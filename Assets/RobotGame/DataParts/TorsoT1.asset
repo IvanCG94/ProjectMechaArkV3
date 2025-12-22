@@ -1,0 +1,39 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 844f020186c0c954bb872a9bedbc9590, type: 3}
+  m_Name: TorsoT1
+  m_EditorClassIdentifier: Assembly-CSharp::RobotGame.Data.StructuralPartData
+  partId: TorsoT1
+  displayName: Basic torso
+  description: 
+  icon: {fileID: 0}
+  prefab: {fileID: 792680213329768598, guid: 7df097ce752664e478b82a82c7105a01, type: 3}
+  category: 0
+  tier: 0
+  weight: 1
+  durability: 100
+  partType: 1
+  canBeRoot: 0
+  structuralSockets:
+  - socketType: 2
+    transformName: HeadSocket
+    isRequired: 0
+    localPosition: {x: 0, y: 0, z: 0}
+    localRotation: {x: 0, y: 0, z: 0}
+  - socketType: 10
+    transformName: CoreSocket
+    isRequired: 0
+    localPosition: {x: 0, y: 0, z: 0}
+    localRotation: {x: 0, y: 0, z: 0}
+  armorGrids: []
+  animatorController: {fileID: 0}
+  animatorAvatar: {fileID: 0}

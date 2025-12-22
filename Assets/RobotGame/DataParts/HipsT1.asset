@@ -1,0 +1,52 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 844f020186c0c954bb872a9bedbc9590, type: 3}
+  m_Name: HipsT1
+  m_EditorClassIdentifier: Assembly-CSharp::RobotGame.Data.StructuralPartData
+  partId: HipsT1
+  displayName: Basic hips
+  description: 
+  icon: {fileID: 0}
+  prefab: {fileID: 3216358612793311869, guid: 7be967e8a50cf864fb62a7710bc84d7d, type: 3}
+  category: 0
+  tier: 0
+  weight: 1
+  durability: 100
+  partType: 0
+  canBeRoot: 1
+  structuralSockets:
+  - socketType: 1
+    transformName: TorsoSocket
+    isRequired: 1
+    localPosition: {x: 0, y: 0, z: 0}
+    localRotation: {x: 0, y: 0, z: 0}
+  armorGrids:
+  - gridInfo:
+      isHead: 1
+      sizeX: 1
+      sizeY: 4
+      surrounding:
+        level: 1
+        isFull: 0
+      gridName: ThighL
+    transformName: Head_1x4_S1_ThighL
+  - gridInfo:
+      isHead: 1
+      sizeX: 1
+      sizeY: 4
+      surrounding:
+        level: 1
+        isFull: 0
+      gridName: ThighR
+    transformName: Head_1x4_S1_ThighR
+  animatorController: {fileID: 0}
+  animatorAvatar: {fileID: 0}
