@@ -185,6 +185,8 @@ MonoBehaviour:
   testArmorParts:
   - {fileID: 11400000, guid: a6c324dbda5575c41822f1f98263f4a1, type: 2}
   - {fileID: 11400000, guid: b056d3f276463e146827e759f3070819, type: 2}
+  - {fileID: 11400000, guid: 0e20e43e5631b164ab1188f748bb4c5f, type: 2}
+  - {fileID: 11400000, guid: 086036f92e8065040a2e09f099d96489, type: 2}
   gridDetectionRadius: 0.5
   gridLayerMask:
     serializedVersion: 2

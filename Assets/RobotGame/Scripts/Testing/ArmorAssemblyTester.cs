@@ -36,8 +36,9 @@ namespace RobotGame.Testing
         
         // Preview
         private GameObject previewObject;
-        private MeshRenderer previewRenderer;
+        private List<MeshRenderer> previewRenderers = new List<MeshRenderer>();
         private Material previewMaterial;
+        private ArmorPartData currentPreviewData;
         
         // Grid highlight objects
         private Dictionary<GridHead, GameObject> gridHighlights = new Dictionary<GridHead, GameObject>();
@@ -377,6 +378,7 @@ namespace RobotGame.Testing
             currentPositionX = 0;
             currentPositionY = 0;
             currentRotation = GridRotation.Rotation.Deg0;
+            currentPreviewData = null; // Forzar recreación del preview
             
             Debug.Log($"Pieza seleccionada: {GetCurrentArmorData().displayName}");
         }
@@ -504,24 +506,89 @@ namespace RobotGame.Testing
         
         private void CreatePreviewObject()
         {
-            previewObject = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            previewObject.name = "ArmorPreview";
-            
-            var collider = previewObject.GetComponent<Collider>();
-            if (collider != null) Destroy(collider);
-            
-            previewRenderer = previewObject.GetComponent<MeshRenderer>();
-            previewMaterial = new Material(Shader.Find("Sprites/Default"));
-            previewRenderer.material = previewMaterial;
-            
+            previewObject = new GameObject("ArmorPreview");
             previewObject.SetActive(false);
+            
+            // Crear material transparente
+            previewMaterial = new Material(Shader.Find("Sprites/Default"));
+            previewMaterial.color = new Color(0f, 0.5f, 1f, 0.5f); // Azul por defecto
+        }
+        
+        private void UpdatePreviewModel()
+        {
+            var armorData = GetCurrentArmorData();
+            
+            // Si la pieza cambió, recrear el preview
+            if (armorData != currentPreviewData)
+            {
+                currentPreviewData = armorData;
+                
+                // Limpiar hijos anteriores
+                foreach (Transform child in previewObject.transform)
+                {
+                    Destroy(child.gameObject);
+                }
+                previewRenderers.Clear();
+                
+                if (armorData != null && armorData.prefab != null)
+                {
+                    // Instanciar el prefab como hijo del preview
+                    GameObject modelInstance = Instantiate(armorData.prefab, previewObject.transform);
+                    modelInstance.transform.localPosition = Vector3.zero;
+                    modelInstance.transform.localRotation = Quaternion.identity;
+                    modelInstance.transform.localScale = Vector3.one;
+                    
+                    // Desactivar cualquier componente que no sea visual
+                    var components = modelInstance.GetComponentsInChildren<MonoBehaviour>();
+                    foreach (var comp in components)
+                    {
+                        comp.enabled = false;
+                    }
+                    
+                    // Desactivar colliders
+                    var colliders = modelInstance.GetComponentsInChildren<Collider>();
+                    foreach (var col in colliders)
+                    {
+                        col.enabled = false;
+                    }
+                    
+                    // Recolectar todos los renderers y aplicar material transparente
+                    var renderers = modelInstance.GetComponentsInChildren<MeshRenderer>();
+                    foreach (var renderer in renderers)
+                    {
+                        // Crear copia del material para cada renderer
+                        Material[] mats = new Material[renderer.sharedMaterials.Length];
+                        for (int i = 0; i < mats.Length; i++)
+                        {
+                            mats[i] = previewMaterial;
+                        }
+                        renderer.materials = mats;
+                        previewRenderers.Add(renderer);
+                    }
+                    
+                    // También para SkinnedMeshRenderer si existe
+                    var skinnedRenderers = modelInstance.GetComponentsInChildren<SkinnedMeshRenderer>();
+                    foreach (var renderer in skinnedRenderers)
+                    {
+                        Material[] mats = new Material[renderer.sharedMaterials.Length];
+                        for (int i = 0; i < mats.Length; i++)
+                        {
+                            mats[i] = previewMaterial;
+                        }
+                        renderer.materials = mats;
+                    }
+                }
+            }
         }
         
         private void UpdatePreview()
         {
             var armorData = GetCurrentArmorData();
             
-            if (hoveredGrid == null || armorData == null)
+            // Actualizar el modelo si cambió la pieza
+            UpdatePreviewModel();
+            
+            if (armorData == null || armorData.prefab == null)
             {
                 previewObject.SetActive(false);
                 return;
@@ -529,19 +596,48 @@ namespace RobotGame.Testing
             
             previewObject.SetActive(true);
             
+            // Obtener tamaño rotado para calcular posición
             var rotatedSize = GetRotatedSize(armorData);
             int sizeX = rotatedSize.x;
             int sizeY = rotatedSize.y;
             
-            previewObject.transform.localScale = new Vector3(sizeX * 0.1f, sizeY * 0.1f, 0.05f);
+            // Determinar color según estado
+            Color previewColor;
             
-            Vector3 cellPos = hoveredGrid.CellToWorldPosition(currentPositionX, currentPositionY);
-            Vector3 offset = new Vector3(sizeX * 0.05f, sizeY * 0.05f, 0.025f);
-            previewObject.transform.position = cellPos + hoveredGrid.transform.rotation * offset;
-            previewObject.transform.rotation = hoveredGrid.transform.rotation;
+            if (hoveredGrid == null)
+            {
+                // Azul transparente - no está sobre ninguna grilla
+                previewColor = new Color(0f, 0.5f, 1f, 0.5f);
+                
+                // Posicionar en el centro de la pantalla o seguir el mouse
+                Ray ray = mainCamera.ScreenPointToRay(Input.mousePosition);
+                Vector3 worldPos = ray.origin + ray.direction * 2f;
+                previewObject.transform.position = worldPos;
+                previewObject.transform.rotation = Quaternion.identity * GridRotation.ToQuaternion(currentRotation);
+            }
+            else
+            {
+                bool canPlace = hoveredGrid.CanPlace(armorData, currentPositionX, currentPositionY, currentRotation);
+                
+                if (canPlace)
+                {
+                    // Verde transparente - posición válida
+                    previewColor = new Color(0f, 1f, 0f, 0.5f);
+                }
+                else
+                {
+                    // Rojo transparente - posición inválida
+                    previewColor = new Color(1f, 0f, 0f, 0.5f);
+                }
+                
+                // Posicionar en la grilla
+                Vector3 cellPos = hoveredGrid.CellToWorldPosition(currentPositionX, currentPositionY);
+                previewObject.transform.position = cellPos;
+                previewObject.transform.rotation = hoveredGrid.transform.rotation * GridRotation.ToQuaternion(currentRotation);
+            }
             
-            bool canPlace = hoveredGrid.CanPlace(armorData, currentPositionX, currentPositionY, currentRotation);
-            previewMaterial.color = canPlace ? new Color(0f, 1f, 0f, 0.5f) : new Color(1f, 0f, 0f, 0.5f);
+            // Aplicar color al material
+            previewMaterial.color = previewColor;
         }
         
         private void OnGUI()
@@ -601,6 +697,7 @@ namespace RobotGame.Testing
             {
                 Destroy(previewObject);
             }
+            previewRenderers.Clear();
         }
     }
 }

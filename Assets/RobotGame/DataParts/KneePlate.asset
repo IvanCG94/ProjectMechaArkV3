@@ -10,13 +10,13 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 0b980c5627308d5458fee39217d364a3, type: 3}
-  m_Name: ArmorT1_1x2_S1
+  m_Name: KneePlate
   m_EditorClassIdentifier: Assembly-CSharp::RobotGame.Data.ArmorPartData
-  partId: armor_1x2_s1
-  displayName: 
+  partId: KneePlateTest
+  displayName: Plate test
   description: 
   icon: {fileID: 0}
-  prefab: {fileID: 8428853684609311786, guid: d0a45981ef039e74dbd709111b3998a6, type: 3}
+  prefab: {fileID: 748634568384274072, guid: b8be150392fcbf948aaceecf5efd6e29, type: 3}
   category: 1
   tier: 0
   weight: 1
@@ -25,13 +25,13 @@ MonoBehaviour:
     gridInfo:
       isHead: 0
       sizeX: 1
-      sizeY: 2
+      sizeY: 1
       surrounding:
         level: 1
         edges: 3
         fullType: 0
-      gridName: test2
-    transformName: Tail_1x2_S1_LR_test2
+      gridName: KneePlate
+    transformName: Tail_1x1_S1_LR_KneePlate
   additionalHeadGrids: []
   armor: 0
   physicalResistance: 0

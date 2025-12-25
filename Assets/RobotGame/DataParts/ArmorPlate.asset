@@ -10,13 +10,13 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 0b980c5627308d5458fee39217d364a3, type: 3}
-  m_Name: ArmorT1_1x2_S1
+  m_Name: ArmorPlate
   m_EditorClassIdentifier: Assembly-CSharp::RobotGame.Data.ArmorPartData
-  partId: armor_1x2_s1
-  displayName: 
+  partId: ArmorPlate_test
+  displayName: Armor plate
   description: 
   icon: {fileID: 0}
-  prefab: {fileID: 8428853684609311786, guid: d0a45981ef039e74dbd709111b3998a6, type: 3}
+  prefab: {fileID: 790046067228398202, guid: e6910c640f1eead4d9f122b7801d1ce0, type: 3}
   category: 1
   tier: 0
   weight: 1
@@ -24,14 +24,14 @@ MonoBehaviour:
   tailGrid:
     gridInfo:
       isHead: 0
-      sizeX: 1
+      sizeX: 2
       sizeY: 2
       surrounding:
         level: 1
-        edges: 3
+        edges: 15
         fullType: 0
-      gridName: test2
-    transformName: Tail_1x2_S1_LR_test2
+      gridName: ShoulderPlate
+    transformName: Tail_2x2_S1_LRTB_ShoulderPlate
   additionalHeadGrids: []
   armor: 0
   physicalResistance: 0

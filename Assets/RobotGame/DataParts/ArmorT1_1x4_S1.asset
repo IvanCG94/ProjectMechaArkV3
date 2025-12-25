@@ -28,7 +28,8 @@ MonoBehaviour:
       sizeY: 4
       surrounding:
         level: 1
-        isFull: 0
+        edges: 3
+        fullType: 0
       gridName: Canilleras
     transformName: Tail_1x4_S1_Canilleras
   additionalHeadGrids: []
