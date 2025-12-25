@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using RobotGame.Data;
 using RobotGame.Enums;
+using RobotGame.Utils;
 
 namespace RobotGame.Components
 {
@@ -52,34 +53,34 @@ namespace RobotGame.Components
         }
         
         /// <summary>
-        /// Verifica si una pieza puede colocarse en la posición especificada.
+        /// Verifica si una pieza puede colocarse en la posición especificada (sin rotación).
         /// </summary>
         public bool CanPlace(ArmorPartData armorData, int startX, int startY)
         {
-            if (armorData == null) return false;
-            
-            int sizeX = armorData.tailGrid.gridInfo.sizeX;
-            int sizeY = armorData.tailGrid.gridInfo.sizeY;
-            SurroundingLevel surrounding = armorData.tailGrid.gridInfo.surrounding;
-            
-            return CanPlaceInternal(startX, startY, sizeX, sizeY, surrounding);
+            return CanPlace(armorData, startX, startY, GridRotation.Rotation.Deg0);
         }
         
         /// <summary>
-        /// Verifica si un tamaño específico puede colocarse en la posición.
+        /// Verifica si una pieza puede colocarse en la posición especificada con una rotación.
         /// </summary>
-        public bool CanPlace(int startX, int startY, int sizeX, int sizeY, SurroundingLevel surrounding)
+        public bool CanPlace(ArmorPartData armorData, int startX, int startY, GridRotation.Rotation rotation)
         {
-            return CanPlaceInternal(startX, startY, sizeX, sizeY, surrounding);
+            if (armorData == null || armorData.tailGrid == null) return false;
+            
+            // Obtener GridInfo rotado
+            GridInfo rotatedTail = GridRotation.RotateGridInfo(armorData.tailGrid.gridInfo, rotation);
+            
+            return CanPlaceInternal(startX, startY, rotatedTail);
         }
         
-        private bool CanPlaceInternal(int startX, int startY, int sizeX, int sizeY, SurroundingLevel surrounding)
+        /// <summary>
+        /// Verifica si un GridInfo específico puede colocarse en la posición.
+        /// </summary>
+        private bool CanPlaceInternal(int startX, int startY, GridInfo tailInfo)
         {
-            // Verificar compatibilidad de Surrounding
-            if (!gridInfo.surrounding.CanAccept(surrounding))
-            {
-                return false;
-            }
+            int sizeX = tailInfo.sizeX;
+            int sizeY = tailInfo.sizeY;
+            SurroundingLevel tailSurrounding = tailInfo.surrounding;
             
             // Verificar límites
             if (startX < 0 || startY < 0)
@@ -88,6 +89,18 @@ namespace RobotGame.Components
             }
             
             if (startX + sizeX > gridInfo.sizeX || startY + sizeY > gridInfo.sizeY)
+            {
+                return false;
+            }
+            
+            // Verificar compatibilidad de Surrounding level
+            if (!gridInfo.surrounding.CanAcceptLevel(tailSurrounding))
+            {
+                return false;
+            }
+            
+            // Verificar compatibilidad de bordes/Full
+            if (!CanAcceptEdgesAtPosition(startX, startY, tailInfo))
             {
                 return false;
             }
@@ -108,9 +121,163 @@ namespace RobotGame.Components
         }
         
         /// <summary>
-        /// Intenta colocar una pieza de armadura en la posición especificada.
+        /// Verifica si los bordes del Tail son válidos en la posición dada.
+        /// Las piezas con bordes solo pueden colocarse en los bordes correspondientes de la grilla.
+        /// </summary>
+        private bool CanAcceptEdgesAtPosition(int startX, int startY, GridInfo tailInfo)
+        {
+            SurroundingLevel tailSurrounding = tailInfo.surrounding;
+            SurroundingLevel headSurrounding = gridInfo.surrounding;
+            
+            // Si el Tail no tiene bordes ni es Full (SN plano), siempre es compatible
+            if (!tailSurrounding.HasEdges && !tailSurrounding.IsFull)
+            {
+                return true;
+            }
+            
+            // Caso especial: Head es Full (FH o FV)
+            if (headSurrounding.IsFull)
+            {
+                // Primero verificar compatibilidad básica de bordes
+                if (!headSurrounding.CanAcceptEdges(tailSurrounding))
+                {
+                    return false;
+                }
+                
+                // Para piezas Full, deben ser del mismo tamaño
+                if (tailSurrounding.IsFull)
+                {
+                    return tailInfo.sizeX == gridInfo.sizeX && tailInfo.sizeY == gridInfo.sizeY;
+                }
+                
+                // Para piezas con LR en Head FH, deben ocupar todo el ancho
+                if (headSurrounding.fullType == FullType.FH)
+                {
+                    if ((tailSurrounding.edges & EdgeFlags.LR) == EdgeFlags.LR)
+                    {
+                        // LR debe ocupar todo el ancho
+                        if (tailInfo.sizeX != gridInfo.sizeX)
+                        {
+                            return false;
+                        }
+                    }
+                    // Verificar posición para bordes individuales L o R
+                    return ValidateSingleEdgePosition(startX, startY, tailInfo, tailSurrounding.edges);
+                }
+                
+                // Para piezas con TB en Head FV, deben ocupar toda la altura
+                if (headSurrounding.fullType == FullType.FV)
+                {
+                    if ((tailSurrounding.edges & EdgeFlags.TB) == EdgeFlags.TB)
+                    {
+                        // TB debe ocupar toda la altura
+                        if (tailInfo.sizeY != gridInfo.sizeY)
+                        {
+                            return false;
+                        }
+                    }
+                    // Verificar posición para bordes individuales T o B
+                    return ValidateSingleEdgePosition(startX, startY, tailInfo, tailSurrounding.edges);
+                }
+                
+                return false;
+            }
+            
+            // Si el Tail es Full pero el Head no es Full, no es compatible
+            if (tailSurrounding.IsFull)
+            {
+                return false;
+            }
+            
+            // Caso especial LRTB: debe ocupar toda la grilla y Head debe tener LRTB
+            if (tailSurrounding.HasAllEdges)
+            {
+                bool occupiesFullGrid = startX == 0 && startY == 0 && 
+                                        tailInfo.sizeX == gridInfo.sizeX && 
+                                        tailInfo.sizeY == gridInfo.sizeY;
+                return headSurrounding.HasAllEdges && occupiesFullGrid;
+            }
+            
+            // Verificar cada borde que el Tail necesita
+            EdgeFlags tailEdges = tailSurrounding.edges;
+            EdgeFlags headEdges = headSurrounding.edges;
+            
+            // El Head debe tener los bordes que el Tail necesita
+            if ((headEdges & tailEdges) != tailEdges)
+            {
+                return false;
+            }
+            
+            // Verificar que piezas con bordes opuestos ocupen todo el ancho/alto
+            if ((tailEdges & EdgeFlags.LR) == EdgeFlags.LR)
+            {
+                // LR debe ocupar todo el ancho
+                if (tailInfo.sizeX != gridInfo.sizeX)
+                {
+                    return false;
+                }
+            }
+            
+            if ((tailEdges & EdgeFlags.TB) == EdgeFlags.TB)
+            {
+                // TB debe ocupar toda la altura
+                if (tailInfo.sizeY != gridInfo.sizeY)
+                {
+                    return false;
+                }
+            }
+            
+            // Verificar posición para bordes individuales
+            return ValidateSingleEdgePosition(startX, startY, tailInfo, tailEdges);
+        }
+        
+        /// <summary>
+        /// Valida que la pieza esté posicionada en los bordes correctos.
+        /// </summary>
+        private bool ValidateSingleEdgePosition(int startX, int startY, GridInfo tailInfo, EdgeFlags tailEdges)
+        {
+            int endX = startX + tailInfo.sizeX - 1;
+            int endY = startY + tailInfo.sizeY - 1;
+            
+            // Si necesita borde L, debe estar en x = 0
+            if ((tailEdges & EdgeFlags.L) != 0 && startX != 0)
+            {
+                return false;
+            }
+            
+            // Si necesita borde R, debe terminar en el borde derecho
+            if ((tailEdges & EdgeFlags.R) != 0 && endX != gridInfo.sizeX - 1)
+            {
+                return false;
+            }
+            
+            // Si necesita borde B, debe estar en y = 0
+            if ((tailEdges & EdgeFlags.B) != 0 && startY != 0)
+            {
+                return false;
+            }
+            
+            // Si necesita borde T, debe terminar en el borde superior
+            if ((tailEdges & EdgeFlags.T) != 0 && endY != gridInfo.sizeY - 1)
+            {
+                return false;
+            }
+            
+            return true;
+        }
+        
+        /// <summary>
+        /// Intenta colocar una pieza de armadura en la posición especificada (sin rotación).
         /// </summary>
         public bool TryPlace(ArmorPart armorPart, int startX, int startY)
+        {
+            return TryPlace(armorPart, startX, startY, GridRotation.Rotation.Deg0);
+        }
+        
+        /// <summary>
+        /// Intenta colocar una pieza de armadura en la posición especificada con rotación.
+        /// </summary>
+        public bool TryPlace(ArmorPart armorPart, int startX, int startY, GridRotation.Rotation rotation)
         {
             if (armorPart == null || armorPart.ArmorData == null)
             {
@@ -119,19 +286,17 @@ namespace RobotGame.Components
             }
             
             ArmorPartData data = armorPart.ArmorData;
-            int sizeX = data.tailGrid.gridInfo.sizeX;
-            int sizeY = data.tailGrid.gridInfo.sizeY;
-            SurroundingLevel surrounding = data.tailGrid.gridInfo.surrounding;
+            GridInfo rotatedTail = GridRotation.RotateGridInfo(data.tailGrid.gridInfo, rotation);
             
-            if (!CanPlaceInternal(startX, startY, sizeX, sizeY, surrounding))
+            if (!CanPlaceInternal(startX, startY, rotatedTail))
             {
                 return false;
             }
             
             // Marcar celdas como ocupadas
-            for (int x = startX; x < startX + sizeX; x++)
+            for (int x = startX; x < startX + rotatedTail.sizeX; x++)
             {
-                for (int y = startY; y < startY + sizeY; y++)
+                for (int y = startY; y < startY + rotatedTail.sizeY; y++)
                 {
                     occupiedCells[x, y] = true;
                     cellOccupants[x, y] = armorPart.InstanceId;
@@ -141,7 +306,7 @@ namespace RobotGame.Components
             // Posicionar la pieza
             armorPart.transform.SetParent(transform);
             armorPart.transform.localPosition = CellToLocalPosition(startX, startY);
-            armorPart.transform.localRotation = Quaternion.identity;
+            armorPart.transform.localRotation = GridRotation.ToQuaternion(rotation);
             
             armorPart.OnPlaced(this, startX, startY);
             placedParts.Add(armorPart);
@@ -199,30 +364,30 @@ namespace RobotGame.Components
         }
         
         /// <summary>
-        /// Obtiene todas las posiciones válidas donde una pieza puede colocarse.
+        /// Obtiene todas las posiciones válidas donde una pieza puede colocarse (sin rotación).
         /// </summary>
         public List<Vector2Int> GetValidPlacements(ArmorPartData armorData)
         {
+            return GetValidPlacements(armorData, GridRotation.Rotation.Deg0);
+        }
+        
+        /// <summary>
+        /// Obtiene todas las posiciones válidas donde una pieza puede colocarse con rotación.
+        /// </summary>
+        public List<Vector2Int> GetValidPlacements(ArmorPartData armorData, GridRotation.Rotation rotation)
+        {
             List<Vector2Int> validPositions = new List<Vector2Int>();
             
-            if (armorData == null) return validPositions;
+            if (armorData == null || armorData.tailGrid == null) return validPositions;
             
-            int sizeX = armorData.tailGrid.gridInfo.sizeX;
-            int sizeY = armorData.tailGrid.gridInfo.sizeY;
-            SurroundingLevel surrounding = armorData.tailGrid.gridInfo.surrounding;
-            
-            // Verificar compatibilidad de Surrounding primero
-            if (!gridInfo.surrounding.CanAccept(surrounding))
-            {
-                return validPositions;
-            }
+            GridInfo rotatedTail = GridRotation.RotateGridInfo(armorData.tailGrid.gridInfo, rotation);
             
             // Probar todas las posiciones posibles
-            for (int x = 0; x <= gridInfo.sizeX - sizeX; x++)
+            for (int x = 0; x <= gridInfo.sizeX - rotatedTail.sizeX; x++)
             {
-                for (int y = 0; y <= gridInfo.sizeY - sizeY; y++)
+                for (int y = 0; y <= gridInfo.sizeY - rotatedTail.sizeY; y++)
                 {
-                    if (CanPlaceInternal(x, y, sizeX, sizeY, surrounding))
+                    if (CanPlaceInternal(x, y, rotatedTail))
                     {
                         validPositions.Add(new Vector2Int(x, y));
                     }
@@ -230,6 +395,19 @@ namespace RobotGame.Components
             }
             
             return validPositions;
+        }
+        
+        /// <summary>
+        /// Obtiene todas las rotaciones válidas para una pieza en esta grilla.
+        /// </summary>
+        public GridRotation.Rotation[] GetValidRotations(ArmorPartData armorData)
+        {
+            if (armorData == null || armorData.tailGrid == null)
+            {
+                return new GridRotation.Rotation[0];
+            }
+            
+            return GridRotation.GetValidRotations(armorData.tailGrid.gridInfo, gridInfo);
         }
         
         /// <summary>
@@ -282,6 +460,58 @@ namespace RobotGame.Components
                             Gizmos.DrawCube(center, Vector3.one * cellSize * 0.8f);
                         }
                     }
+                }
+            }
+            
+            // Dibujar indicadores de bordes abiertos
+            DrawEdgeIndicators();
+        }
+        
+        private void DrawEdgeIndicators()
+        {
+            float cellSize = 0.1f;
+            EdgeFlags edges = gridInfo.surrounding.edges;
+            
+            Gizmos.color = Color.green;
+            float indicatorSize = 0.02f;
+            
+            // Indicador L (borde izquierdo)
+            if ((edges & EdgeFlags.L) != 0 || gridInfo.surrounding.IsFull)
+            {
+                for (int y = 0; y < gridInfo.sizeY; y++)
+                {
+                    Vector3 pos = transform.TransformPoint(new Vector3(-indicatorSize, (y + 0.5f) * cellSize, 0));
+                    Gizmos.DrawCube(pos, Vector3.one * indicatorSize);
+                }
+            }
+            
+            // Indicador R (borde derecho)
+            if ((edges & EdgeFlags.R) != 0 || gridInfo.surrounding.IsFull)
+            {
+                for (int y = 0; y < gridInfo.sizeY; y++)
+                {
+                    Vector3 pos = transform.TransformPoint(new Vector3(gridInfo.sizeX * cellSize + indicatorSize, (y + 0.5f) * cellSize, 0));
+                    Gizmos.DrawCube(pos, Vector3.one * indicatorSize);
+                }
+            }
+            
+            // Indicador B (borde inferior)
+            if ((edges & EdgeFlags.B) != 0 || gridInfo.surrounding.IsFull)
+            {
+                for (int x = 0; x < gridInfo.sizeX; x++)
+                {
+                    Vector3 pos = transform.TransformPoint(new Vector3((x + 0.5f) * cellSize, -indicatorSize, 0));
+                    Gizmos.DrawCube(pos, Vector3.one * indicatorSize);
+                }
+            }
+            
+            // Indicador T (borde superior)
+            if ((edges & EdgeFlags.T) != 0 || gridInfo.surrounding.IsFull)
+            {
+                for (int x = 0; x < gridInfo.sizeX; x++)
+                {
+                    Vector3 pos = transform.TransformPoint(new Vector3((x + 0.5f) * cellSize, gridInfo.sizeY * cellSize + indicatorSize, 0));
+                    Gizmos.DrawCube(pos, Vector3.one * indicatorSize);
                 }
             }
         }

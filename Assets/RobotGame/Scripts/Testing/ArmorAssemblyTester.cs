@@ -3,6 +3,8 @@ using UnityEngine;
 using RobotGame.Components;
 using RobotGame.Data;
 using RobotGame.Systems;
+using RobotGame.Utils;
+using RobotGame.Enums;
 
 namespace RobotGame.Testing
 {
@@ -30,6 +32,7 @@ namespace RobotGame.Testing
         private int currentArmorIndex = 0;
         private int currentPositionX = 0;
         private int currentPositionY = 0;
+        private GridRotation.Rotation currentRotation = GridRotation.Rotation.Deg0;
         
         // Preview
         private GameObject previewObject;
@@ -55,7 +58,6 @@ namespace RobotGame.Testing
         
         private void Update()
         {
-            // Activar con P (primera vez)
             if (Input.GetKeyDown(KeyCode.P))
             {
                 if (!isActive)
@@ -66,16 +68,13 @@ namespace RobotGame.Testing
             
             if (!isActive) return;
             
-            // Detectar grilla bajo el mouse
             DetectGridUnderMouse();
             
-            // Click izquierdo para colocar pieza
             if (Input.GetMouseButtonDown(0))
             {
                 TryPlaceArmor();
             }
             
-            // Cambiar pieza con flechas izquierda/derecha
             if (Input.GetKeyDown(KeyCode.LeftArrow))
             {
                 ChangeArmorPiece(-1);
@@ -85,7 +84,6 @@ namespace RobotGame.Testing
                 ChangeArmorPiece(1);
             }
             
-            // Mover posición dentro de la grilla con flechas arriba/abajo
             if (Input.GetKeyDown(KeyCode.UpArrow))
             {
                 MovePosition(0, 1);
@@ -95,7 +93,6 @@ namespace RobotGame.Testing
                 MovePosition(0, -1);
             }
             
-            // Mover posición horizontal con A/D (alternativa)
             if (Input.GetKeyDown(KeyCode.A))
             {
                 MovePosition(-1, 0);
@@ -105,13 +102,16 @@ namespace RobotGame.Testing
                 MovePosition(1, 0);
             }
             
-            // Cancelar con Escape
+            if (Input.GetKeyDown(KeyCode.R))
+            {
+                RotatePiece();
+            }
+            
             if (Input.GetKeyDown(KeyCode.Escape))
             {
                 DeactivateTester();
             }
             
-            // Actualizar preview
             UpdatePreview();
         }
         
@@ -156,6 +156,7 @@ namespace RobotGame.Testing
             currentArmorIndex = 0;
             currentPositionX = 0;
             currentPositionY = 0;
+            currentRotation = GridRotation.Rotation.Deg0;
             hoveredGrid = null;
             
             CreateGridHighlights();
@@ -167,6 +168,7 @@ namespace RobotGame.Testing
             Debug.Log("  Click Izq   : Colocar pieza");
             Debug.Log("  ← →         : Cambiar pieza de armadura");
             Debug.Log("  ↑ ↓ A D     : Mover posición en grilla");
+            Debug.Log("  R           : Rotar pieza (90°)");
             Debug.Log("  Esc         : Cancelar");
             Debug.Log("======================================");
         }
@@ -191,10 +193,7 @@ namespace RobotGame.Testing
                 foreach (var grid in part.ArmorGrids)
                 {
                     availableGrids.Add(grid);
-                    
-                    // Agregar un collider temporal a la grilla para detección con raycast
                     EnsureGridCollider(grid);
-                    
                     Debug.Log($"Grilla encontrada: {grid.GridInfo.gridName} ({grid.GridInfo.sizeX}x{grid.GridInfo.sizeY}) en {part.PartData.displayName}");
                 }
             }
@@ -210,7 +209,6 @@ namespace RobotGame.Testing
                 collider = grid.gameObject.AddComponent<BoxCollider>();
             }
             
-            // Configurar el tamaño del collider basado en la grilla
             float sizeX = grid.GridInfo.sizeX * 0.1f;
             float sizeY = grid.GridInfo.sizeY * 0.1f;
             collider.size = new Vector3(sizeX, sizeY, 0.1f);
@@ -227,25 +225,20 @@ namespace RobotGame.Testing
             
             if (Physics.Raycast(ray, out hit, 100f, gridLayerMask))
             {
-                // Verificar si el objeto golpeado es una grilla
                 GridHead hitGrid = hit.collider.GetComponent<GridHead>();
                 
                 if (hitGrid != null && availableGrids.Contains(hitGrid))
                 {
                     newHoveredGrid = hitGrid;
-                    
-                    // Calcular posición en la grilla basada en el punto de impacto
                     CalculateGridPosition(hitGrid, hit.point);
                 }
             }
             
-            // Si no hay hit directo, buscar la grilla más cercana
             if (newHoveredGrid == null)
             {
                 newHoveredGrid = FindClosestGridToRay(ray);
             }
             
-            // Actualizar grilla seleccionada
             if (newHoveredGrid != hoveredGrid)
             {
                 hoveredGrid = newHoveredGrid;
@@ -263,22 +256,18 @@ namespace RobotGame.Testing
         
         private void CalculateGridPosition(GridHead grid, Vector3 worldPoint)
         {
-            // Convertir punto mundial a local de la grilla
             Vector3 localPoint = grid.transform.InverseTransformPoint(worldPoint);
             
-            // Calcular celda (cada celda es 0.1 unidades)
             int cellX = Mathf.FloorToInt(localPoint.x / 0.1f);
             int cellY = Mathf.FloorToInt(localPoint.y / 0.1f);
             
             var armorData = GetCurrentArmorData();
             if (armorData == null) return;
             
-            int armorSizeX = armorData.tailGrid.gridInfo.sizeX;
-            int armorSizeY = armorData.tailGrid.gridInfo.sizeY;
+            var rotatedSize = GetRotatedSize(armorData);
             
-            // Ajustar para que la pieza no se salga de la grilla
-            int maxX = Mathf.Max(0, grid.GridInfo.sizeX - armorSizeX);
-            int maxY = Mathf.Max(0, grid.GridInfo.sizeY - armorSizeY);
+            int maxX = Mathf.Max(0, grid.GridInfo.sizeX - rotatedSize.x);
+            int maxY = Mathf.Max(0, grid.GridInfo.sizeY - rotatedSize.y);
             
             currentPositionX = Mathf.Clamp(cellX, 0, maxX);
             currentPositionY = Mathf.Clamp(cellY, 0, maxY);
@@ -291,7 +280,6 @@ namespace RobotGame.Testing
             
             foreach (var grid in availableGrids)
             {
-                // Calcular el centro de la grilla
                 Vector3 gridCenter = grid.transform.position + 
                     grid.transform.rotation * new Vector3(
                         grid.GridInfo.sizeX * 0.05f,
@@ -299,7 +287,6 @@ namespace RobotGame.Testing
                         0f
                     );
                 
-                // Calcular distancia del rayo al centro de la grilla
                 Vector3 toGrid = gridCenter - ray.origin;
                 float projectedDistance = Vector3.Dot(toGrid, ray.direction);
                 Vector3 closestPointOnRay = ray.origin + ray.direction * projectedDistance;
@@ -317,7 +304,6 @@ namespace RobotGame.Testing
         
         private Material CreateTransparentMaterial(Color color)
         {
-            // Usar Unlit shader para colores más precisos
             Material mat = new Material(Shader.Find("Sprites/Default"));
             mat.color = color;
             return mat;
@@ -327,7 +313,6 @@ namespace RobotGame.Testing
         {
             DestroyGridHighlights();
             
-            // Color azul celeste transparente para grillas
             Color gridColor = new Color(0f, 0.8f, 1f, 0.3f);
             
             foreach (var grid in availableGrids)
@@ -335,16 +320,13 @@ namespace RobotGame.Testing
                 GameObject highlight = GameObject.CreatePrimitive(PrimitiveType.Cube);
                 highlight.name = $"GridHighlight_{grid.GridInfo.gridName}";
                 
-                // Desactivar collider del highlight
                 var collider = highlight.GetComponent<Collider>();
                 if (collider != null) Destroy(collider);
                 
-                // Crear material azul celeste transparente
                 Material mat = CreateTransparentMaterial(gridColor);
                 var renderer = highlight.GetComponent<MeshRenderer>();
                 renderer.material = mat;
                 
-                // Posicionar y escalar
                 float sizeX = grid.GridInfo.sizeX * 0.1f;
                 float sizeY = grid.GridInfo.sizeY * 0.1f;
                 highlight.transform.SetParent(grid.transform);
@@ -359,21 +341,12 @@ namespace RobotGame.Testing
         
         private void UpdateGridHighlights()
         {
-            // Color azul celeste para grillas no seleccionadas
             Color normalColor = new Color(0f, 0.8f, 1f, 0.3f);
-            // Color azul celeste más brillante para grilla seleccionada
             Color selectedColor = new Color(0f, 0.9f, 1f, 0.5f);
             
             foreach (var kvp in gridMaterials)
             {
-                if (kvp.Key == hoveredGrid)
-                {
-                    kvp.Value.color = selectedColor;
-                }
-                else
-                {
-                    kvp.Value.color = normalColor;
-                }
+                kvp.Value.color = (kvp.Key == hoveredGrid) ? selectedColor : normalColor;
             }
         }
         
@@ -381,19 +354,13 @@ namespace RobotGame.Testing
         {
             foreach (var kvp in gridHighlights)
             {
-                if (kvp.Value != null)
-                {
-                    Destroy(kvp.Value);
-                }
+                if (kvp.Value != null) Destroy(kvp.Value);
             }
             gridHighlights.Clear();
             
             foreach (var kvp in gridMaterials)
             {
-                if (kvp.Value != null)
-                {
-                    Destroy(kvp.Value);
-                }
+                if (kvp.Value != null) Destroy(kvp.Value);
             }
             gridMaterials.Clear();
         }
@@ -409,8 +376,54 @@ namespace RobotGame.Testing
             
             currentPositionX = 0;
             currentPositionY = 0;
+            currentRotation = GridRotation.Rotation.Deg0;
             
             Debug.Log($"Pieza seleccionada: {GetCurrentArmorData().displayName}");
+        }
+        
+        private void RotatePiece()
+        {
+            currentRotation = GridRotation.RotateClockwise(currentRotation);
+            
+            if (hoveredGrid != null)
+            {
+                var armorData = GetCurrentArmorData();
+                if (armorData != null)
+                {
+                    var rotatedSize = GetRotatedSize(armorData);
+                    int maxX = Mathf.Max(0, hoveredGrid.GridInfo.sizeX - rotatedSize.x);
+                    int maxY = Mathf.Max(0, hoveredGrid.GridInfo.sizeY - rotatedSize.y);
+                    
+                    currentPositionX = Mathf.Clamp(currentPositionX, 0, maxX);
+                    currentPositionY = Mathf.Clamp(currentPositionY, 0, maxY);
+                }
+            }
+            
+            var armor = GetCurrentArmorData();
+            if (armor != null)
+            {
+                var rotatedInfo = GridRotation.RotateGridInfo(armor.tailGrid.gridInfo, currentRotation);
+                string edgesStr = rotatedInfo.surrounding.HasEdges ? 
+                    $"_{SurroundingLevel.EdgesToString(rotatedInfo.surrounding.edges)}" : "";
+                string fullStr = rotatedInfo.surrounding.IsFull ? 
+                    rotatedInfo.surrounding.fullType.ToString() : "";
+                    
+                Debug.Log($"Rotación: {currentRotation} → {rotatedInfo.sizeX}x{rotatedInfo.sizeY} S{rotatedInfo.surrounding.level}{fullStr}{edgesStr}");
+            }
+        }
+        
+        private Vector2Int GetRotatedSize(ArmorPartData armorData)
+        {
+            if (armorData == null || armorData.tailGrid == null)
+            {
+                return Vector2Int.zero;
+            }
+            
+            return GridRotation.RotateSize(
+                armorData.tailGrid.gridInfo.sizeX,
+                armorData.tailGrid.gridInfo.sizeY,
+                currentRotation
+            );
         }
         
         private void MovePosition(int deltaX, int deltaY)
@@ -420,8 +433,10 @@ namespace RobotGame.Testing
             var armor = GetCurrentArmorData();
             if (armor == null) return;
             
-            int maxX = Mathf.Max(0, hoveredGrid.GridInfo.sizeX - armor.tailGrid.gridInfo.sizeX);
-            int maxY = Mathf.Max(0, hoveredGrid.GridInfo.sizeY - armor.tailGrid.gridInfo.sizeY);
+            var rotatedSize = GetRotatedSize(armor);
+            
+            int maxX = Mathf.Max(0, hoveredGrid.GridInfo.sizeX - rotatedSize.x);
+            int maxY = Mathf.Max(0, hoveredGrid.GridInfo.sizeY - rotatedSize.y);
             
             currentPositionX = Mathf.Clamp(currentPositionX + deltaX, 0, maxX);
             currentPositionY = Mathf.Clamp(currentPositionY + deltaY, 0, maxY);
@@ -438,9 +453,9 @@ namespace RobotGame.Testing
             var armorData = GetCurrentArmorData();
             if (armorData == null) return;
             
-            if (!hoveredGrid.CanPlace(armorData, currentPositionX, currentPositionY))
+            if (!hoveredGrid.CanPlace(armorData, currentPositionX, currentPositionY, currentRotation))
             {
-                Debug.LogWarning($"No se puede colocar {armorData.displayName} en posición ({currentPositionX}, {currentPositionY})");
+                Debug.LogWarning($"No se puede colocar {armorData.displayName} en posición ({currentPositionX}, {currentPositionY}) con rotación {currentRotation}");
                 return;
             }
             
@@ -452,9 +467,9 @@ namespace RobotGame.Testing
                 return;
             }
             
-            if (hoveredGrid.TryPlace(armorPart, currentPositionX, currentPositionY))
+            if (hoveredGrid.TryPlace(armorPart, currentPositionX, currentPositionY, currentRotation))
             {
-                Debug.Log($"✓ {armorData.displayName} colocada en {hoveredGrid.GridInfo.gridName} posición ({currentPositionX}, {currentPositionY})");
+                Debug.Log($"✓ {armorData.displayName} colocada en {hoveredGrid.GridInfo.gridName} posición ({currentPositionX}, {currentPositionY}) rotación {currentRotation}");
                 PrintGridState(hoveredGrid);
             }
             else
@@ -496,7 +511,6 @@ namespace RobotGame.Testing
             if (collider != null) Destroy(collider);
             
             previewRenderer = previewObject.GetComponent<MeshRenderer>();
-            // Usar Unlit shader para colores precisos
             previewMaterial = new Material(Shader.Find("Sprites/Default"));
             previewRenderer.material = previewMaterial;
             
@@ -515,8 +529,9 @@ namespace RobotGame.Testing
             
             previewObject.SetActive(true);
             
-            int sizeX = armorData.tailGrid.gridInfo.sizeX;
-            int sizeY = armorData.tailGrid.gridInfo.sizeY;
+            var rotatedSize = GetRotatedSize(armorData);
+            int sizeX = rotatedSize.x;
+            int sizeY = rotatedSize.y;
             
             previewObject.transform.localScale = new Vector3(sizeX * 0.1f, sizeY * 0.1f, 0.05f);
             
@@ -525,17 +540,8 @@ namespace RobotGame.Testing
             previewObject.transform.position = cellPos + hoveredGrid.transform.rotation * offset;
             previewObject.transform.rotation = hoveredGrid.transform.rotation;
             
-            bool canPlace = hoveredGrid.CanPlace(armorData, currentPositionX, currentPositionY);
-            
-            // Verde transparente si es válido, rojo transparente si no
-            if (canPlace)
-            {
-                previewMaterial.color = new Color(0f, 1f, 0f, 0.5f);
-            }
-            else
-            {
-                previewMaterial.color = new Color(1f, 0f, 0f, 0.5f);
-            }
+            bool canPlace = hoveredGrid.CanPlace(armorData, currentPositionX, currentPositionY, currentRotation);
+            previewMaterial.color = canPlace ? new Color(0f, 1f, 0f, 0.5f) : new Color(1f, 0f, 0f, 0.5f);
         }
         
         private void OnGUI()
@@ -563,20 +569,24 @@ namespace RobotGame.Testing
             
             if (armorData != null)
             {
+                var rotatedInfo = GridRotation.RotateGridInfo(armorData.tailGrid.gridInfo, currentRotation);
+                
                 info += $"Pieza: {armorData.displayName}\n";
-                info += $"Tamaño: {armorData.tailGrid.gridInfo.sizeX}x{armorData.tailGrid.gridInfo.sizeY}\n";
-                info += $"Surrounding: {armorData.tailGrid.gridInfo.surrounding}\n\n";
+                info += $"Tamaño original: {armorData.tailGrid.gridInfo.sizeX}x{armorData.tailGrid.gridInfo.sizeY}\n";
+                info += $"Tamaño rotado: {rotatedInfo.sizeX}x{rotatedInfo.sizeY}\n";
+                info += $"Surrounding: {rotatedInfo.surrounding}\n";
+                info += $"Rotación: {currentRotation}\n\n";
             }
             
             info += $"Posición: ({currentPositionX}, {currentPositionY})\n\n";
             
             if (hoveredGrid != null && armorData != null)
             {
-                bool canPlace = hoveredGrid.CanPlace(armorData, currentPositionX, currentPositionY);
+                bool canPlace = hoveredGrid.CanPlace(armorData, currentPositionX, currentPositionY, currentRotation);
                 info += canPlace ? "Estado: VÁLIDO" : "Estado: INVÁLIDO";
             }
             
-            GUI.Box(new Rect(10, 10, 300, 240), info, style);
+            GUI.Box(new Rect(10, 10, 320, 280), info, style);
         }
         
         private void OnDestroy()

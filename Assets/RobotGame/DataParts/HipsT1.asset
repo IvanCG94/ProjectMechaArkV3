@@ -16,7 +16,7 @@ MonoBehaviour:
   displayName: Basic hips
   description: 
   icon: {fileID: 0}
-  prefab: {fileID: 3216358612793311869, guid: 7be967e8a50cf864fb62a7710bc84d7d, type: 3}
+  prefab: {fileID: 1710420536852196592, guid: 3c4a4a8fd44bbdd4fb7ca63a96d7eea0, type: 3}
   category: 0
   tier: 0
   weight: 1
@@ -32,21 +32,103 @@ MonoBehaviour:
   armorGrids:
   - gridInfo:
       isHead: 1
-      sizeX: 1
-      sizeY: 4
+      sizeX: 2
+      sizeY: 2
       surrounding:
         level: 1
-        isFull: 0
+        edges: 15
+        fullType: 0
+      gridName: HipsArmorL
+    transformName: Head_2x2_S1_LRTB_HipsArmorL
+  - gridInfo:
+      isHead: 1
+      sizeX: 2
+      sizeY: 4
+      surrounding:
+        level: 3
+        edges: 0
+        fullType: 1
       gridName: ThighL
-    transformName: Head_1x4_S1_ThighL
+    transformName: Head_2x4_S3FH_ThighL
   - gridInfo:
       isHead: 1
       sizeX: 1
-      sizeY: 4
+      sizeY: 1
+      surrounding:
+        level: 0
+        edges: 0
+        fullType: 0
+      gridName: FootArmorL
+    transformName: Head_1x1_SN_FootArmorL
+  - gridInfo:
+      isHead: 1
+      sizeX: 1
+      sizeY: 1
       surrounding:
         level: 1
-        isFull: 0
+        edges: 3
+        fullType: 0
+      gridName: KneeL
+    transformName: Head_1x1_S1_LR_KneeL
+  - gridInfo:
+      isHead: 1
+      sizeX: 2
+      sizeY: 4
+      surrounding:
+        level: 3
+        edges: 0
+        fullType: 1
+      gridName: ShinL
+    transformName: Head_2x4_S3FH_ShinL
+  - gridInfo:
+      isHead: 1
+      sizeX: 2
+      sizeY: 2
+      surrounding:
+        level: 1
+        edges: 15
+        fullType: 0
+      gridName: HipsArmorR
+    transformName: Head_2x2_S1_LRTB_HipsArmorR
+  - gridInfo:
+      isHead: 1
+      sizeX: 2
+      sizeY: 4
+      surrounding:
+        level: 3
+        edges: 0
+        fullType: 1
       gridName: ThighR
-    transformName: Head_1x4_S1_ThighR
+    transformName: Head_2x4_S3FH_ThighR
+  - gridInfo:
+      isHead: 1
+      sizeX: 1
+      sizeY: 1
+      surrounding:
+        level: 0
+        edges: 0
+        fullType: 0
+      gridName: FootArmorR
+    transformName: Head_1x1_SN_FootArmorR
+  - gridInfo:
+      isHead: 1
+      sizeX: 1
+      sizeY: 1
+      surrounding:
+        level: 1
+        edges: 3
+        fullType: 0
+      gridName: KneeR
+    transformName: Head_1x1_S1_LR_KneeR
+  - gridInfo:
+      isHead: 1
+      sizeX: 2
+      sizeY: 4
+      surrounding:
+        level: 3
+        edges: 0
+        fullType: 1
+      gridName: ShinR
+    transformName: Head_2x4_S3FH_ShinR
   animatorController: {fileID: 0}
   animatorAvatar: {fileID: 0}

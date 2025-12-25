@@ -130,6 +130,8 @@ GameObject:
   - component: {fileID: 98802577}
   - component: {fileID: 98802576}
   - component: {fileID: 98802578}
+  - component: {fileID: 98802579}
+  - component: {fileID: 98802580}
   m_Layer: 0
   m_Name: GameManager
   m_TagString: Untagged
@@ -150,7 +152,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::RobotGame.GameInitializer
   initialRobotConfig: {fileID: 11400000, guid: ba6c4383dcf5f3b419867fc285af0571, type: 2}
-  spawnPoint: {fileID: 0}
+  spawnPoint: {fileID: 98802577}
   debugMode: 1
   playerRobot: {fileID: 0}
 --- !u!4 &98802577
@@ -162,7 +164,7 @@ Transform:
   m_GameObject: {fileID: 98802575}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 2.0451, y: 0, z: -88.49165}
+  m_LocalPosition: {x: 0, y: 3, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -187,11 +189,32 @@ MonoBehaviour:
   gridLayerMask:
     serializedVersion: 2
     m_Bits: 4294967295
-  validPlacementColor: {r: 0, g: 1, b: 0, a: 0.5}
-  invalidPlacementColor: {r: 1, g: 0, b: 0, a: 0.5}
-  gridHighlightColor: {r: 0, g: 1, b: 1, a: 0.3}
   targetRobot: {fileID: 0}
   mainCamera: {fileID: 0}
+--- !u!114 &98802579
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 98802575}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1551d5c288453f74090234749c6651c8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RobotGame.Testing.NomenclatureParserTester
+--- !u!114 &98802580
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 98802575}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7c273a65fa0547946a40f0767b6f5234, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RobotGame.Testing.GridRotationTester
 --- !u!1 &330585543
 GameObject:
   m_ObjectHideFlags: 0
@@ -278,13 +301,13 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 330585543}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0.9935719, z: -0.11320323, w: 0}
-  m_LocalPosition: {x: 3.0645893, y: -0.9110527, z: 3.8309708}
+  m_LocalRotation: {x: 0, y: 0.9848472, z: -0.17342474, w: 0}
+  m_LocalPosition: {x: 0.0054473877, y: 4.168583, z: 1.5742836}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 13, y: 180, z: 0}
+  m_LocalEulerAnglesHint: {x: 19.974, y: 180, z: 0}
 --- !u!114 &330585547
 MonoBehaviour:
   m_ObjectHideFlags: 0

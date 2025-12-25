@@ -16,7 +16,7 @@ MonoBehaviour:
   displayName: 
   description: 
   icon: {fileID: 0}
-  prefab: {fileID: 380705199253689801, guid: fe6eab924c0f5ae41b149b7e27b59634, type: 3}
+  prefab: {fileID: 8428853684609311786, guid: d0a45981ef039e74dbd709111b3998a6, type: 3}
   category: 1
   tier: 0
   weight: 1
@@ -28,9 +28,10 @@ MonoBehaviour:
       sizeY: 2
       surrounding:
         level: 1
-        isFull: 0
+        edges: 2
+        fullType: 0
       gridName: test2
-    transformName: Tail_1x2_S1_test2
+    transformName: Tail_1x2_S1_LR_test2
   additionalHeadGrids: []
   armor: 0
   physicalResistance: 0
