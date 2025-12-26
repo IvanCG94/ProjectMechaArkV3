@@ -191,6 +191,7 @@ namespace RobotGame.Testing
             
             var structuralParts = targetRobot.GetAllStructuralParts();
             
+            // Recolectar grillas de partes estructurales
             foreach (var part in structuralParts)
             {
                 foreach (var grid in part.ArmorGrids)
@@ -199,9 +200,46 @@ namespace RobotGame.Testing
                     EnsureGridCollider(grid);
                     Debug.Log($"Grilla encontrada: {grid.GridInfo.gridName} ({grid.GridInfo.sizeX}x{grid.GridInfo.sizeY}) en {part.PartData.displayName}");
                 }
+                
+                // Recolectar grillas de las piezas de armadura colocadas
+                CollectArmorPartGrids(part.ArmorGrids);
             }
             
             Debug.Log($"Total de grillas disponibles: {availableGrids.Count}");
+        }
+        
+        /// <summary>
+        /// Recolecta recursivamente las grillas adicionales de las piezas de armadura.
+        /// </summary>
+        private void CollectArmorPartGrids(IReadOnlyList<GridHead> grids)
+        {
+            Debug.Log($"[DEBUG] CollectArmorPartGrids: revisando {grids.Count} grillas");
+            
+            foreach (var grid in grids)
+            {
+                Debug.Log($"[DEBUG] Grilla {grid.GridInfo.gridName} tiene {grid.PlacedParts.Count} piezas colocadas");
+                
+                foreach (var armorPart in grid.PlacedParts)
+                {
+                    Debug.Log($"[DEBUG] Pieza {armorPart.ArmorData.displayName} tiene {armorPart.AdditionalGrids?.Count ?? 0} grillas adicionales");
+                    
+                    if (armorPart.AdditionalGrids != null && armorPart.AdditionalGrids.Count > 0)
+                    {
+                        foreach (var additionalGrid in armorPart.AdditionalGrids)
+                        {
+                            if (!availableGrids.Contains(additionalGrid))
+                            {
+                                availableGrids.Add(additionalGrid);
+                                EnsureGridCollider(additionalGrid);
+                                Debug.Log($"Grilla adicional encontrada: {additionalGrid.GridInfo.gridName} ({additionalGrid.GridInfo.sizeX}x{additionalGrid.GridInfo.sizeY}) en {armorPart.ArmorData.displayName}");
+                                
+                                // Recursivamente buscar en las grillas de esta pieza
+                                CollectArmorPartGrids(armorPart.AdditionalGrids);
+                            }
+                        }
+                    }
+                }
+            }
         }
         
         private void EnsureGridCollider(GridHead grid)
@@ -382,9 +420,7 @@ namespace RobotGame.Testing
             currentRotation = GridRotation.Rotation.Deg0;
             currentPreviewData = null;
             
-            var armor = GetCurrentArmorData();
-            Debug.Log($"Pieza seleccionada: {armor.displayName}");
-            Debug.Log($"[DEBUG ARMOR] TailGrid: {armor.tailGrid.gridInfo.sizeX}x{armor.tailGrid.gridInfo.sizeY}, Surrounding: level={armor.tailGrid.gridInfo.surrounding.level}, fullType={armor.tailGrid.gridInfo.surrounding.fullType}, edges={armor.tailGrid.gridInfo.surrounding.edges}");
+            Debug.Log($"Pieza seleccionada: {GetCurrentArmorData().displayName}");
         }
         
         private void RotatePiece()
@@ -467,12 +503,29 @@ namespace RobotGame.Testing
             {
                 Debug.Log($"✓ {armorData.displayName} colocada en {hoveredGrid.GridInfo.gridName} posición ({currentPositionX}, {currentPositionY}) rotación {currentRotation}");
                 PrintGridState(hoveredGrid);
+                
+                // Si la pieza tiene grillas adicionales, refrescar la lista de grillas disponibles
+                if (armorPart.AdditionalGrids != null && armorPart.AdditionalGrids.Count > 0)
+                {
+                    RefreshAvailableGrids();
+                }
             }
             else
             {
                 Debug.LogError("Error al colocar la pieza en la grilla.");
                 Destroy(armorPart.gameObject);
             }
+        }
+        
+        /// <summary>
+        /// Refresca la lista de grillas disponibles y sus highlights.
+        /// </summary>
+        private void RefreshAvailableGrids()
+        {
+            DestroyGridHighlights();
+            CollectAvailableGrids();
+            CreateGridHighlights();
+            Debug.Log("Grillas refrescadas - nuevas grillas adicionales disponibles");
         }
         
         private void PrintGridState(GridHead grid)

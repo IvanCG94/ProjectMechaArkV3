@@ -25,14 +25,24 @@ MonoBehaviour:
     gridInfo:
       isHead: 0
       sizeX: 2
-      sizeY: 4
+      sizeY: 2
       surrounding:
         level: 3
         edges: 0
         fullType: 1
       gridName: Paco
     transformName: Tail_2x2_S3FH_Paco
-  additionalHeadGrids: []
+  additionalHeadGrids:
+  - gridInfo:
+      isHead: 1
+      sizeX: 2
+      sizeY: 2
+      surrounding:
+        level: 0
+        edges: 0
+        fullType: 0
+      gridName: Pedrito
+    transformName: Head_2x2_SN_Pedrito
   armor: 0
   physicalResistance: 0
   energyResistance: 0

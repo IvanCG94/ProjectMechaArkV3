@@ -129,70 +129,52 @@ namespace RobotGame.Components
             SurroundingLevel tailSurrounding = tailInfo.surrounding;
             SurroundingLevel headSurrounding = gridInfo.surrounding;
             
-            Debug.Log($"[DEBUG] CanAcceptEdgesAtPosition: pos=({startX},{startY}), tail={tailInfo.sizeX}x{tailInfo.sizeY}");
-            Debug.Log($"[DEBUG] TailSurrounding: level={tailSurrounding.level}, edges={tailSurrounding.edges}, fullType={tailSurrounding.fullType}, HasEdges={tailSurrounding.HasEdges}, IsFull={tailSurrounding.IsFull}");
-            Debug.Log($"[DEBUG] HeadSurrounding: level={headSurrounding.level}, edges={headSurrounding.edges}, fullType={headSurrounding.fullType}, HasEdges={headSurrounding.HasEdges}, IsFull={headSurrounding.IsFull}");
-            
             // Si el Tail no tiene bordes ni es Full (SN plano o SX sin especificación), siempre es compatible en posición
             if (!tailSurrounding.HasEdges && !tailSurrounding.IsFull)
             {
-                Debug.Log("[DEBUG] Tail no tiene bordes ni es Full, ACEPTADO");
                 return true;
             }
             
             // Caso especial: Head es Full (FH o FV)
             if (headSurrounding.IsFull)
             {
-                Debug.Log("[DEBUG] Head es Full, verificando compatibilidad...");
-                
                 // Primero verificar compatibilidad básica de bordes
                 if (!headSurrounding.CanAcceptEdges(tailSurrounding))
                 {
-                    Debug.Log("[DEBUG] RECHAZADO: CanAcceptEdges falló");
                     return false;
                 }
                 
                 // Para piezas Full Tail
                 if (tailSurrounding.IsFull)
                 {
-                    Debug.Log($"[DEBUG] Tail es Full, tipo={tailSurrounding.fullType}");
-                    
                     // FH: debe tener el mismo ancho (N) y posición X debe ser 0
                     if (tailSurrounding.fullType == FullType.FH)
                     {
-                        Debug.Log($"[DEBUG] FH: tailSizeX={tailInfo.sizeX}, headSizeX={gridInfo.sizeX}, startX={startX}");
                         if (tailInfo.sizeX != gridInfo.sizeX)
                         {
-                            Debug.Log("[DEBUG] RECHAZADO: ancho no coincide");
                             return false;
                         }
                         // FH implica LR, entonces startX debe ser 0
                         if (startX != 0)
                         {
-                            Debug.Log("[DEBUG] RECHAZADO: startX != 0");
                             return false;
                         }
                         // La posición Y puede variar libremente (siempre que quepa)
-                        Debug.Log("[DEBUG] ACEPTADO: FH válido");
                         return true;
                     }
                     // FV: debe tener la misma altura (M) y posición Y debe ser 0
                     else if (tailSurrounding.fullType == FullType.FV)
                     {
-                        Debug.Log($"[DEBUG] FV: tailSizeY={tailInfo.sizeY}, headSizeY={gridInfo.sizeY}, startY={startY}");
                         if (tailInfo.sizeY != gridInfo.sizeY)
                         {
-                            Debug.Log("[DEBUG] RECHAZADO: altura no coincide");
                             return false;
                         }
                         // FV implica TB, entonces startY debe ser 0
                         if (startY != 0)
                         {
-                            Debug.Log("[DEBUG] RECHAZADO: startY != 0");
                             return false;
                         }
                         // La posición X puede variar libremente (siempre que quepa)
-                        Debug.Log("[DEBUG] ACEPTADO: FV válido");
                         return true;
                     }
                 }
