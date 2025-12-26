@@ -1,0 +1,41 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0b980c5627308d5458fee39217d364a3, type: 3}
+  m_Name: Paco
+  m_EditorClassIdentifier: Assembly-CSharp::RobotGame.Data.ArmorPartData
+  partId: paco
+  displayName: Paco
+  description: 
+  icon: {fileID: 0}
+  prefab: {fileID: 7785364154154999238, guid: 803294b98a51e5f4b8738c740b9cc3b2, type: 3}
+  category: 1
+  tier: 0
+  weight: 1
+  durability: 100
+  tailGrid:
+    gridInfo:
+      isHead: 0
+      sizeX: 2
+      sizeY: 4
+      surrounding:
+        level: 3
+        edges: 0
+        fullType: 1
+      gridName: Paco
+    transformName: Tail_2x2_S3FH_Paco
+  additionalHeadGrids: []
+  armor: 0
+  physicalResistance: 0
+  energyResistance: 0
+  explosiveResistance: 0
+  damagedMaterial: {fileID: 0}
+  hitEffectPrefab: {fileID: 0}

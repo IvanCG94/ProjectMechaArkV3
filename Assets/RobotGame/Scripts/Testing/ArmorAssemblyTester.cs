@@ -34,8 +34,10 @@ namespace RobotGame.Testing
         private int currentPositionY = 0;
         private GridRotation.Rotation currentRotation = GridRotation.Rotation.Deg0;
         
-        // Preview
+        // Preview con pivote centrado
         private GameObject previewObject;
+        private GameObject pivotContainer;
+        private GameObject modelContainer;
         private List<MeshRenderer> previewRenderers = new List<MeshRenderer>();
         private Material previewMaterial;
         private ArmorPartData currentPreviewData;
@@ -378,9 +380,11 @@ namespace RobotGame.Testing
             currentPositionX = 0;
             currentPositionY = 0;
             currentRotation = GridRotation.Rotation.Deg0;
-            currentPreviewData = null; // Forzar recreación del preview
+            currentPreviewData = null;
             
-            Debug.Log($"Pieza seleccionada: {GetCurrentArmorData().displayName}");
+            var armor = GetCurrentArmorData();
+            Debug.Log($"Pieza seleccionada: {armor.displayName}");
+            Debug.Log($"[DEBUG ARMOR] TailGrid: {armor.tailGrid.gridInfo.sizeX}x{armor.tailGrid.gridInfo.sizeY}, Surrounding: level={armor.tailGrid.gridInfo.surrounding.level}, fullType={armor.tailGrid.gridInfo.surrounding.fullType}, edges={armor.tailGrid.gridInfo.surrounding.edges}");
         }
         
         private void RotatePiece()
@@ -401,17 +405,7 @@ namespace RobotGame.Testing
                 }
             }
             
-            var armor = GetCurrentArmorData();
-            if (armor != null)
-            {
-                var rotatedInfo = GridRotation.RotateGridInfo(armor.tailGrid.gridInfo, currentRotation);
-                string edgesStr = rotatedInfo.surrounding.HasEdges ? 
-                    $"_{SurroundingLevel.EdgesToString(rotatedInfo.surrounding.edges)}" : "";
-                string fullStr = rotatedInfo.surrounding.IsFull ? 
-                    rotatedInfo.surrounding.fullType.ToString() : "";
-                    
-                Debug.Log($"Rotación: {currentRotation} → {rotatedInfo.sizeX}x{rotatedInfo.sizeY} S{rotatedInfo.surrounding.level}{fullStr}{edgesStr}");
-            }
+            Debug.Log($"Rotación: {currentRotation}");
         }
         
         private Vector2Int GetRotatedSize(ArmorPartData armorData)
@@ -507,24 +501,32 @@ namespace RobotGame.Testing
         private void CreatePreviewObject()
         {
             previewObject = new GameObject("ArmorPreview");
+            
+            // Crear contenedor de pivote (se posiciona en el centro de la pieza)
+            pivotContainer = new GameObject("PivotContainer");
+            pivotContainer.transform.SetParent(previewObject.transform);
+            
+            // Crear contenedor del modelo (se desplaza para centrar)
+            modelContainer = new GameObject("ModelContainer");
+            modelContainer.transform.SetParent(pivotContainer.transform);
+            
             previewObject.SetActive(false);
             
             // Crear material transparente
             previewMaterial = new Material(Shader.Find("Sprites/Default"));
-            previewMaterial.color = new Color(0f, 0.5f, 1f, 0.5f); // Azul por defecto
+            previewMaterial.color = new Color(0f, 0.5f, 1f, 0.5f);
         }
         
         private void UpdatePreviewModel()
         {
             var armorData = GetCurrentArmorData();
             
-            // Si la pieza cambió, recrear el preview
             if (armorData != currentPreviewData)
             {
                 currentPreviewData = armorData;
                 
-                // Limpiar hijos anteriores
-                foreach (Transform child in previewObject.transform)
+                // Limpiar hijos anteriores del modelContainer
+                foreach (Transform child in modelContainer.transform)
                 {
                     Destroy(child.gameObject);
                 }
@@ -532,13 +534,12 @@ namespace RobotGame.Testing
                 
                 if (armorData != null && armorData.prefab != null)
                 {
-                    // Instanciar el prefab como hijo del preview
-                    GameObject modelInstance = Instantiate(armorData.prefab, previewObject.transform);
+                    GameObject modelInstance = Instantiate(armorData.prefab, modelContainer.transform);
                     modelInstance.transform.localPosition = Vector3.zero;
                     modelInstance.transform.localRotation = Quaternion.identity;
                     modelInstance.transform.localScale = Vector3.one;
                     
-                    // Desactivar cualquier componente que no sea visual
+                    // Desactivar componentes no visuales
                     var components = modelInstance.GetComponentsInChildren<MonoBehaviour>();
                     foreach (var comp in components)
                     {
@@ -552,11 +553,10 @@ namespace RobotGame.Testing
                         col.enabled = false;
                     }
                     
-                    // Recolectar todos los renderers y aplicar material transparente
+                    // Aplicar material transparente
                     var renderers = modelInstance.GetComponentsInChildren<MeshRenderer>();
                     foreach (var renderer in renderers)
                     {
-                        // Crear copia del material para cada renderer
                         Material[] mats = new Material[renderer.sharedMaterials.Length];
                         for (int i = 0; i < mats.Length; i++)
                         {
@@ -566,7 +566,6 @@ namespace RobotGame.Testing
                         previewRenderers.Add(renderer);
                     }
                     
-                    // También para SkinnedMeshRenderer si existe
                     var skinnedRenderers = modelInstance.GetComponentsInChildren<SkinnedMeshRenderer>();
                     foreach (var renderer in skinnedRenderers)
                     {
@@ -585,7 +584,6 @@ namespace RobotGame.Testing
         {
             var armorData = GetCurrentArmorData();
             
-            // Actualizar el modelo si cambió la pieza
             UpdatePreviewModel();
             
             if (armorData == null || armorData.prefab == null)
@@ -596,24 +594,39 @@ namespace RobotGame.Testing
             
             previewObject.SetActive(true);
             
-            // Obtener tamaño rotado para calcular posición
+            // Tamaño original de la pieza
+            int originalSizeX = armorData.tailGrid.gridInfo.sizeX;
+            int originalSizeY = armorData.tailGrid.gridInfo.sizeY;
+            
+            // Tamaño rotado (para validación y celdas ocupadas)
             var rotatedSize = GetRotatedSize(armorData);
-            int sizeX = rotatedSize.x;
-            int sizeY = rotatedSize.y;
+            
+            // Centro de la pieza ROTADA (en unidades de mundo)
+            float centerX = rotatedSize.x * 0.05f;
+            float centerY = rotatedSize.y * 0.05f;
+            
+            // Posicionar pivotContainer en el centro de la pieza rotada
+            pivotContainer.transform.localPosition = new Vector3(centerX, centerY, 0f);
+            
+            // El modelContainer se posiciona con offset basado en tamaño ORIGINAL
+            float originalCenterX = originalSizeX * 0.05f;
+            float originalCenterY = originalSizeY * 0.05f;
+            modelContainer.transform.localPosition = new Vector3(-originalCenterX, -originalCenterY, 0f);
+            
+            // Aplicar rotación al pivotContainer
+            pivotContainer.transform.localRotation = GridRotation.ToQuaternion(currentRotation);
             
             // Determinar color según estado
             Color previewColor;
             
             if (hoveredGrid == null)
             {
-                // Azul transparente - no está sobre ninguna grilla
                 previewColor = new Color(0f, 0.5f, 1f, 0.5f);
                 
-                // Posicionar en el centro de la pantalla o seguir el mouse
                 Ray ray = mainCamera.ScreenPointToRay(Input.mousePosition);
                 Vector3 worldPos = ray.origin + ray.direction * 2f;
                 previewObject.transform.position = worldPos;
-                previewObject.transform.rotation = Quaternion.identity * GridRotation.ToQuaternion(currentRotation);
+                previewObject.transform.rotation = Quaternion.identity;
             }
             else
             {
@@ -621,22 +634,19 @@ namespace RobotGame.Testing
                 
                 if (canPlace)
                 {
-                    // Verde transparente - posición válida
                     previewColor = new Color(0f, 1f, 0f, 0.5f);
                 }
                 else
                 {
-                    // Rojo transparente - posición inválida
                     previewColor = new Color(1f, 0f, 0f, 0.5f);
                 }
                 
                 // Posicionar en la grilla
                 Vector3 cellPos = hoveredGrid.CellToWorldPosition(currentPositionX, currentPositionY);
                 previewObject.transform.position = cellPos;
-                previewObject.transform.rotation = hoveredGrid.transform.rotation * GridRotation.ToQuaternion(currentRotation);
+                previewObject.transform.rotation = hoveredGrid.transform.rotation;
             }
             
-            // Aplicar color al material
             previewMaterial.color = previewColor;
         }
         

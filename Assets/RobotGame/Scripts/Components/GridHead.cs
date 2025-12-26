@@ -129,25 +129,72 @@ namespace RobotGame.Components
             SurroundingLevel tailSurrounding = tailInfo.surrounding;
             SurroundingLevel headSurrounding = gridInfo.surrounding;
             
-            // Si el Tail no tiene bordes ni es Full (SN plano), siempre es compatible
+            Debug.Log($"[DEBUG] CanAcceptEdgesAtPosition: pos=({startX},{startY}), tail={tailInfo.sizeX}x{tailInfo.sizeY}");
+            Debug.Log($"[DEBUG] TailSurrounding: level={tailSurrounding.level}, edges={tailSurrounding.edges}, fullType={tailSurrounding.fullType}, HasEdges={tailSurrounding.HasEdges}, IsFull={tailSurrounding.IsFull}");
+            Debug.Log($"[DEBUG] HeadSurrounding: level={headSurrounding.level}, edges={headSurrounding.edges}, fullType={headSurrounding.fullType}, HasEdges={headSurrounding.HasEdges}, IsFull={headSurrounding.IsFull}");
+            
+            // Si el Tail no tiene bordes ni es Full (SN plano o SX sin especificación), siempre es compatible en posición
             if (!tailSurrounding.HasEdges && !tailSurrounding.IsFull)
             {
+                Debug.Log("[DEBUG] Tail no tiene bordes ni es Full, ACEPTADO");
                 return true;
             }
             
             // Caso especial: Head es Full (FH o FV)
             if (headSurrounding.IsFull)
             {
+                Debug.Log("[DEBUG] Head es Full, verificando compatibilidad...");
+                
                 // Primero verificar compatibilidad básica de bordes
                 if (!headSurrounding.CanAcceptEdges(tailSurrounding))
                 {
+                    Debug.Log("[DEBUG] RECHAZADO: CanAcceptEdges falló");
                     return false;
                 }
                 
-                // Para piezas Full, deben ser del mismo tamaño
+                // Para piezas Full Tail
                 if (tailSurrounding.IsFull)
                 {
-                    return tailInfo.sizeX == gridInfo.sizeX && tailInfo.sizeY == gridInfo.sizeY;
+                    Debug.Log($"[DEBUG] Tail es Full, tipo={tailSurrounding.fullType}");
+                    
+                    // FH: debe tener el mismo ancho (N) y posición X debe ser 0
+                    if (tailSurrounding.fullType == FullType.FH)
+                    {
+                        Debug.Log($"[DEBUG] FH: tailSizeX={tailInfo.sizeX}, headSizeX={gridInfo.sizeX}, startX={startX}");
+                        if (tailInfo.sizeX != gridInfo.sizeX)
+                        {
+                            Debug.Log("[DEBUG] RECHAZADO: ancho no coincide");
+                            return false;
+                        }
+                        // FH implica LR, entonces startX debe ser 0
+                        if (startX != 0)
+                        {
+                            Debug.Log("[DEBUG] RECHAZADO: startX != 0");
+                            return false;
+                        }
+                        // La posición Y puede variar libremente (siempre que quepa)
+                        Debug.Log("[DEBUG] ACEPTADO: FH válido");
+                        return true;
+                    }
+                    // FV: debe tener la misma altura (M) y posición Y debe ser 0
+                    else if (tailSurrounding.fullType == FullType.FV)
+                    {
+                        Debug.Log($"[DEBUG] FV: tailSizeY={tailInfo.sizeY}, headSizeY={gridInfo.sizeY}, startY={startY}");
+                        if (tailInfo.sizeY != gridInfo.sizeY)
+                        {
+                            Debug.Log("[DEBUG] RECHAZADO: altura no coincide");
+                            return false;
+                        }
+                        // FV implica TB, entonces startY debe ser 0
+                        if (startY != 0)
+                        {
+                            Debug.Log("[DEBUG] RECHAZADO: startY != 0");
+                            return false;
+                        }
+                        // La posición X puede variar libremente (siempre que quepa)
+                        Debug.Log("[DEBUG] ACEPTADO: FV válido");
+                        return true;
+                    }
                 }
                 
                 // Para piezas con LR en Head FH, deben ocupar todo el ancho
@@ -303,9 +350,31 @@ namespace RobotGame.Components
                 }
             }
             
-            // Posicionar la pieza
+            // Posicionar la pieza usando pivote centrado
+            // Esto compensa la rotación para que la pieza quede en las celdas correctas
             armorPart.transform.SetParent(transform);
-            armorPart.transform.localPosition = CellToLocalPosition(startX, startY);
+            
+            // Tamaño original y rotado
+            int originalSizeX = data.tailGrid.gridInfo.sizeX;
+            int originalSizeY = data.tailGrid.gridInfo.sizeY;
+            
+            // Centro de la pieza rotada (donde debe estar el pivote visual)
+            float rotatedCenterX = rotatedTail.sizeX * 0.05f;
+            float rotatedCenterY = rotatedTail.sizeY * 0.05f;
+            
+            // Centro de la pieza original
+            float originalCenterX = originalSizeX * 0.05f;
+            float originalCenterY = originalSizeY * 0.05f;
+            
+            // Posición base de la celda
+            Vector3 cellPos = CellToLocalPosition(startX, startY);
+            
+            // Calcular offset para compensar la rotación
+            // El modelo rota sobre su centro original, pero queremos que ocupe las celdas rotadas
+            Vector3 pivotOffset = new Vector3(rotatedCenterX, rotatedCenterY, 0f);
+            Vector3 modelOffset = GridRotation.ToQuaternion(rotation) * new Vector3(-originalCenterX, -originalCenterY, 0f);
+            
+            armorPart.transform.localPosition = cellPos + pivotOffset + modelOffset;
             armorPart.transform.localRotation = GridRotation.ToQuaternion(rotation);
             
             armorPart.OnPlaced(this, startX, startY);
