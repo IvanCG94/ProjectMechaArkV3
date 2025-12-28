@@ -359,7 +359,7 @@ namespace RobotGame.Components
             armorPart.transform.localPosition = cellPos + pivotOffset + modelOffset;
             armorPart.transform.localRotation = GridRotation.ToQuaternion(rotation);
             
-            armorPart.OnPlaced(this, startX, startY);
+            armorPart.OnPlaced(this, startX, startY, rotation);
             placedParts.Add(armorPart);
             
             return true;
@@ -368,12 +368,18 @@ namespace RobotGame.Components
         /// <summary>
         /// Remueve una pieza de armadura de la grilla.
         /// </summary>
-        public bool Remove(ArmorPart armorPart)
+        /// <param name="armorPart">La pieza a remover</param>
+        /// <param name="destroyGameObject">Si es true, destruye el GameObject. Si es false, solo lo desvincula (para inventario)</param>
+        /// <returns>True si se removió exitosamente</returns>
+        public bool Remove(ArmorPart armorPart, bool destroyGameObject = true)
         {
             if (armorPart == null || !placedParts.Contains(armorPart))
             {
                 return false;
             }
+            
+            // Primero remover recursivamente todas las piezas hijas
+            RemoveChildParts(armorPart, destroyGameObject);
             
             // Liberar celdas
             for (int x = 0; x < gridInfo.sizeX; x++)
@@ -389,10 +395,81 @@ namespace RobotGame.Components
             }
             
             armorPart.OnRemoved(this);
-            armorPart.transform.SetParent(null);
             placedParts.Remove(armorPart);
             
+            if (destroyGameObject)
+            {
+                GameObject.Destroy(armorPart.gameObject);
+            }
+            else
+            {
+                armorPart.transform.SetParent(null);
+            }
+            
             return true;
+        }
+        
+        /// <summary>
+        /// Remueve recursivamente todas las piezas colocadas en las grillas adicionales de una pieza.
+        /// </summary>
+        private void RemoveChildParts(ArmorPart parentPart, bool destroyGameObject)
+        {
+            if (parentPart.AdditionalGrids == null || parentPart.AdditionalGrids.Count == 0)
+            {
+                return;
+            }
+            
+            foreach (var childGrid in parentPart.AdditionalGrids)
+            {
+                // Crear copia de la lista porque vamos a modificarla
+                var partsToRemove = new List<ArmorPart>(childGrid.PlacedParts);
+                
+                foreach (var childPart in partsToRemove)
+                {
+                    childGrid.Remove(childPart, destroyGameObject);
+                }
+            }
+        }
+        
+        /// <summary>
+        /// Remueve todas las piezas de la grilla.
+        /// </summary>
+        /// <param name="destroyGameObjects">Si es true, destruye los GameObjects</param>
+        /// <returns>Lista de piezas removidas (vacía si destroyGameObjects es true)</returns>
+        public List<ArmorPart> RemoveAll(bool destroyGameObjects = true)
+        {
+            var removedParts = new List<ArmorPart>();
+            var partsToRemove = new List<ArmorPart>(placedParts);
+            
+            foreach (var part in partsToRemove)
+            {
+                if (!destroyGameObjects)
+                {
+                    removedParts.Add(part);
+                }
+                Remove(part, destroyGameObjects);
+            }
+            
+            return removedParts;
+        }
+        
+        /// <summary>
+        /// Obtiene la pieza en una celda específica.
+        /// </summary>
+        public ArmorPart GetPartAtCell(int cellX, int cellY)
+        {
+            if (cellX < 0 || cellX >= gridInfo.sizeX || cellY < 0 || cellY >= gridInfo.sizeY)
+            {
+                return null;
+            }
+            
+            string occupantId = cellOccupants[cellX, cellY];
+            if (string.IsNullOrEmpty(occupantId))
+            {
+                return null;
+            }
+            
+            return placedParts.Find(p => p.InstanceId == occupantId);
         }
         
         /// <summary>

@@ -16,7 +16,7 @@ MonoBehaviour:
   displayName: Basic hips
   description: 
   icon: {fileID: 0}
-  prefab: {fileID: 1710420536852196592, guid: 3c4a4a8fd44bbdd4fb7ca63a96d7eea0, type: 3}
+  prefab: {fileID: 919132149155446097, guid: a241ce47760183e459f205c96d1c2fc2, type: 3}
   category: 0
   tier: 0
   weight: 1

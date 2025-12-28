@@ -31,8 +31,6 @@ namespace RobotGame.Utils
                         transformName = prefab.name
                     };
                     grids.Add(def);
-                    
-                    Debug.Log($"GridAutoDetector: Encontrada grilla Head en raíz '{prefab.name}' - {rootGridInfo.sizeX}x{rootGridInfo.sizeY} {rootGridInfo.surrounding}");
                 }
             }
             
@@ -62,8 +60,6 @@ namespace RobotGame.Utils
                         transformName = prefab.name
                     };
                     grids.Add(def);
-                    
-                    Debug.Log($"GridAutoDetector: Encontrada grilla Tail en raíz '{prefab.name}' - {rootGridInfo.sizeX}x{rootGridInfo.sizeY} {rootGridInfo.surrounding}");
                 }
             }
             
@@ -103,8 +99,6 @@ namespace RobotGame.Utils
                             transformName = child.name
                         };
                         grids.Add(def);
-                        
-                        Debug.Log($"GridAutoDetector: Encontrada grilla Head '{child.name}' - {gridInfo.sizeX}x{gridInfo.sizeY} {gridInfo.surrounding}");
                     }
                 }
                 
@@ -128,8 +122,6 @@ namespace RobotGame.Utils
                             transformName = child.name
                         };
                         grids.Add(def);
-                        
-                        Debug.Log($"GridAutoDetector: Encontrada grilla Tail '{child.name}' - {gridInfo.sizeX}x{gridInfo.sizeY} {gridInfo.surrounding}");
                     }
                 }
                 

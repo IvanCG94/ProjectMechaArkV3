@@ -1,0 +1,41 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0b980c5627308d5458fee39217d364a3, type: 3}
+  m_Name: CorazaFea
+  m_EditorClassIdentifier: Assembly-CSharp::RobotGame.Data.ArmorPartData
+  partId: CorazaFea
+  displayName: Coraza fea
+  description: 
+  icon: {fileID: 0}
+  prefab: {fileID: 4146691745644616186, guid: fc859e954cb8e054cb9ad95a0f105034, type: 3}
+  category: 1
+  tier: 0
+  weight: 1
+  durability: 100
+  tailGrid:
+    gridInfo:
+      isHead: 0
+      sizeX: 1
+      sizeY: 3
+      surrounding:
+        level: 0
+        edges: 0
+        fullType: 0
+      gridName: CorazaFea
+    transformName: Tail_1x3_SN_CorazaFea
+  additionalHeadGrids: []
+  armor: 0
+  physicalResistance: 0
+  energyResistance: 0
+  explosiveResistance: 0
+  damagedMaterial: {fileID: 0}
+  hitEffectPrefab: {fileID: 0}

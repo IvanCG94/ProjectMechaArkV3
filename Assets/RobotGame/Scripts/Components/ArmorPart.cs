@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using RobotGame.Data;
+using RobotGame.Utils;
 
 namespace RobotGame.Components
 {
@@ -17,6 +18,7 @@ namespace RobotGame.Components
         [SerializeField] private GridHead parentGrid;
         [SerializeField] private int gridPositionX;
         [SerializeField] private int gridPositionY;
+        [SerializeField] private GridRotation.Rotation currentRotation;
         
         [Header("Grillas Adicionales")]
         [SerializeField] private List<GridHead> additionalGrids = new List<GridHead>();
@@ -48,6 +50,11 @@ namespace RobotGame.Components
         /// Posición Y en la grilla (celda inicial).
         /// </summary>
         public int GridPositionY => gridPositionY;
+        
+        /// <summary>
+        /// Rotación actual de la pieza.
+        /// </summary>
+        public GridRotation.Rotation CurrentRotation => currentRotation;
         
         /// <summary>
         /// Grillas Head adicionales para apilar más piezas.
@@ -128,9 +135,18 @@ namespace RobotGame.Components
         /// </summary>
         public void OnPlaced(GridHead grid, int posX, int posY)
         {
+            OnPlaced(grid, posX, posY, GridRotation.Rotation.Deg0);
+        }
+        
+        /// <summary>
+        /// Llamado cuando la pieza se coloca en una grilla con rotación.
+        /// </summary>
+        public void OnPlaced(GridHead grid, int posX, int posY, GridRotation.Rotation rotation)
+        {
             parentGrid = grid;
             gridPositionX = posX;
             gridPositionY = posY;
+            currentRotation = rotation;
         }
         
         /// <summary>

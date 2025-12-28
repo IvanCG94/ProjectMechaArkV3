@@ -75,11 +75,12 @@ namespace RobotGame.Systems
             GameObject robotGO = new GameObject($"Robot_{config.robotName}");
             robotGO.transform.position = spawnPoint != null ? spawnPoint.position : Vector3.zero;
             
-            // Agregar componente Robot
+            // Agregar componente Robot e inicializar estructura base (crea HipsAnchor)
             Robot robot = robotGO.AddComponent<Robot>();
+            robot.Initialize(null, config.robotName, config.core.tier);
             
-            // Crear las Hips (raíz estructural)
-            StructuralPart hips = CreateStructuralPart(config.hips, robotGO.transform);
+            // Crear las Hips (ahora como hijo del HipsAnchor via el socket)
+            StructuralPart hips = CreateStructuralPart(config.hips, robot.HipsSocket.transform);
             
             if (hips == null)
             {
@@ -88,14 +89,14 @@ namespace RobotGame.Systems
                 return null;
             }
             
+            // Conectar las Hips al robot
+            robot.AttachHips(hips);
+            
             // Colocar armadura en las Hips
             PlaceArmorPieces(hips, config.hipsArmorPieces);
             
-            // Crear piezas estructurales conectadas ANTES de inicializar
+            // Crear piezas estructurales conectadas
             CreateAttachedParts(hips, config.attachedParts);
-            
-            // Inicializar el robot DESPUÉS de crear todas las piezas
-            robot.Initialize(null, config.robotName, hips, config.core.tier);
             
             // Crear e insertar el core si se requiere
             if (insertCore && config.core != null)
@@ -106,8 +107,6 @@ namespace RobotGame.Systems
                     core.InsertInto(robot);
                 }
             }
-            
-            Debug.Log($"RobotFactory: Robot '{config.robotName}' creado exitosamente.");
             
             return robot;
         }
@@ -127,9 +126,40 @@ namespace RobotGame.Systems
             robotGO.transform.position = spawnPoint != null ? spawnPoint.position : Vector3.zero;
             
             Robot robot = robotGO.AddComponent<Robot>();
-            StructuralPart hips = CreateStructuralPart(hipsData, robotGO.transform);
+            robot.Initialize(null, name, tier);
             
-            robot.Initialize(null, name, hips, tier);
+            StructuralPart hips = CreateStructuralPart(hipsData, robot.HipsSocket.transform);
+            robot.AttachHips(hips);
+            
+            return robot;
+        }
+        
+        /// <summary>
+        /// Crea un robot completamente vacío (sin hips, solo el anchor).
+        /// Útil para restaurar desde snapshots.
+        /// </summary>
+        public Robot CreateEmptyRobot(string name)
+        {
+            GameObject robotGO = new GameObject($"Robot_{name}");
+            robotGO.transform.position = spawnPoint != null ? spawnPoint.position : Vector3.zero;
+            
+            Robot robot = robotGO.AddComponent<Robot>();
+            robot.Initialize(null, name, RobotTier.Tier1_1);
+            
+            return robot;
+        }
+        
+        /// <summary>
+        /// Crea un robot completamente vacío (sin hips, solo el anchor).
+        /// Útil para ensamblar desde cero.
+        /// </summary>
+        public Robot CreateShellRobot(RobotTier tier, string name = "Shell Robot")
+        {
+            GameObject robotGO = new GameObject($"Robot_{name}");
+            robotGO.transform.position = spawnPoint != null ? spawnPoint.position : Vector3.zero;
+            
+            Robot robot = robotGO.AddComponent<Robot>();
+            robot.Initialize(null, name, tier);
             
             return robot;
         }
@@ -162,6 +192,14 @@ namespace RobotGame.Systems
         }
         
         /// <summary>
+        /// Crea una pieza estructural sin parent (para luego conectarla a un socket).
+        /// </summary>
+        public StructuralPart CreateStructuralPart(StructuralPartData data)
+        {
+            return CreateStructuralPart(data, null);
+        }
+        
+        /// <summary>
         /// Crea una pieza de armadura.
         /// </summary>
         public ArmorPart CreateArmorPart(ArmorPartData data)
@@ -191,7 +229,7 @@ namespace RobotGame.Systems
         /// <summary>
         /// Crea un core.
         /// </summary>
-        public RobotCore CreateCore(CoreData data)
+        public RobotCore CreateCore(CoreData data, bool isPlayerCore = false)
         {
             if (data == null)
             {
@@ -219,9 +257,17 @@ namespace RobotGame.Systems
                 core = coreGO.AddComponent<RobotCore>();
             }
             
-            core.Initialize(data);
+            core.Initialize(data, null, isPlayerCore);
             
             return core;
+        }
+        
+        /// <summary>
+        /// Crea el Core del jugador.
+        /// </summary>
+        public RobotCore CreatePlayerCore(CoreData data)
+        {
+            return CreateCore(data, true);
         }
         
         /// <summary>

@@ -129,9 +129,10 @@ GameObject:
   m_Component:
   - component: {fileID: 98802577}
   - component: {fileID: 98802576}
-  - component: {fileID: 98802578}
   - component: {fileID: 98802579}
   - component: {fileID: 98802580}
+  - component: {fileID: 98802581}
+  - component: {fileID: 98802582}
   m_Layer: 0
   m_Name: GameManager
   m_TagString: Untagged
@@ -153,8 +154,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::RobotGame.GameInitializer
   initialRobotConfig: {fileID: 11400000, guid: ba6c4383dcf5f3b419867fc285af0571, type: 2}
   spawnPoint: {fileID: 98802577}
+  mainCamera: {fileID: 0}
   debugMode: 1
   playerRobot: {fileID: 0}
+  playerCore: {fileID: 0}
+  cameraController: {fileID: 0}
 --- !u!4 &98802577
 Transform:
   m_ObjectHideFlags: 0
@@ -170,31 +174,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &98802578
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 98802575}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7d530801ecebc8e4eba497c9e463088c, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::RobotGame.Testing.ArmorAssemblyTester
-  testArmorParts:
-  - {fileID: 11400000, guid: a6c324dbda5575c41822f1f98263f4a1, type: 2}
-  - {fileID: 11400000, guid: b056d3f276463e146827e759f3070819, type: 2}
-  - {fileID: 11400000, guid: 0e20e43e5631b164ab1188f748bb4c5f, type: 2}
-  - {fileID: 11400000, guid: 086036f92e8065040a2e09f099d96489, type: 2}
-  - {fileID: 11400000, guid: 92bf77bbccc72284d83e77af26a0f5d9, type: 2}
-  - {fileID: 11400000, guid: 04f600018b581c0498997810afdb2369, type: 2}
-  gridDetectionRadius: 0.5
-  gridLayerMask:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  targetRobot: {fileID: 0}
-  mainCamera: {fileID: 0}
 --- !u!114 &98802579
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -219,6 +198,49 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7c273a65fa0547946a40f0767b6f5234, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::RobotGame.Testing.GridRotationTester
+--- !u!114 &98802581
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 98802575}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 69599c7e09c29914fbc99b739169c9c3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RobotGame.Testing.AssemblyTester
+  testArmorParts:
+  - {fileID: 11400000, guid: d69586ac1b364a242a67b9e737b84e8e, type: 2}
+  - {fileID: 11400000, guid: c2d5b7d2fb2367445a46cd55ebf708ab, type: 2}
+  - {fileID: 11400000, guid: 764c6a1d836dd91418c087bff306f96f, type: 2}
+  - {fileID: 11400000, guid: d71eb8d52c8927e4b8f509e80c86b559, type: 2}
+  - {fileID: 11400000, guid: a2a64132e77cf3c47a2f6a230a50d0b6, type: 2}
+  testStructuralParts:
+  - {fileID: 11400000, guid: 541ccf4624a5ba244adeac4ef2872493, type: 2}
+  - {fileID: 11400000, guid: 441a199948f58464e86b04f41192090f, type: 2}
+  - {fileID: 11400000, guid: b4817d8946b531a4dbdb2fe894dc7052, type: 2}
+  - {fileID: 11400000, guid: 9355feb6de61b2b4ca34607c2e0df38e, type: 2}
+  gridDetectionRadius: 0.5
+  gridLayerMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  editModeRotationSpeed: 100
+  targetRobot: {fileID: 0}
+  mainCamera: {fileID: 0}
+  cameraController: {fileID: 0}
+--- !u!114 &98802582
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 98802575}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 328e06796d350c94abdddf2cc108cea7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RobotGame.Control.PlayerController
 --- !u!1 &330585543
 GameObject:
   m_ObjectHideFlags: 0
@@ -231,6 +253,7 @@ GameObject:
   - component: {fileID: 330585545}
   - component: {fileID: 330585544}
   - component: {fileID: 330585547}
+  - component: {fileID: 330585548}
   m_Layer: 0
   m_Name: Main Camera
   m_TagString: MainCamera
@@ -356,6 +379,29 @@ MonoBehaviour:
     m_VarianceClampScale: 0.9
     m_ContrastAdaptiveSharpening: 0
   m_Version: 2
+--- !u!114 &330585548
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 330585543}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 08137dfdb28f8d942875d4191844af6c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RobotGame.Control.CameraController
+  target: {fileID: 98802577}
+  heightOffset: 1.5
+  orbitSpeed: 3
+  minVerticalAngle: -20
+  maxVerticalAngle: 60
+  zoomSpeed: 3
+  minDistance: 2
+  maxDistance: 15
+  defaultDistance: 6
+  followSpeed: 10
+  isInEditMode: 0
 --- !u!1 &410087039
 GameObject:
   m_ObjectHideFlags: 0

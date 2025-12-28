@@ -2,12 +2,14 @@ using UnityEngine;
 using RobotGame.Data;
 using RobotGame.Components;
 using RobotGame.Systems;
+using RobotGame.Control;
 
 namespace RobotGame
 {
     /// <summary>
     /// Script de inicialización del juego.
     /// Crea el robot inicial del jugador a partir de una configuración.
+    /// Configura los sistemas de movimiento y cámara.
     /// </summary>
     public class GameInitializer : MonoBehaviour
     {
@@ -19,16 +21,38 @@ namespace RobotGame
         [Tooltip("Punto donde aparece el robot")]
         [SerializeField] private Transform spawnPoint;
         
+        [Header("Control")]
+        [Tooltip("Cámara principal (si no se asigna, busca Camera.main)")]
+        [SerializeField] private Camera mainCamera;
+        
         [Header("Debug")]
         [SerializeField] private bool debugMode = true;
         
         [Header("Referencias (Auto-asignadas)")]
         [SerializeField] private Robot playerRobot;
+        [SerializeField] private RobotCore playerCore;
+        [SerializeField] private PlayerMovement playerMovement;
+        [SerializeField] private PlayerCamera playerCamera;
         
         /// <summary>
         /// Robot actual del jugador.
         /// </summary>
         public Robot PlayerRobot => playerRobot;
+        
+        /// <summary>
+        /// Core del jugador.
+        /// </summary>
+        public RobotCore PlayerCore => playerCore;
+        
+        private void OnEnable()
+        {
+            RobotCore.OnPlayerRobotChanged += OnPlayerRobotChanged;
+        }
+        
+        private void OnDisable()
+        {
+            RobotCore.OnPlayerRobotChanged -= OnPlayerRobotChanged;
+        }
         
         private void Start()
         {
@@ -46,79 +70,120 @@ namespace RobotGame
                 return;
             }
             
-            // Configurar el spawn point del factory
-            RobotFactory factory = RobotFactory.Instance;
-            
-            if (spawnPoint != null)
-            {
-                // El factory usará este punto si está configurado en él
-            }
-            
             // Crear el robot del jugador
+            RobotFactory factory = RobotFactory.Instance;
             playerRobot = factory.CreateRobot(initialRobotConfig, insertCore: true);
             
-            if (playerRobot != null)
-            {
-                // Posicionar en el spawn point
-                if (spawnPoint != null)
-                {
-                    playerRobot.transform.position = spawnPoint.position;
-                    playerRobot.transform.rotation = spawnPoint.rotation;
-                }
-                
-                if (debugMode)
-                {
-                    PrintRobotInfo(playerRobot);
-                }
-            }
-            else
+            if (playerRobot == null)
             {
                 Debug.LogError("GameInitializer: No se pudo crear el robot del jugador.");
+                return;
+            }
+            
+            // Posicionar en el spawn point
+            if (spawnPoint != null)
+            {
+                playerRobot.transform.position = spawnPoint.position;
+                playerRobot.transform.rotation = spawnPoint.rotation;
+            }
+            
+            // Obtener el Core y marcarlo como del jugador
+            playerCore = playerRobot.Core;
+            if (playerCore != null)
+            {
+                playerCore.SetAsPlayerCore(true);
+            }
+            
+            // Configurar sistemas de control
+            SetupMovement();
+            SetupCamera();
+            
+            if (debugMode)
+            {
+                Debug.Log($"Robot creado: {playerRobot.RobotName}");
+                Debug.Log($"Core del jugador: {(playerCore != null ? "OK" : "NO ENCONTRADO")}");
+                Debug.Log($"Controles: WASD=mover, P=modo edición");
             }
         }
         
-        /// <summary>
-        /// Imprime información de debug sobre el robot.
-        /// </summary>
-        private void PrintRobotInfo(Robot robot)
+        private void SetupMovement()
         {
-            Debug.Log("=== ROBOT INFO ===");
-            Debug.Log($"Nombre: {robot.RobotName}");
-            Debug.Log($"ID: {robot.RobotId}");
-            Debug.Log($"Tier: {robot.CurrentTier}");
-            Debug.Log($"Operacional: {robot.IsOperational}");
-            
-            if (robot.Core != null)
+            // Buscar o crear PlayerMovement
+            playerMovement = FindObjectOfType<PlayerMovement>();
+            if (playerMovement == null)
             {
-                Debug.Log($"Core: {robot.Core.CoreData.displayName}");
-                Debug.Log($"Energía: {robot.Core.CurrentEnergy}/{robot.Core.MaxEnergy}");
+                // Crear un GameObject para el sistema de movimiento
+                GameObject movementGO = new GameObject("PlayerMovement");
+                playerMovement = movementGO.AddComponent<PlayerMovement>();
             }
             
-            Debug.Log("--- Piezas Estructurales ---");
-            foreach (var part in robot.GetAllStructuralParts())
+            playerMovement.SetTarget(playerRobot.transform);
+            playerMovement.Enable();
+        }
+        
+        private void SetupCamera()
+        {
+            if (mainCamera == null)
             {
-                Debug.Log($"  - {part.PartData.displayName} ({part.PartData.partType})");
-                Debug.Log($"    Sockets: {part.ChildSockets.Count}, Grillas: {part.ArmorGrids.Count}");
+                mainCamera = Camera.main;
             }
             
-            Debug.Log("--- Piezas de Armadura ---");
-            foreach (var armor in robot.GetAllArmorParts())
+            if (mainCamera != null)
             {
-                Debug.Log($"  - {armor.ArmorData.displayName}");
-                Debug.Log($"    Tamaño: {armor.ArmorData.Size}, Surrounding: {armor.ArmorData.Surrounding}");
+                // Buscar PlayerCamera o CameraController (compatibilidad)
+                playerCamera = mainCamera.GetComponent<PlayerCamera>();
+                if (playerCamera == null)
+                {
+                    // Intentar con el nombre antiguo
+                    var oldController = mainCamera.GetComponent<CameraController>();
+                    if (oldController != null)
+                    {
+                        oldController.SetTarget(playerRobot.transform, true);
+                        return;
+                    }
+                    
+                    // Crear nuevo PlayerCamera
+                    playerCamera = mainCamera.gameObject.AddComponent<PlayerCamera>();
+                }
+                
+                playerCamera.SetTarget(playerRobot.transform, true);
+            }
+        }
+        
+        private void OnPlayerRobotChanged(RobotCore core, Robot newRobot)
+        {
+            if (core != playerCore) return;
+            
+            playerRobot = newRobot;
+            
+            // Actualizar movimiento
+            if (playerMovement != null)
+            {
+                if (newRobot != null)
+                {
+                    playerMovement.SetTarget(newRobot.transform);
+                    playerMovement.Enable();
+                }
+                else
+                {
+                    playerMovement.SetTarget(null);
+                    playerMovement.Disable();
+                }
             }
             
-            Debug.Log($"Peso Total: {robot.CalculateTotalWeight()}");
-            Debug.Log($"Armadura Total: {robot.CalculateTotalArmor()}");
-            Debug.Log("==================");
+            // Actualizar cámara
+            if (playerCamera != null && newRobot != null)
+            {
+                playerCamera.SetTarget(newRobot.transform, false);
+            }
         }
         
         /// <summary>
-        /// Método de prueba para transferir el core a otro robot.
+        /// Método para transferir el core a otro robot.
         /// </summary>
         public void TransferCoreTo(Robot targetRobot)
         {
-            if (playerRobot == null || playerRobot.Core == null)
+            if (playerCore == null)
             {
                 Debug.LogWarning("No hay core para transferir.");
                 return;
@@ -131,19 +196,15 @@ namespace RobotGame
             }
             
             // Extraer el core del robot actual
-            RobotCore core = playerRobot.Core;
-            core.Extract();
+            playerCore.Extract();
             
             // Insertar en el nuevo robot
-            if (core.InsertInto(targetRobot))
+            if (playerCore.InsertInto(targetRobot))
             {
-                playerRobot = targetRobot;
-                Debug.Log($"Core transferido a {targetRobot.RobotName}");
+                Debug.Log($"Core transferido a: {targetRobot.RobotName}");
             }
             else
             {
-                // Si falla, reinsertar en el original
-                core.InsertInto(playerRobot);
                 Debug.LogWarning("Falló la transferencia del core.");
             }
         }

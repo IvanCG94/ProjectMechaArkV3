@@ -1,12 +1,16 @@
 using UnityEngine;
 using RobotGame.Data;
 using RobotGame.Enums;
+using RobotGame.Control;
 
 namespace RobotGame.Components
 {
     /// <summary>
-    /// Componente runtime que representa el Core del jugador.
+    /// Componente runtime que representa el Core del robot.
     /// El Core es el "alma" que se puede transferir entre cuerpos de robot.
+    /// 
+    /// NOTA: El movimiento está delegado a PlayerMovement (script independiente).
+    /// Este script solo notifica cuando el Core se inserta/extrae.
     /// </summary>
     public class RobotCore : MonoBehaviour
     {
@@ -14,12 +18,20 @@ namespace RobotGame.Components
         [SerializeField] private CoreData coreData;
         [SerializeField] private string instanceId;
         
+        [Header("Jugador")]
+        [SerializeField] private bool isPlayerCore = false;
+        
         [Header("Estado")]
         [SerializeField] private float currentEnergy;
         [SerializeField] private bool isActive = false;
         
         [Header("Conexión")]
         [SerializeField] private Robot currentRobot;
+        
+        // Evento para notificar cambios de robot (usado por PlayerMovement y PlayerCamera)
+        public static event System.Action<RobotCore, Robot> OnPlayerRobotChanged;
+        
+        #region Properties
         
         /// <summary>
         /// Datos del core (ScriptableObject).
@@ -30,6 +42,11 @@ namespace RobotGame.Components
         /// ID único de esta instancia.
         /// </summary>
         public string InstanceId => instanceId;
+        
+        /// <summary>
+        /// Si este es el core del jugador.
+        /// </summary>
+        public bool IsPlayerCore => isPlayerCore;
         
         /// <summary>
         /// Tier del core.
@@ -61,17 +78,34 @@ namespace RobotGame.Components
         /// </summary>
         public Robot CurrentRobot => currentRobot;
         
+        #endregion
+        
+        #region Initialization
+        
+        /// <summary>
+        /// Marca este core como el core del jugador.
+        /// </summary>
+        public void SetAsPlayerCore(bool isPlayer)
+        {
+            isPlayerCore = isPlayer;
+        }
+        
         /// <summary>
         /// Inicializa el core con sus datos.
         /// </summary>
-        public void Initialize(CoreData data, string id = null)
+        public void Initialize(CoreData data, string id = null, bool playerCore = false)
         {
             coreData = data;
             instanceId = id ?? System.Guid.NewGuid().ToString();
-            currentEnergy = data.maxEnergy;
+            currentEnergy = data != null ? data.maxEnergy : 100f;
             isActive = false;
             currentRobot = null;
+            isPlayerCore = playerCore;
         }
+        
+        #endregion
+        
+        #region Core Operations
         
         /// <summary>
         /// Verifica si una pieza es compatible con este core.
@@ -88,25 +122,43 @@ namespace RobotGame.Components
         {
             if (robot == null)
             {
-                Debug.LogWarning("Intentando insertar core en un robot null.");
+                Debug.LogWarning("RobotCore: Intentando insertar en un robot null.");
                 return false;
             }
             
             if (isActive && currentRobot != null)
             {
-                Debug.LogWarning("El core ya está insertado en otro robot. Extráelo primero.");
+                Debug.LogWarning("RobotCore: Ya está insertado en otro robot. Extráelo primero.");
+                return false;
+            }
+            
+            // Buscar el socket del core en el robot
+            Transform coreSocketTransform = robot.FindCoreSocket();
+            
+            if (coreSocketTransform == null)
+            {
+                Debug.LogWarning("RobotCore: El robot no tiene CoreSocket disponible.");
                 return false;
             }
             
             currentRobot = robot;
             isActive = true;
             
-            // Posicionar el core en el socket correspondiente
-            transform.SetParent(robot.CoreSocket);
+            // Posicionar el core en el socket
+            transform.SetParent(coreSocketTransform);
             transform.localPosition = Vector3.zero;
             transform.localRotation = Quaternion.identity;
             
+            // Mostrar el Core (por si estaba oculto)
+            SetCoreVisible(true);
+            
             robot.OnCoreInserted(this);
+            
+            // Notificar cambio de robot (PlayerMovement y PlayerCamera escuchan esto)
+            if (isPlayerCore)
+            {
+                OnPlayerRobotChanged?.Invoke(this, robot);
+            }
             
             return true;
         }
@@ -128,14 +180,41 @@ namespace RobotGame.Components
             currentRobot = null;
             isActive = false;
             
+            // Ocultar el Core cuando está extraído (va al "inventario")
+            SetCoreVisible(false);
+            
+            // Notificar que ya no hay robot
+            if (isPlayerCore)
+            {
+                OnPlayerRobotChanged?.Invoke(this, null);
+            }
+            
             return previousRobot;
         }
         
         /// <summary>
+        /// Muestra u oculta el Core visualmente.
+        /// </summary>
+        private void SetCoreVisible(bool visible)
+        {
+            foreach (var renderer in GetComponentsInChildren<Renderer>(true))
+            {
+                renderer.enabled = visible;
+            }
+            
+            foreach (var collider in GetComponentsInChildren<Collider>(true))
+            {
+                collider.enabled = visible;
+            }
+        }
+        
+        #endregion
+        
+        #region Energy
+        
+        /// <summary>
         /// Consume energía del core.
         /// </summary>
-        /// <param name="amount">Cantidad de energía a consumir</param>
-        /// <returns>True si había suficiente energía</returns>
         public bool ConsumeEnergy(float amount)
         {
             if (currentEnergy >= amount)
@@ -143,7 +222,6 @@ namespace RobotGame.Components
                 currentEnergy -= amount;
                 return true;
             }
-            
             return false;
         }
         
@@ -155,14 +233,51 @@ namespace RobotGame.Components
             currentEnergy = Mathf.Min(MaxEnergy, currentEnergy + amount);
         }
         
+        #endregion
+        
+        #region Unity Lifecycle
+        
         private void Update()
         {
+            // Solo regenerar energía
             if (isActive && coreData != null)
             {
-                // Regenerar energía
                 float regenAmount = coreData.energyRegenRate * Time.deltaTime;
                 RechargeEnergy(regenAmount);
             }
         }
+        
+        #endregion
+        
+        #region Movement Control (Legacy - para compatibilidad con AssemblyTester)
+        
+        // Estos métodos son llamados por AssemblyTester para deshabilitar movimiento en modo edición.
+        // Ahora delegan a PlayerMovement si existe.
+        
+        /// <summary>
+        /// Deshabilita el movimiento (llamado al entrar en modo edición).
+        /// </summary>
+        public void DisableMovement()
+        {
+            var movement = FindObjectOfType<PlayerMovement>();
+            if (movement != null)
+            {
+                movement.Disable();
+            }
+        }
+        
+        /// <summary>
+        /// Habilita el movimiento (llamado al salir de modo edición).
+        /// </summary>
+        public void EnableMovement()
+        {
+            var movement = FindObjectOfType<PlayerMovement>();
+            if (movement != null)
+            {
+                movement.Enable();
+            }
+        }
+        
+        #endregion
     }
 }

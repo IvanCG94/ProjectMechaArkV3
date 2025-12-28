@@ -1,0 +1,174 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 844f020186c0c954bb872a9bedbc9590, type: 3}
+  m_Name: NewHips
+  m_EditorClassIdentifier: Assembly-CSharp::RobotGame.Data.StructuralPartData
+  partId: newHips
+  displayName: New Hips
+  description: 
+  icon: {fileID: 0}
+  prefab: {fileID: 6017231385690551128, guid: 461bf19432b31a041a1778caf216fe9a, type: 3}
+  category: 0
+  tier: 0
+  weight: 1
+  durability: 100
+  partType: 0
+  canBeRoot: 1
+  structuralSockets:
+  - socketType: 1
+    transformName: TorsoSocket
+    isRequired: 0
+    localPosition: {x: 0, y: 0, z: 0}
+    localRotation: {x: 0, y: 0, z: 0}
+  armorGrids:
+  - gridInfo:
+      isHead: 1
+      sizeX: 1
+      sizeY: 1
+      surrounding:
+        level: 0
+        edges: 0
+        fullType: 0
+      gridName: FootArmorL
+    transformName: Head_1x1_SN_FootArmorL
+  - gridInfo:
+      isHead: 1
+      sizeX: 1
+      sizeY: 1
+      surrounding:
+        level: 1
+        edges: 3
+        fullType: 0
+      gridName: FootBoneL
+    transformName: Head_1x1_S1_LR_FootBoneL
+  - gridInfo:
+      isHead: 1
+      sizeX: 1
+      sizeY: 2
+      surrounding:
+        level: 1
+        edges: 3
+        fullType: 0
+      gridName: ShinBoneL
+    transformName: Head_1x2_S1_LR_ShinBoneL
+  - gridInfo:
+      isHead: 1
+      sizeX: 1
+      sizeY: 2
+      surrounding:
+        level: 0
+        edges: 0
+        fullType: 0
+      gridName: ThighLBoneR
+    transformName: Head_1x2_SN_ThighLBoneR
+  - gridInfo:
+      isHead: 1
+      sizeX: 1
+      sizeY: 3
+      surrounding:
+        level: 0
+        edges: 0
+        fullType: 0
+      gridName: ThighLBoneL
+    transformName: Head_1x3_SN_ThighLBoneL
+  - gridInfo:
+      isHead: 1
+      sizeX: 1
+      sizeY: 3
+      surrounding:
+        level: 0
+        edges: 0
+        fullType: 0
+      gridName: ThighRBoneL
+    transformName: Head_1x3_SN_ThighRBoneL
+  - gridInfo:
+      isHead: 1
+      sizeX: 1
+      sizeY: 4
+      surrounding:
+        level: 1
+        edges: 3
+        fullType: 0
+      gridName: ThighBoneL
+    transformName: Head_1x4_S1_LR_ThighBoneL
+  - gridInfo:
+      isHead: 1
+      sizeX: 1
+      sizeY: 1
+      surrounding:
+        level: 0
+        edges: 0
+        fullType: 0
+      gridName: FootArmorR
+    transformName: Head_1x1_SN_FootArmorR
+  - gridInfo:
+      isHead: 1
+      sizeX: 1
+      sizeY: 1
+      surrounding:
+        level: 1
+        edges: 3
+        fullType: 0
+      gridName: FootBoneR
+    transformName: Head_1x1_S1_LR_FootBoneR
+  - gridInfo:
+      isHead: 1
+      sizeX: 1
+      sizeY: 2
+      surrounding:
+        level: 1
+        edges: 3
+        fullType: 0
+      gridName: ShinBoneR
+    transformName: Head_1x2_S1_LR_ShinBoneR
+  - gridInfo:
+      isHead: 1
+      sizeX: 1
+      sizeY: 2
+      surrounding:
+        level: 0
+        edges: 0
+        fullType: 0
+      gridName: ThighBBoneR
+    transformName: Head_1x2_SN_ThighBBoneR
+  - gridInfo:
+      isHead: 1
+      sizeX: 1
+      sizeY: 3
+      surrounding:
+        level: 0
+        edges: 0
+        fullType: 0
+      gridName: ThighLBoneR
+    transformName: Head_1x3_SN_ThighLBoneR
+  - gridInfo:
+      isHead: 1
+      sizeX: 1
+      sizeY: 3
+      surrounding:
+        level: 0
+        edges: 0
+        fullType: 0
+      gridName: ThighRBoneR
+    transformName: Head_1x3_SN_ThighRBoneR
+  - gridInfo:
+      isHead: 1
+      sizeX: 1
+      sizeY: 4
+      surrounding:
+        level: 1
+        edges: 3
+        fullType: 0
+      gridName: ThighBoneR
+    transformName: Head_1x4_S1_LR_ThighBoneR
+  animatorController: {fileID: 0}
+  animatorAvatar: {fileID: 0}

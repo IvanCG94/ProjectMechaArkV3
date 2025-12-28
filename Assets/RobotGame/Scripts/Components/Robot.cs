@@ -17,9 +17,10 @@ namespace RobotGame.Components
         
         [Header("Core")]
         [SerializeField] private RobotCore core;
-        [SerializeField] private Transform coreSocket;
         
         [Header("Estructura")]
+        [SerializeField] private Transform hipsAnchor;
+        [SerializeField] private StructuralSocket hipsSocket;
         [SerializeField] private StructuralPart hips;
         [SerializeField] private RobotTier currentTier;
         
@@ -42,9 +43,9 @@ namespace RobotGame.Components
         public RobotCore Core => core;
         
         /// <summary>
-        /// Transform donde se inserta el core.
+        /// Socket donde se conectan las Hips.
         /// </summary>
-        public Transform CoreSocket => coreSocket;
+        public StructuralSocket HipsSocket => hipsSocket;
         
         /// <summary>
         /// Pieza estructural raíz (Hips).
@@ -62,23 +63,112 @@ namespace RobotGame.Components
         public bool IsOperational => isOperational;
         
         /// <summary>
-        /// Inicializa el robot con sus componentes base.
+        /// Inicializa el robot con su estructura base (crea el HipsAnchor y HipsSocket).
+        /// </summary>
+        public void Initialize(string id, string name, RobotTier tier)
+        {
+            robotId = id ?? System.Guid.NewGuid().ToString();
+            robotName = name ?? "Robot";
+            currentTier = tier;
+            isOperational = false;
+            
+            // Crear el HipsAnchor y HipsSocket si no existen
+            CreateHipsAnchor();
+        }
+        
+        /// <summary>
+        /// Inicializa el robot con sus componentes base (versión legacy con hips ya creadas).
         /// </summary>
         public void Initialize(string id, string name, StructuralPart hipsComponent, RobotTier tier)
         {
             robotId = id ?? System.Guid.NewGuid().ToString();
             robotName = name ?? "Robot";
-            hips = hipsComponent;
             currentTier = tier;
             isOperational = false;
             
-            // Buscar o crear el socket del core
-            FindOrCreateCoreSocket();
+            // Crear el HipsAnchor y HipsSocket
+            CreateHipsAnchor();
+            
+            // Conectar las hips al socket
+            if (hipsComponent != null)
+            {
+                AttachHips(hipsComponent);
+            }
         }
         
-        private void FindOrCreateCoreSocket()
+        /// <summary>
+        /// Crea el HipsAnchor y el HipsSocket.
+        /// </summary>
+        private void CreateHipsAnchor()
         {
-            // Buscar el socket de core en el torso (si existe)
+            if (hipsAnchor == null)
+            {
+                GameObject anchorGO = new GameObject("HipsAnchor");
+                hipsAnchor = anchorGO.transform;
+                hipsAnchor.SetParent(transform);
+                hipsAnchor.localPosition = Vector3.zero;
+                hipsAnchor.localRotation = Quaternion.identity;
+            }
+            
+            if (hipsSocket == null)
+            {
+                hipsSocket = hipsAnchor.gameObject.AddComponent<StructuralSocket>();
+                hipsSocket.Initialize(new StructuralSocketDefinition
+                {
+                    socketType = StructuralSocketType.Hips,
+                    isRequired = true
+                });
+            }
+        }
+        
+        /// <summary>
+        /// Conecta unas Hips al robot.
+        /// </summary>
+        public bool AttachHips(StructuralPart hipsComponent)
+        {
+            if (hipsComponent == null) return false;
+            
+            if (hipsSocket == null)
+            {
+                CreateHipsAnchor();
+            }
+            
+            if (hipsSocket.TryAttach(hipsComponent))
+            {
+                hips = hipsComponent;
+                return true;
+            }
+            
+            return false;
+        }
+        
+        /// <summary>
+        /// Alias de AttachHips para claridad.
+        /// </summary>
+        public bool SetHips(StructuralPart hipsComponent)
+        {
+            return AttachHips(hipsComponent);
+        }
+        
+        /// <summary>
+        /// Desconecta las Hips actuales del robot.
+        /// </summary>
+        public StructuralPart DetachHips()
+        {
+            if (hipsSocket == null || !hipsSocket.IsOccupied) return null;
+            
+            StructuralPart detachedHips = hipsSocket.Detach();
+            hips = null;
+            
+            return detachedHips;
+        }
+        
+        /// <summary>
+        /// Busca y retorna el CoreSocket actual (puede cambiar si se modifica la estructura).
+        /// </summary>
+        public Transform FindCoreSocket()
+        {
+            // Buscar el socket de core en el torso
             StructuralSocket torsoSocket = hips?.GetSocket(StructuralSocketType.Torso);
             
             if (torsoSocket != null && torsoSocket.IsOccupied)
@@ -88,19 +178,11 @@ namespace RobotGame.Components
                 
                 if (coreSocketComponent != null)
                 {
-                    coreSocket = coreSocketComponent.transform;
-                    return;
+                    return coreSocketComponent.transform;
                 }
             }
             
-            // Si no se encontró, crear uno temporal en el robot
-            if (coreSocket == null)
-            {
-                GameObject coreSocketGO = new GameObject("CoreSocket");
-                coreSocket = coreSocketGO.transform;
-                coreSocket.SetParent(transform);
-                coreSocket.localPosition = Vector3.up; // Posición por defecto arriba del robot
-            }
+            return null;
         }
         
         /// <summary>
@@ -110,8 +192,6 @@ namespace RobotGame.Components
         {
             core = insertedCore;
             isOperational = true;
-            
-            Debug.Log($"Core insertado en robot {robotName}. Robot operacional.");
         }
         
         /// <summary>
@@ -123,8 +203,6 @@ namespace RobotGame.Components
             {
                 core = null;
                 isOperational = false;
-                
-                Debug.Log($"Core extraído de robot {robotName}. Robot inactivo.");
             }
         }
         
