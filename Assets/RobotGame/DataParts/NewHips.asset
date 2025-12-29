@@ -16,7 +16,7 @@ MonoBehaviour:
   displayName: New Hips
   description: 
   icon: {fileID: 0}
-  prefab: {fileID: 6017231385690551128, guid: 461bf19432b31a041a1778caf216fe9a, type: 3}
+  prefab: {fileID: 7410692846874625324, guid: 3219d01a3950afd41b90a52d094ae88e, type: 3}
   category: 0
   tier: 0
   weight: 1
@@ -25,10 +25,10 @@ MonoBehaviour:
   canBeRoot: 1
   structuralSockets:
   - socketType: 1
-    transformName: TorsoSocket
+    transformName: Socket_torso
     isRequired: 0
-    localPosition: {x: 0, y: 0, z: 0}
-    localRotation: {x: 0, y: 0, z: 0}
+    localPosition: {x: 0, y: 1.1664124, z: -0.107525885}
+    localRotation: {x: 0, y: 0, z: -2.7805295e-22}
   armorGrids:
   - gridInfo:
       isHead: 1
@@ -55,11 +55,11 @@ MonoBehaviour:
       sizeX: 1
       sizeY: 2
       surrounding:
-        level: 1
+        level: 2
         edges: 3
         fullType: 0
       gridName: ShinBoneL
-    transformName: Head_1x2_S1_LR_ShinBoneL
+    transformName: Head_1x2_S2_LR_ShinBoneL
   - gridInfo:
       isHead: 1
       sizeX: 1
@@ -125,11 +125,11 @@ MonoBehaviour:
       sizeX: 1
       sizeY: 2
       surrounding:
-        level: 1
+        level: 2
         edges: 3
         fullType: 0
       gridName: ShinBoneR
-    transformName: Head_1x2_S1_LR_ShinBoneR
+    transformName: Head_1x2_S2_LR_ShinBoneR
   - gridInfo:
       isHead: 1
       sizeX: 1
@@ -170,5 +170,5 @@ MonoBehaviour:
         fullType: 0
       gridName: ThighBoneR
     transformName: Head_1x4_S1_LR_ThighBoneR
-  animatorController: {fileID: 0}
+  animatorController: {fileID: 9100000, guid: 34d661efc465b4c42827ad231b4aff1a, type: 2}
   animatorAvatar: {fileID: 0}

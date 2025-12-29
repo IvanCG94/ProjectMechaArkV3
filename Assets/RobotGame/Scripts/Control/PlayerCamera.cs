@@ -3,63 +3,167 @@ using UnityEngine;
 namespace RobotGame.Control
 {
     /// <summary>
-    /// Sistema de cámara del jugador.
-    /// Este script es INDEPENDIENTE del sistema modular y puede ser reemplazado
-    /// sin afectar la lógica de ensamblaje, Core, o edición.
+    /// Sistema de cámara third-person con dos modos de control:
     /// 
-    /// INTEGRACIÓN:
-    /// - Recibe el Transform a seguir via SetTarget()
-    /// - Modo edición via EnterEditMode()/ExitEditMode()
+    /// MODO NORMAL (jugando):
+    /// - Cursor bloqueado (invisible)
+    /// - Mouse mueve la cámara directamente (sin click)
+    /// - Mantener Alt para liberar el cursor temporalmente
+    /// - Zoom con rueda
     /// 
-    /// PARA REEMPLAZAR:
-    /// - Mantén la interfaz pública (SetTarget, EnterEditMode, ExitEditMode, IsInEditMode, Target)
-    /// - Implementa tu propio sistema de cámara en LateUpdate()
+    /// MODO EDICIÓN:
+    /// - Cursor libre (visible)
+    /// - Click derecho sostenido para rotar la cámara
+    /// - Zoom con rueda
     /// </summary>
     public class PlayerCamera : MonoBehaviour
     {
+        #region Serialized Fields
+        
         [Header("Target")]
         [SerializeField] private Transform target;
-        [SerializeField] private float heightOffset = 1.5f;
+        [SerializeField] private Vector3 targetOffset = new Vector3(0f, 1.5f, 0f);
         
-        [Header("Órbita")]
-        [SerializeField] private float orbitSpeed = 3f;
-        [SerializeField] private float minVerticalAngle = -20f;
-        [SerializeField] private float maxVerticalAngle = 60f;
-        
-        [Header("Zoom")]
-        [SerializeField] private float zoomSpeed = 3f;
+        [Header("Distancia")]
+        [SerializeField] private float defaultDistance = 6f;
         [SerializeField] private float minDistance = 2f;
         [SerializeField] private float maxDistance = 15f;
-        [SerializeField] private float defaultDistance = 6f;
+        [SerializeField] private float zoomSpeed = 5f;
+        [SerializeField] private float zoomSmoothTime = 0.1f;
+        
+        [Header("Órbita")]
+        [SerializeField] private float orbitSensitivity = 3f;
+        [SerializeField] private float minVerticalAngle = -30f;
+        [SerializeField] private float maxVerticalAngle = 70f;
+        
+        [Header("Control de Mouse")]
+        [Tooltip("Tecla para liberar el mouse en modo normal")]
+        [SerializeField] private KeyCode freeCursorKey = KeyCode.LeftAlt;
+        
+        [Header("Auto-Recentrado")]
+        [SerializeField] private bool enableAutoRecenter = true;
+        [SerializeField] private float autoRecenterDelay = 2f;
+        [SerializeField] private float autoRecenterSpeed = 1f;
+        [SerializeField] private float autoRecenterMinSpeed = 0.5f;
         
         [Header("Suavizado")]
-        [SerializeField] private float followSpeed = 10f;
+        [SerializeField] private float positionSmoothTime = 0.1f;
+        [SerializeField] private float rotationSmoothTime = 0.05f;
         
-        [Header("Estado")]
+        [Header("Colisión")]
+        [SerializeField] private bool enableCollision = true;
+        [SerializeField] private float collisionRadius = 0.2f;
+        [SerializeField] private LayerMask collisionLayers = ~0;
+        [SerializeField] private float collisionSmoothTime = 0.1f;
+        
+        [Header("Estado (Debug)")]
         [SerializeField] private bool isInEditMode = false;
         
-        // Estado interno
+        [Header("Debug")]
+        [SerializeField] private bool showDebugGizmos = false;
+        [SerializeField] private bool showDebugUI = false;
+        
+        #endregion
+        
+        #region Private Fields
+        
+        // Ángulos actuales
+        private float horizontalAngle;
+        private float verticalAngle = 30f;
+        
+        // Distancia
         private float currentDistance;
-        private float currentHorizontalAngle = 0f;
-        private float currentVerticalAngle = 30f;
+        private float targetDistance;
+        private float distanceVelocity;
         
-        /// <summary>
-        /// El objetivo que sigue la cámara.
-        /// </summary>
+        // Posición suave
+        private Vector3 currentFocusPoint;
+        private Vector3 focusVelocity;
+        
+        // Colisión
+        private float collisionDistance;
+        private float collisionVelocity;
+        
+        // Auto-recentrado
+        private float timeSinceLastInput;
+        private bool isOrbiting;
+        
+        // Referencia al PlayerMovement para detectar movimiento
+        private PlayerMovement playerMovement;
+        
+        #endregion
+        
+        #region Properties
+        
         public Transform Target => target;
-        
-        /// <summary>
-        /// Si está en modo edición.
-        /// </summary>
         public bool IsInEditMode => isInEditMode;
+        public float HorizontalAngle => horizontalAngle;
+        public float VerticalAngle => verticalAngle;
+        
+        #endregion
+        
+        #region Public Methods
+        
+        public void SetTarget(Transform newTarget, bool instant = false)
+        {
+            target = newTarget;
+            
+            if (target != null)
+            {
+                playerMovement = FindObjectOfType<PlayerMovement>();
+                
+                if (instant)
+                {
+                    InitializeCameraPosition();
+                }
+            }
+        }
+        
+        public void EnterEditMode()
+        {
+            isInEditMode = true;
+            UnlockCursor();
+            Debug.Log("PlayerCamera: Entrando a modo edición");
+        }
+        
+        public void ExitEditMode()
+        {
+            isInEditMode = false;
+            LockCursor();
+            Debug.Log("PlayerCamera: Saliendo de modo edición");
+        }
+        
+        public void SetZoom(float distance)
+        {
+            targetDistance = Mathf.Clamp(distance, minDistance, maxDistance);
+        }
+        
+        public void SetAngles(float horizontal, float vertical)
+        {
+            horizontalAngle = horizontal;
+            verticalAngle = Mathf.Clamp(vertical, minVerticalAngle, maxVerticalAngle);
+        }
+        
+        #endregion
+        
+        #region Unity Lifecycle
         
         private void Start()
         {
             currentDistance = defaultDistance;
+            targetDistance = defaultDistance;
+            collisionDistance = defaultDistance;
             
             if (target != null)
             {
-                UpdateCameraPosition(true);
+                InitializeCameraPosition();
+                playerMovement = FindObjectOfType<PlayerMovement>();
+            }
+            
+            // Por defecto empezamos en modo normal (cursor bloqueado)
+            if (!isInEditMode)
+            {
+                LockCursor();
             }
         }
         
@@ -67,114 +171,269 @@ namespace RobotGame.Control
         {
             if (target == null) return;
             
-            HandleZoom();
-            
-            if (!isInEditMode)
-            {
-                HandleOrbit();
-            }
-            
-            UpdateCameraPosition(false);
+            HandleInput();
+            UpdateFocusPoint();
+            UpdateDistance();
+            HandleCollision();
+            UpdateCameraTransform();
         }
         
-        /// <summary>
-        /// Lógica de zoom. Puede ser sobrescrita.
-        /// </summary>
-        protected virtual void HandleZoom()
+        #endregion
+        
+        #region Initialization
+        
+        private void InitializeCameraPosition()
         {
-            float scroll = Input.GetAxis("Mouse ScrollWheel");
+            if (target == null) return;
             
-            if (scroll != 0f)
+            currentFocusPoint = target.position + targetOffset;
+            horizontalAngle = target.eulerAngles.y;
+            UpdateCameraTransform();
+        }
+        
+        #endregion
+        
+        #region Cursor Management
+        
+        private void LockCursor()
+        {
+            Cursor.lockState = CursorLockMode.Locked;
+            Cursor.visible = false;
+        }
+        
+        private void UnlockCursor()
+        {
+            Cursor.lockState = CursorLockMode.None;
+            Cursor.visible = true;
+        }
+        
+        #endregion
+        
+        #region Input
+        
+        private void HandleInput()
+        {
+            // Zoom con rueda (siempre disponible)
+            float scrollInput = Input.GetAxis("Mouse ScrollWheel");
+            if (Mathf.Abs(scrollInput) > 0.01f)
             {
-                currentDistance -= scroll * zoomSpeed;
-                currentDistance = Mathf.Clamp(currentDistance, minDistance, maxDistance);
+                targetDistance -= scrollInput * zoomSpeed;
+                targetDistance = Mathf.Clamp(targetDistance, minDistance, maxDistance);
+            }
+            
+            // Lógica de órbita según el modo
+            if (isInEditMode)
+            {
+                // MODO EDICIÓN: Click derecho para rotar
+                HandleEditModeInput();
+            }
+            else
+            {
+                // MODO NORMAL: Mouse directo, Alt para liberar
+                HandleNormalModeInput();
+            }
+            
+            // Auto-recentrado
+            timeSinceLastInput += Time.deltaTime;
+            
+            if (enableAutoRecenter && !isOrbiting && !isInEditMode)
+            {
+                HandleAutoRecenter();
             }
         }
         
-        /// <summary>
-        /// Lógica de órbita. Puede ser sobrescrita.
-        /// </summary>
-        protected virtual void HandleOrbit()
+        private void HandleNormalModeInput()
         {
+            // Alt libera el cursor temporalmente
+            if (Input.GetKeyDown(freeCursorKey))
+            {
+                UnlockCursor();
+            }
+            if (Input.GetKeyUp(freeCursorKey))
+            {
+                LockCursor();
+            }
+            
+            // Si Alt está presionado, no mover la cámara
+            if (Input.GetKey(freeCursorKey))
+            {
+                isOrbiting = false;
+                return;
+            }
+            
+            // Mouse mueve la cámara directamente
+            float mouseX = Input.GetAxis("Mouse X");
+            float mouseY = Input.GetAxis("Mouse Y");
+            
+            if (Mathf.Abs(mouseX) > 0.01f || Mathf.Abs(mouseY) > 0.01f)
+            {
+                horizontalAngle += mouseX * orbitSensitivity;
+                verticalAngle -= mouseY * orbitSensitivity;
+                verticalAngle = Mathf.Clamp(verticalAngle, minVerticalAngle, maxVerticalAngle);
+                
+                timeSinceLastInput = 0f;
+                isOrbiting = true;
+            }
+            else
+            {
+                isOrbiting = false;
+            }
+        }
+        
+        private void HandleEditModeInput()
+        {
+            // En modo edición: click derecho sostenido para rotar
             if (Input.GetMouseButton(1))
             {
                 float mouseX = Input.GetAxis("Mouse X");
                 float mouseY = Input.GetAxis("Mouse Y");
                 
-                currentHorizontalAngle += mouseX * orbitSpeed;
-                currentVerticalAngle -= mouseY * orbitSpeed;
-                currentVerticalAngle = Mathf.Clamp(currentVerticalAngle, minVerticalAngle, maxVerticalAngle);
-            }
-        }
-        
-        /// <summary>
-        /// Actualiza la posición de la cámara. Puede ser sobrescrita.
-        /// </summary>
-        protected virtual void UpdateCameraPosition(bool instant)
-        {
-            if (target == null) return;
-            
-            Vector3 focusPoint = target.position + Vector3.up * heightOffset;
-            
-            float horizontalRad = currentHorizontalAngle * Mathf.Deg2Rad;
-            float verticalRad = currentVerticalAngle * Mathf.Deg2Rad;
-            
-            Vector3 direction = new Vector3(
-                Mathf.Sin(horizontalRad) * Mathf.Cos(verticalRad),
-                Mathf.Sin(verticalRad),
-                -Mathf.Cos(horizontalRad) * Mathf.Cos(verticalRad)
-            );
-            
-            Vector3 desiredPosition = focusPoint + direction * currentDistance;
-            
-            if (instant)
-            {
-                transform.position = desiredPosition;
-                transform.LookAt(focusPoint);
+                if (Mathf.Abs(mouseX) > 0.01f || Mathf.Abs(mouseY) > 0.01f)
+                {
+                    horizontalAngle += mouseX * orbitSensitivity;
+                    verticalAngle -= mouseY * orbitSensitivity;
+                    verticalAngle = Mathf.Clamp(verticalAngle, minVerticalAngle, maxVerticalAngle);
+                    
+                    timeSinceLastInput = 0f;
+                    isOrbiting = true;
+                }
             }
             else
             {
-                transform.position = Vector3.Lerp(transform.position, desiredPosition, followSpeed * Time.deltaTime);
-                Quaternion desiredRotation = Quaternion.LookRotation(focusPoint - transform.position);
-                transform.rotation = Quaternion.Slerp(transform.rotation, desiredRotation, followSpeed * Time.deltaTime);
+                isOrbiting = false;
             }
         }
         
-        /// <summary>
-        /// Entra en modo edición.
-        /// </summary>
-        public void EnterEditMode()
+        private void HandleAutoRecenter()
         {
-            isInEditMode = true;
-        }
-        
-        /// <summary>
-        /// Sale del modo edición.
-        /// </summary>
-        public void ExitEditMode()
-        {
-            isInEditMode = false;
-        }
-        
-        /// <summary>
-        /// Establece el objetivo de la cámara.
-        /// </summary>
-        public void SetTarget(Transform newTarget, bool instant = false)
-        {
-            target = newTarget;
+            if (timeSinceLastInput < autoRecenterDelay) return;
+            if (playerMovement == null || playerMovement.CurrentSpeed < autoRecenterMinSpeed) return;
             
-            if (target != null && instant)
+            float targetHorizontalAngle = target.eulerAngles.y;
+            horizontalAngle = Mathf.LerpAngle(horizontalAngle, targetHorizontalAngle, 
+                autoRecenterSpeed * Time.deltaTime);
+        }
+        
+        #endregion
+        
+        #region Focus Point
+        
+        private void UpdateFocusPoint()
+        {
+            Vector3 targetFocusPoint = target.position + targetOffset;
+            currentFocusPoint = Vector3.SmoothDamp(currentFocusPoint, targetFocusPoint, 
+                ref focusVelocity, positionSmoothTime);
+        }
+        
+        #endregion
+        
+        #region Distance
+        
+        private void UpdateDistance()
+        {
+            currentDistance = Mathf.SmoothDamp(currentDistance, targetDistance, 
+                ref distanceVelocity, zoomSmoothTime);
+        }
+        
+        #endregion
+        
+        #region Collision
+        
+        private void HandleCollision()
+        {
+            if (!enableCollision)
             {
-                UpdateCameraPosition(true);
+                collisionDistance = currentDistance;
+                return;
+            }
+            
+            Vector3 cameraDirection = CalculateCameraDirection();
+            float desiredDistance = currentDistance;
+            
+            if (Physics.SphereCast(currentFocusPoint, collisionRadius, -cameraDirection, 
+                out RaycastHit hit, currentDistance, collisionLayers, QueryTriggerInteraction.Ignore))
+            {
+                desiredDistance = hit.distance - collisionRadius * 0.5f;
+                desiredDistance = Mathf.Max(desiredDistance, minDistance * 0.5f);
+            }
+            
+            float smoothTime = desiredDistance < collisionDistance ? 0.01f : collisionSmoothTime;
+            collisionDistance = Mathf.SmoothDamp(collisionDistance, desiredDistance, 
+                ref collisionVelocity, smoothTime);
+        }
+        
+        #endregion
+        
+        #region Camera Transform
+        
+        private Vector3 CalculateCameraDirection()
+        {
+            float horizontalRad = horizontalAngle * Mathf.Deg2Rad;
+            float verticalRad = verticalAngle * Mathf.Deg2Rad;
+            
+            return new Vector3(
+                Mathf.Sin(horizontalRad) * Mathf.Cos(verticalRad),
+                Mathf.Sin(verticalRad),
+                -Mathf.Cos(horizontalRad) * Mathf.Cos(verticalRad)
+            ).normalized;
+        }
+        
+        private void UpdateCameraTransform()
+        {
+            Vector3 cameraDirection = CalculateCameraDirection();
+            float effectiveDistance = Mathf.Min(currentDistance, collisionDistance);
+            Vector3 desiredPosition = currentFocusPoint + cameraDirection * effectiveDistance;
+            
+            transform.position = desiredPosition;
+            
+            Quaternion desiredRotation = Quaternion.LookRotation(currentFocusPoint - transform.position);
+            transform.rotation = Quaternion.Slerp(transform.rotation, desiredRotation, 
+                (1f / rotationSmoothTime) * Time.deltaTime);
+        }
+        
+        #endregion
+        
+        #region Debug
+        
+        private void OnGUI()
+        {
+            if (!showDebugUI) return;
+            
+            GUILayout.BeginArea(new Rect(Screen.width - 260, 10, 250, 120));
+            GUILayout.BeginVertical("box");
+            
+            GUILayout.Label("=== PlayerCamera Debug ===");
+            GUILayout.Label($"Modo: {(isInEditMode ? "EDICIÓN" : "NORMAL")}");
+            GUILayout.Label($"Cursor: {(Cursor.lockState == CursorLockMode.Locked ? "Bloqueado" : "Libre")}");
+            GUILayout.Label($"Orbiting: {isOrbiting}");
+            GUILayout.Label($"H Angle: {horizontalAngle:F1}°");
+            GUILayout.Label($"V Angle: {verticalAngle:F1}°");
+            
+            GUILayout.EndVertical();
+            GUILayout.EndArea();
+        }
+        
+        private void OnDrawGizmos()
+        {
+            if (!showDebugGizmos || target == null) return;
+            
+            Vector3 focusPoint = Application.isPlaying ? currentFocusPoint : target.position + targetOffset;
+            
+            Gizmos.color = Color.yellow;
+            Gizmos.DrawWireSphere(focusPoint, 0.2f);
+            
+            Gizmos.color = Color.green;
+            Gizmos.DrawLine(focusPoint, target.position);
+            
+            if (enableCollision)
+            {
+                Vector3 cameraDir = CalculateCameraDirection();
+                Gizmos.color = Color.red;
+                Gizmos.DrawWireSphere(focusPoint + cameraDir * (Application.isPlaying ? collisionDistance : defaultDistance), 
+                    collisionRadius);
             }
         }
         
-        /// <summary>
-        /// Ajusta el zoom.
-        /// </summary>
-        public void SetZoom(float distance)
-        {
-            currentDistance = Mathf.Clamp(distance, minDistance, maxDistance);
-        }
+        #endregion
     }
 }

@@ -4,8 +4,17 @@ namespace RobotGame.Control
 {
     /// <summary>
     /// Controlador de cámara con dos modos:
-    /// - Modo Normal: Mouse orbita alrededor del robot, rueda zoom
-    /// - Modo Edición: Solo rueda zoom (el robot se rota con A/D)
+    /// 
+    /// MODO NORMAL (jugando):
+    /// - Cursor bloqueado (invisible)
+    /// - Mouse mueve la cámara directamente (sin click)
+    /// - Mantener Alt para liberar el cursor temporalmente
+    /// - Zoom con rueda
+    /// 
+    /// MODO EDICIÓN:
+    /// - Cursor libre (visible)
+    /// - Click derecho sostenido para rotar la cámara
+    /// - Zoom con rueda
     /// </summary>
     public class CameraController : MonoBehaviour
     {
@@ -13,7 +22,7 @@ namespace RobotGame.Control
         [SerializeField] private Transform target;
         [SerializeField] private float heightOffset = 1.5f;
         
-        [Header("Órbita (Modo Normal)")]
+        [Header("Órbita")]
         [SerializeField] private float orbitSpeed = 3f;
         [SerializeField] private float minVerticalAngle = -20f;
         [SerializeField] private float maxVerticalAngle = 60f;
@@ -27,8 +36,15 @@ namespace RobotGame.Control
         [Header("Suavizado")]
         [SerializeField] private float followSpeed = 10f;
         
+        [Header("Control de Mouse")]
+        [Tooltip("Tecla para liberar el mouse en modo normal")]
+        [SerializeField] private KeyCode freeCursorKey = KeyCode.LeftAlt;
+        
         [Header("Estado")]
         [SerializeField] private bool isInEditMode = false;
+        
+        [Header("Debug")]
+        [SerializeField] private bool showDebugUI = false;
         
         // Estado interno
         private float currentDistance;
@@ -51,7 +67,14 @@ namespace RobotGame.Control
             
             if (target != null)
             {
+                currentHorizontalAngle = target.eulerAngles.y;
                 UpdateCameraPosition(true);
+            }
+            
+            // Por defecto empezamos en modo normal (cursor bloqueado)
+            if (!isInEditMode)
+            {
+                LockCursor();
             }
         }
         
@@ -61,13 +84,35 @@ namespace RobotGame.Control
             
             HandleZoom();
             
-            if (!isInEditMode)
+            if (isInEditMode)
             {
-                HandleOrbit();
+                HandleEditModeOrbit();
+            }
+            else
+            {
+                HandleNormalModeOrbit();
             }
             
             UpdateCameraPosition(false);
         }
+        
+        #region Cursor Management
+        
+        private void LockCursor()
+        {
+            Cursor.lockState = CursorLockMode.Locked;
+            Cursor.visible = false;
+        }
+        
+        private void UnlockCursor()
+        {
+            Cursor.lockState = CursorLockMode.None;
+            Cursor.visible = true;
+        }
+        
+        #endregion
+        
+        #region Input Handling
         
         private void HandleZoom()
         {
@@ -80,18 +125,66 @@ namespace RobotGame.Control
             }
         }
         
-        private void HandleOrbit()
+        /// <summary>
+        /// Modo normal: mouse mueve la cámara directamente, Alt libera el cursor.
+        /// </summary>
+        private void HandleNormalModeOrbit()
+        {
+            // Alt libera el cursor temporalmente
+            bool altPressed = Input.GetKey(freeCursorKey);
+            
+            if (altPressed)
+            {
+                // Alt presionado: cursor libre, no mover cámara
+                if (Cursor.lockState != CursorLockMode.None)
+                {
+                    UnlockCursor();
+                }
+                return;
+            }
+            else
+            {
+                // Alt no presionado: cursor bloqueado
+                if (Cursor.lockState != CursorLockMode.Locked)
+                {
+                    LockCursor();
+                }
+            }
+            
+            // Mouse mueve la cámara directamente
+            float mouseX = Input.GetAxis("Mouse X");
+            float mouseY = Input.GetAxis("Mouse Y");
+            
+            if (Mathf.Abs(mouseX) > 0.01f || Mathf.Abs(mouseY) > 0.01f)
+            {
+                currentHorizontalAngle += mouseX * orbitSpeed;
+                currentVerticalAngle -= mouseY * orbitSpeed;
+                currentVerticalAngle = Mathf.Clamp(currentVerticalAngle, minVerticalAngle, maxVerticalAngle);
+            }
+        }
+        
+        /// <summary>
+        /// Modo edición: click derecho sostenido para rotar.
+        /// </summary>
+        private void HandleEditModeOrbit()
         {
             if (Input.GetMouseButton(1))
             {
                 float mouseX = Input.GetAxis("Mouse X");
                 float mouseY = Input.GetAxis("Mouse Y");
                 
-                currentHorizontalAngle += mouseX * orbitSpeed;
-                currentVerticalAngle -= mouseY * orbitSpeed;
-                currentVerticalAngle = Mathf.Clamp(currentVerticalAngle, minVerticalAngle, maxVerticalAngle);
+                if (Mathf.Abs(mouseX) > 0.01f || Mathf.Abs(mouseY) > 0.01f)
+                {
+                    currentHorizontalAngle += mouseX * orbitSpeed;
+                    currentVerticalAngle -= mouseY * orbitSpeed;
+                    currentVerticalAngle = Mathf.Clamp(currentVerticalAngle, minVerticalAngle, maxVerticalAngle);
+                }
             }
         }
+        
+        #endregion
+        
+        #region Camera Position
         
         private void UpdateCameraPosition(bool instant)
         {
@@ -123,12 +216,18 @@ namespace RobotGame.Control
             }
         }
         
+        #endregion
+        
+        #region Public Methods
+        
         /// <summary>
         /// Entra en modo edición.
         /// </summary>
         public void EnterEditMode()
         {
             isInEditMode = true;
+            UnlockCursor();
+            Debug.Log("CameraController: Entrando a modo edición");
         }
         
         /// <summary>
@@ -137,6 +236,8 @@ namespace RobotGame.Control
         public void ExitEditMode()
         {
             isInEditMode = false;
+            LockCursor();
+            Debug.Log("CameraController: Saliendo de modo edición");
         }
         
         /// <summary>
@@ -146,9 +247,13 @@ namespace RobotGame.Control
         {
             target = newTarget;
             
-            if (target != null && instant)
+            if (target != null)
             {
-                UpdateCameraPosition(true);
+                if (instant)
+                {
+                    currentHorizontalAngle = target.eulerAngles.y;
+                    UpdateCameraPosition(true);
+                }
             }
         }
         
@@ -159,5 +264,28 @@ namespace RobotGame.Control
         {
             currentDistance = Mathf.Clamp(distance, minDistance, maxDistance);
         }
+        
+        #endregion
+        
+        #region Debug
+        
+        private void OnGUI()
+        {
+            if (!showDebugUI) return;
+            
+            GUILayout.BeginArea(new Rect(Screen.width - 260, 10, 250, 100));
+            GUILayout.BeginVertical("box");
+            
+            GUILayout.Label("=== CameraController Debug ===");
+            GUILayout.Label($"Modo: {(isInEditMode ? "EDICIÓN" : "NORMAL")}");
+            GUILayout.Label($"Cursor: {(Cursor.lockState == CursorLockMode.Locked ? "Bloqueado" : "Libre")}");
+            GUILayout.Label($"H Angle: {currentHorizontalAngle:F1}°");
+            GUILayout.Label($"V Angle: {currentVerticalAngle:F1}°");
+            
+            GUILayout.EndVertical();
+            GUILayout.EndArea();
+        }
+        
+        #endregion
     }
 }

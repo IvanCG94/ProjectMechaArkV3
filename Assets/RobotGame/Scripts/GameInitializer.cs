@@ -113,8 +113,19 @@ namespace RobotGame
             if (playerMovement == null)
             {
                 // Crear un GameObject para el sistema de movimiento
-                GameObject movementGO = new GameObject("PlayerMovement");
+                GameObject movementGO = new GameObject("PlayerController");
                 playerMovement = movementGO.AddComponent<PlayerMovement>();
+                
+                // Agregar PlayerAnimator al mismo objeto
+                movementGO.AddComponent<PlayerAnimator>();
+            }
+            else
+            {
+                // Si ya existe PlayerMovement, asegurar que tenga PlayerAnimator
+                if (playerMovement.GetComponent<PlayerAnimator>() == null)
+                {
+                    playerMovement.gameObject.AddComponent<PlayerAnimator>();
+                }
             }
             
             playerMovement.SetTarget(playerRobot.transform);

@@ -262,7 +262,7 @@ namespace RobotGame.Components
             var movement = FindObjectOfType<PlayerMovement>();
             if (movement != null)
             {
-                movement.Disable();
+                movement.EnterEditMode();
             }
         }
         
@@ -274,7 +274,7 @@ namespace RobotGame.Components
             var movement = FindObjectOfType<PlayerMovement>();
             if (movement != null)
             {
-                movement.Enable();
+                movement.ExitEditMode();
             }
         }
         

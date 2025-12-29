@@ -41,6 +41,7 @@ namespace RobotGame.Testing
         [SerializeField] private Robot targetRobot;
         [SerializeField] private Camera mainCamera;
         [SerializeField] private CameraController cameraController;
+        [SerializeField] private PlayerCamera playerCamera;
         
         // Estado interno - Modo
         private AssemblyMode currentMode = AssemblyMode.Armor;
@@ -113,8 +114,9 @@ namespace RobotGame.Testing
             
             if (!isActive) return;
             
-            // Rotación del robot en modo edición (A/D)
-            HandleEditModeRotation();
+            // Rotación del robot en modo edición (A/D) - DESHABILITADO
+            // Ahora la cámara se controla con click derecho sostenido
+            // HandleEditModeRotation();
             
             // Insertar/Extraer Core con C
             if (Input.GetKeyDown(KeyCode.C))
@@ -835,7 +837,11 @@ namespace RobotGame.Testing
                 }
             }
             
-            // Buscar CameraController
+            // Buscar cámara (PlayerCamera o CameraController legacy)
+            if (playerCamera == null)
+            {
+                playerCamera = FindObjectOfType<PlayerCamera>();
+            }
             if (cameraController == null)
             {
                 cameraController = FindObjectOfType<CameraController>();
@@ -851,8 +857,12 @@ namespace RobotGame.Testing
                 playerCore.DisableMovement();
             }
             
-            // Notificar a la cámara
-            if (cameraController != null)
+            // Notificar a la cámara (prioridad PlayerCamera)
+            if (playerCamera != null)
+            {
+                playerCamera.EnterEditMode();
+            }
+            else if (cameraController != null)
             {
                 cameraController.EnterEditMode();
             }
@@ -959,7 +969,15 @@ namespace RobotGame.Testing
             }
             
             // Actualizar cámara target (por si cambió el robot)
-            if (cameraController != null)
+            if (playerCamera != null)
+            {
+                playerCamera.ExitEditMode();
+                if (targetRobot != null)
+                {
+                    playerCamera.SetTarget(targetRobot.transform, false);
+                }
+            }
+            else if (cameraController != null)
             {
                 cameraController.ExitEditMode();
                 if (targetRobot != null)
