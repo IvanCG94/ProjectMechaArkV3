@@ -4,6 +4,7 @@ namespace RobotGame.Control
 {
     /// <summary>
     /// Sistema de movimiento del jugador estilo Zelda BotW/TotK.
+    /// Usa Rigidbody Kinematic para mejor integración con el sistema de física de Unity.
     /// 
     /// Características:
     /// - Movimiento relativo a la cámara
@@ -12,18 +13,19 @@ namespace RobotGame.Control
     /// - Ground detection con raycasts
     /// - Pendientes (caminar/resbalar según ángulo)
     /// - Gravedad y caída
-    /// - Salto
+    /// - Salto con coyote time y jump buffer
     /// - Sprint
     /// - Colisiones horizontales
+    /// 
+    /// SETUP REQUERIDO:
+    /// - El robot necesita un Rigidbody (Is Kinematic = true)
+    /// - El robot necesita un Collider (CapsuleCollider recomendado)
+    /// - El script auto-configura estos componentes si no existen
     /// 
     /// INTEGRACIÓN:
     /// - Recibe el Transform a mover via SetTarget()
     /// - Se habilita/deshabilita via Enable()/Disable()
-    /// - El sistema de Core llama a estos métodos cuando se inserta/extrae
-    /// 
-    /// FUTURO:
-    /// - Modo combate: SetLookTarget(Transform) para mirar al enemigo mientras se mueve
-    /// - Escalada: Sistema de gravedad dinámica para paredes/techos
+    /// - Funciona con triggers (OnTriggerEnter, etc.)
     /// </summary>
     public class PlayerMovement : MonoBehaviour
     {
@@ -51,8 +53,13 @@ namespace RobotGame.Control
         [SerializeField] private float gravity = 20f;
         [SerializeField] private float maxFallSpeed = 30f;
         
+        [Header("Collider")]
+        [SerializeField] private float colliderHeight = 2f;
+        [SerializeField] private float colliderRadius = 0.4f;
+        [SerializeField] private Vector3 colliderCenter = new Vector3(0f, 1f, 0f);
+        
         [Header("Ground Detection")]
-        [SerializeField] private float groundCheckDistance = 0.2f;
+        [SerializeField] private float groundCheckDistance = 0.1f;
         [SerializeField] private float groundCheckRadius = 0.3f;
         [SerializeField] private LayerMask groundLayers = ~0;
         [SerializeField] private float groundOffset = 0.05f;
@@ -63,7 +70,6 @@ namespace RobotGame.Control
         [SerializeField] private float slideControl = 0.3f;
         
         [Header("Colisiones")]
-        [SerializeField] private float collisionCheckDistance = 0.1f;
         [SerializeField] private float skinWidth = 0.02f;
         [SerializeField] private int maxCollisionIterations = 3;
         
@@ -78,7 +84,9 @@ namespace RobotGame.Control
         
         #region Private Fields
         
-        // Referencia a la cámara
+        // Componentes
+        private Rigidbody rb;
+        private CapsuleCollider capsuleCollider;
         private Transform cameraTransform;
         
         // Estado del movimiento
@@ -141,6 +149,16 @@ namespace RobotGame.Control
         public Transform Target => target;
         
         /// <summary>
+        /// Rigidbody del robot (para referencia externa).
+        /// </summary>
+        public Rigidbody Rigidbody => rb;
+        
+        /// <summary>
+        /// Collider del robot (para referencia externa).
+        /// </summary>
+        public CapsuleCollider Collider => capsuleCollider;
+        
+        /// <summary>
         /// Si el personaje está en el suelo.
         /// </summary>
         public bool IsGrounded => isGrounded;
@@ -165,6 +183,11 @@ namespace RobotGame.Control
         /// </summary>
         public Vector3 GroundNormal => groundNormal;
         
+        /// <summary>
+        /// Si está en modo edición.
+        /// </summary>
+        public bool IsInEditMode => isInEditMode;
+        
         #endregion
         
         #region Public Methods
@@ -175,6 +198,11 @@ namespace RobotGame.Control
         public void SetTarget(Transform newTarget)
         {
             target = newTarget;
+            
+            if (target != null)
+            {
+                SetupRigidbodyAndCollider();
+            }
             
             // Reset del estado cuando cambia el target
             velocity = Vector3.zero;
@@ -221,7 +249,14 @@ namespace RobotGame.Control
         {
             isInEditMode = true;
             Disable();
-            Debug.Log("PlayerMovement: Entrando a modo edición");
+            
+            // Desactivar collider para que los raycasts puedan alcanzar las grillas
+            if (capsuleCollider != null)
+            {
+                capsuleCollider.enabled = false;
+            }
+            
+            Debug.Log("PlayerMovement: Entrando a modo edición (collider desactivado)");
         }
         
         /// <summary>
@@ -230,18 +265,19 @@ namespace RobotGame.Control
         public void ExitEditMode()
         {
             isInEditMode = false;
+            
+            // Reactivar collider
+            if (capsuleCollider != null)
+            {
+                capsuleCollider.enabled = true;
+            }
+            
             Enable();
-            Debug.Log("PlayerMovement: Saliendo de modo edición");
+            Debug.Log("PlayerMovement: Saliendo de modo edición (collider activado)");
         }
         
         /// <summary>
-        /// Si está en modo edición.
-        /// </summary>
-        public bool IsInEditMode => isInEditMode;
-        
-        /// <summary>
         /// [FUTURO] Establece un objetivo para mirar (modo combate).
-        /// Cuando está activo, el personaje mira al objetivo en lugar de girar hacia el movimiento.
         /// </summary>
         public void SetLookTarget(Transform target)
         {
@@ -250,7 +286,7 @@ namespace RobotGame.Control
         }
         
         /// <summary>
-        /// [FUTURO] Limpia el objetivo de mirada, volviendo al modo normal.
+        /// [FUTURO] Limpia el objetivo de mirada.
         /// </summary>
         public void ClearLookTarget()
         {
@@ -264,19 +300,22 @@ namespace RobotGame.Control
         
         private void Awake()
         {
-            // Inicializar layers si no están configurados
             if (groundLayers == 0)
             {
-                groundLayers = ~0; // Todas las layers
+                groundLayers = ~0;
             }
         }
         
         private void Start()
         {
-            // Obtener referencia a la cámara
             if (Camera.main != null)
             {
                 cameraTransform = Camera.main.transform;
+            }
+            
+            if (target != null)
+            {
+                SetupRigidbodyAndCollider();
             }
         }
         
@@ -284,7 +323,6 @@ namespace RobotGame.Control
         {
             if (!IsEnabled) return;
             
-            // Actualizar referencia a cámara si es necesario
             if (cameraTransform == null && Camera.main != null)
             {
                 cameraTransform = Camera.main.transform;
@@ -297,6 +335,7 @@ namespace RobotGame.Control
         private void FixedUpdate()
         {
             if (!IsEnabled) return;
+            if (rb == null) return;
             
             CheckGround();
             HandleMovement();
@@ -307,11 +346,51 @@ namespace RobotGame.Control
         
         #endregion
         
+        #region Setup
+        
+        /// <summary>
+        /// Configura el Rigidbody y Collider en el robot.
+        /// </summary>
+        private void SetupRigidbodyAndCollider()
+        {
+            if (target == null) return;
+            
+            // Buscar o crear Rigidbody
+            rb = target.GetComponent<Rigidbody>();
+            if (rb == null)
+            {
+                rb = target.gameObject.AddComponent<Rigidbody>();
+                Debug.Log("PlayerMovement: Rigidbody creado automáticamente");
+            }
+            
+            // Configurar Rigidbody como Kinematic
+            rb.isKinematic = true;
+            rb.useGravity = false; // Usamos nuestra propia gravedad
+            rb.interpolation = RigidbodyInterpolation.Interpolate; // Suaviza el movimiento
+            rb.collisionDetectionMode = CollisionDetectionMode.ContinuousSpeculative;
+            
+            // Buscar o crear CapsuleCollider
+            capsuleCollider = target.GetComponent<CapsuleCollider>();
+            if (capsuleCollider == null)
+            {
+                capsuleCollider = target.gameObject.AddComponent<CapsuleCollider>();
+                Debug.Log("PlayerMovement: CapsuleCollider creado automáticamente");
+            }
+            
+            // Configurar Collider
+            capsuleCollider.height = colliderHeight;
+            capsuleCollider.radius = colliderRadius;
+            capsuleCollider.center = colliderCenter;
+            
+            Debug.Log($"PlayerMovement: Rigidbody y Collider configurados en {target.name}");
+        }
+        
+        #endregion
+        
         #region Input
         
         private void GatherInput()
         {
-            // Movimiento
             float horizontal = 0f;
             float vertical = 0f;
             
@@ -323,14 +402,11 @@ namespace RobotGame.Control
             
             inputDirection = new Vector2(horizontal, vertical).normalized;
             
-            // Sprint
             sprintInput = Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
             
-            // Salto
             jumpInputDown = Input.GetKeyDown(KeyCode.Space);
             jumpInput = Input.GetKey(KeyCode.Space);
             
-            // Buffer de salto
             if (jumpInputDown)
             {
                 timeSinceJumpPressed = 0f;
@@ -343,7 +419,6 @@ namespace RobotGame.Control
         
         private void UpdateTimers()
         {
-            // Coyote time
             if (isGrounded)
             {
                 timeSinceGrounded = 0f;
@@ -353,7 +428,6 @@ namespace RobotGame.Control
                 timeSinceGrounded += Time.deltaTime;
             }
             
-            // Jump buffer
             timeSinceJumpPressed += Time.deltaTime;
         }
         
@@ -367,25 +441,22 @@ namespace RobotGame.Control
             
             Vector3 origin = target.position + Vector3.up * (groundCheckRadius + groundOffset);
             
-            // SphereCast hacia abajo para detectar el suelo
             if (Physics.SphereCast(origin, groundCheckRadius, Vector3.down, out groundHit, 
                 groundCheckDistance + groundOffset, groundLayers, QueryTriggerInteraction.Ignore))
             {
                 groundNormal = groundHit.normal;
                 groundAngle = Vector3.Angle(Vector3.up, groundNormal);
                 
-                // Solo consideramos suelo si el ángulo es caminable
-                // o si estamos cayendo (para aterrizar aunque sea una pendiente)
                 isGrounded = groundAngle <= maxWalkableAngle || verticalVelocity <= 0;
                 
-                // Ajustar posición al suelo si estamos muy cerca
+                // Ajustar posición al suelo
                 if (isGrounded && verticalVelocity <= 0)
                 {
                     float distanceToGround = groundHit.distance - groundOffset;
                     if (distanceToGround > skinWidth)
                     {
-                        // Estamos flotando un poco, ajustar
-                        target.position -= Vector3.up * (distanceToGround - skinWidth);
+                        Vector3 newPos = target.position - Vector3.up * (distanceToGround - skinWidth);
+                        rb.MovePosition(newPos);
                     }
                 }
             }
@@ -396,7 +467,6 @@ namespace RobotGame.Control
                 groundAngle = 0f;
             }
             
-            // Evento de aterrizaje (para futuras animaciones)
             if (isGrounded && !wasGrounded)
             {
                 OnLanded();
@@ -405,13 +475,11 @@ namespace RobotGame.Control
         
         private void OnLanded()
         {
-            // Reset de velocidad vertical al aterrizar
             if (verticalVelocity < 0)
             {
                 verticalVelocity = 0f;
             }
             
-            // Notificar que aterrizó
             OnLand?.Invoke();
         }
         
@@ -423,44 +491,36 @@ namespace RobotGame.Control
         {
             if (cameraTransform == null) return;
             
-            // Calcular dirección de movimiento relativa a la cámara
             Vector3 cameraForward = cameraTransform.forward;
             Vector3 cameraRight = cameraTransform.right;
             
-            // Proyectar en el plano horizontal
             cameraForward.y = 0f;
             cameraRight.y = 0f;
             cameraForward.Normalize();
             cameraRight.Normalize();
             
-            // Dirección deseada
             Vector3 moveDirection = (cameraForward * inputDirection.y + cameraRight * inputDirection.x);
             
-            // Velocidad objetivo
             float targetSpeed = 0f;
             if (moveDirection.magnitude > 0.1f)
             {
                 moveDirection.Normalize();
                 targetSpeed = sprintInput ? sprintSpeed : walkSpeed;
                 
-                // Proyectar movimiento en la superficie si estamos en el suelo
                 if (isGrounded)
                 {
                     moveDirection = Vector3.ProjectOnPlane(moveDirection, groundNormal).normalized;
                 }
             }
             
-            // Manejar pendientes pronunciadas (resbalar)
             if (isGrounded && groundAngle > maxWalkableAngle)
             {
                 HandleSliding(ref moveDirection, ref targetSpeed);
             }
             
-            // Aplicar aceleración/deceleración
             float accel = targetSpeed > currentSpeed ? acceleration : deceleration;
             currentSpeed = Mathf.MoveTowards(currentSpeed, targetSpeed, accel * Time.fixedDeltaTime);
             
-            // Calcular velocidad horizontal
             if (currentSpeed > 0.01f && moveDirection.magnitude > 0.1f)
             {
                 horizontalVelocity = moveDirection * currentSpeed;
@@ -474,10 +534,8 @@ namespace RobotGame.Control
         
         private void HandleSliding(ref Vector3 moveDirection, ref float targetSpeed)
         {
-            // Calcular dirección de deslizamiento (hacia abajo de la pendiente)
             Vector3 slideDirection = Vector3.ProjectOnPlane(Vector3.down, groundNormal).normalized;
             
-            // Combinar con el input del jugador (control limitado)
             if (inputDirection.magnitude > 0.1f)
             {
                 moveDirection = Vector3.Lerp(slideDirection, moveDirection, slideControl);
@@ -496,43 +554,39 @@ namespace RobotGame.Control
         
         private void HandleRotation()
         {
-            // En modo combate, mirar al objetivo
             if (isInCombatMode && lookTarget != null)
             {
                 HandleCombatRotation();
                 return;
             }
             
-            // Modo normal: girar hacia la dirección de movimiento
             if (horizontalVelocity.magnitude > 0.1f)
             {
-                // Calcular rotación objetivo
                 Vector3 flatVelocity = new Vector3(horizontalVelocity.x, 0f, horizontalVelocity.z);
                 if (flatVelocity.magnitude > 0.1f)
                 {
                     targetRotation = Mathf.Atan2(flatVelocity.x, flatVelocity.z) * Mathf.Rad2Deg;
                     
-                    // Rotación suave
                     float currentYRotation = target.eulerAngles.y;
                     float newRotation = Mathf.SmoothDampAngle(currentYRotation, targetRotation, 
                         ref rotationVelocity, rotationSmoothTime, rotationSpeed);
                     
-                    target.rotation = Quaternion.Euler(0f, newRotation, 0f);
+                    rb.MoveRotation(Quaternion.Euler(0f, newRotation, 0f));
                 }
             }
         }
         
         private void HandleCombatRotation()
         {
-            // [FUTURO] Rotación hacia el enemigo
             Vector3 directionToTarget = lookTarget.position - target.position;
             directionToTarget.y = 0f;
             
             if (directionToTarget.magnitude > 0.1f)
             {
                 Quaternion targetRot = Quaternion.LookRotation(directionToTarget);
-                target.rotation = Quaternion.RotateTowards(target.rotation, targetRot, 
+                Quaternion newRot = Quaternion.RotateTowards(target.rotation, targetRot, 
                     rotationSpeed * Time.fixedDeltaTime);
+                rb.MoveRotation(newRot);
             }
         }
         
@@ -542,7 +596,6 @@ namespace RobotGame.Control
         
         private void HandleGravityAndJump()
         {
-            // Salto con coyote time y buffer
             bool canJump = isGrounded || timeSinceGrounded < coyoteTime;
             bool wantsToJump = timeSinceJumpPressed < jumpBufferTime;
             
@@ -551,7 +604,6 @@ namespace RobotGame.Control
                 Jump();
             }
             
-            // Aplicar gravedad
             if (!isGrounded)
             {
                 verticalVelocity -= gravity * Time.fixedDeltaTime;
@@ -559,7 +611,6 @@ namespace RobotGame.Control
             }
             else if (verticalVelocity < 0)
             {
-                // Pequeña velocidad negativa para mantener pegado al suelo
                 verticalVelocity = -2f;
             }
         }
@@ -568,10 +619,9 @@ namespace RobotGame.Control
         {
             verticalVelocity = jumpForce;
             isGrounded = false;
-            timeSinceGrounded = coyoteTime; // Consumir coyote time
-            timeSinceJumpPressed = jumpBufferTime; // Consumir buffer
+            timeSinceGrounded = coyoteTime;
+            timeSinceJumpPressed = jumpBufferTime;
             
-            // Notificar que saltó
             OnJump?.Invoke();
         }
         
@@ -581,17 +631,15 @@ namespace RobotGame.Control
         
         private void ApplyMovement()
         {
-            // Combinar velocidades
             velocity = horizontalVelocity + Vector3.up * verticalVelocity;
             
-            // Calcular desplazamiento
             Vector3 displacement = velocity * Time.fixedDeltaTime;
             
-            // Resolver colisiones horizontales
             displacement = ResolveCollisions(displacement);
             
-            // Aplicar movimiento
-            target.position += displacement;
+            // Usar MovePosition en lugar de modificar transform.position
+            Vector3 newPosition = rb.position + displacement;
+            rb.MovePosition(newPosition);
         }
         
         private Vector3 ResolveCollisions(Vector3 displacement)
@@ -599,29 +647,35 @@ namespace RobotGame.Control
             if (displacement.magnitude < 0.001f) return displacement;
             
             Vector3 origin = target.position + Vector3.up * (groundCheckRadius + 0.1f);
-            Vector3 horizontalDisplacement = new Vector3(displacement.x, 0f, displacement.z);
             
+            // Resolver colisiones horizontales
+            Vector3 horizontalDisplacement = new Vector3(displacement.x, 0f, displacement.z);
+            horizontalDisplacement = ResolveHorizontalCollisions(origin, horizontalDisplacement);
+            
+            // Resolver colisiones verticales (importante para caídas rápidas)
+            float verticalDisplacement = displacement.y;
+            verticalDisplacement = ResolveVerticalCollisions(origin, verticalDisplacement);
+            
+            return new Vector3(horizontalDisplacement.x, verticalDisplacement, horizontalDisplacement.z);
+        }
+        
+        private Vector3 ResolveHorizontalCollisions(Vector3 origin, Vector3 horizontalDisplacement)
+        {
             for (int i = 0; i < maxCollisionIterations; i++)
             {
                 if (horizontalDisplacement.magnitude < skinWidth) break;
                 
-                // Raycast en la dirección del movimiento
                 if (Physics.SphereCast(origin, groundCheckRadius * 0.9f, horizontalDisplacement.normalized, 
                     out RaycastHit hit, horizontalDisplacement.magnitude + skinWidth, 
                     groundLayers, QueryTriggerInteraction.Ignore))
                 {
-                    // Verificar que no sea el suelo
                     float hitAngle = Vector3.Angle(Vector3.up, hit.normal);
                     if (hitAngle > maxWalkableAngle)
                     {
-                        // Es una pared, deslizar a lo largo de ella
                         float distanceToWall = hit.distance - skinWidth;
                         if (distanceToWall > 0)
                         {
-                            // Moverse hasta la pared
                             Vector3 moveToWall = horizontalDisplacement.normalized * distanceToWall;
-                            
-                            // Calcular el resto del movimiento proyectado en la pared
                             Vector3 remaining = horizontalDisplacement - moveToWall;
                             Vector3 slideDirection = Vector3.ProjectOnPlane(remaining, hit.normal);
                             
@@ -629,19 +683,45 @@ namespace RobotGame.Control
                         }
                         else
                         {
-                            // Ya estamos en la pared, solo deslizar
                             horizontalDisplacement = Vector3.ProjectOnPlane(horizontalDisplacement, hit.normal);
                         }
                     }
                 }
                 else
                 {
-                    // No hay colisión
                     break;
                 }
             }
             
-            return new Vector3(horizontalDisplacement.x, displacement.y, horizontalDisplacement.z);
+            return horizontalDisplacement;
+        }
+        
+        private float ResolveVerticalCollisions(Vector3 origin, float verticalDisplacement)
+        {
+            // Solo verificar cuando está cayendo (movimiento hacia abajo)
+            if (verticalDisplacement >= 0) return verticalDisplacement;
+            
+            float fallDistance = Mathf.Abs(verticalDisplacement);
+            
+            // SphereCast hacia abajo para detectar el suelo
+            if (Physics.SphereCast(origin, groundCheckRadius * 0.9f, Vector3.down, 
+                out RaycastHit hit, fallDistance + skinWidth, 
+                groundLayers, QueryTriggerInteraction.Ignore))
+            {
+                // Hay algo debajo, limitar la caída
+                float maxFall = hit.distance - skinWidth;
+                
+                if (maxFall < fallDistance)
+                {
+                    // Iba a atravesar, detener en el punto de impacto
+                    verticalVelocity = 0f; // Detener la velocidad vertical
+                    isGrounded = true;
+                    
+                    return -Mathf.Max(maxFall, 0f);
+                }
+            }
+            
+            return verticalDisplacement;
         }
         
         #endregion
@@ -671,9 +751,12 @@ namespace RobotGame.Control
             Gizmos.DrawLine(target.position + Vector3.up, 
                 target.position + Vector3.up + horizontalVelocity.normalized * 2f);
             
-            // Collision check
-            Gizmos.color = Color.magenta;
-            Gizmos.DrawWireSphere(origin, groundCheckRadius * 0.9f);
+            // Capsule collider preview
+            Gizmos.color = Color.white;
+            Vector3 colliderBottom = target.position + colliderCenter - Vector3.up * (colliderHeight / 2 - colliderRadius);
+            Vector3 colliderTop = target.position + colliderCenter + Vector3.up * (colliderHeight / 2 - colliderRadius);
+            Gizmos.DrawWireSphere(colliderBottom, colliderRadius);
+            Gizmos.DrawWireSphere(colliderTop, colliderRadius);
         }
         
         #endregion

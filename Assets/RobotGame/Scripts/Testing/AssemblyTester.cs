@@ -6,6 +6,7 @@ using RobotGame.Data;
 using RobotGame.Systems;
 using RobotGame.Utils;
 using RobotGame.Enums;
+using RobotGame.Assembly;
 
 namespace RobotGame.Testing
 {
@@ -21,6 +22,12 @@ namespace RobotGame.Testing
     /// <summary>
     /// Script de prueba para ensamblar piezas interactivamente.
     /// Soporta tanto piezas de armadura (en grillas) como piezas estructurales (en sockets).
+    /// 
+    /// INTEGRACIÓN CON ASSEMBLY STATION:
+    /// - Solo se activa cuando el jugador está en una AssemblyStation
+    /// - Escucha el evento OnEditModeStarted de la estación
+    /// - Modo ModifyCurrent: Crea snapshot, valida al salir
+    /// - Modo CreateNew: Sin snapshot, puede salir incompleto
     /// </summary>
     public class AssemblyTester : MonoBehaviour
     {
@@ -42,6 +49,10 @@ namespace RobotGame.Testing
         [SerializeField] private Camera mainCamera;
         [SerializeField] private CameraController cameraController;
         [SerializeField] private PlayerCamera playerCamera;
+        
+        // Referencia a la estación actual
+        private AssemblyStation currentStation;
+        private StationEditMode stationEditMode = StationEditMode.None;
         
         // Estado interno - Modo
         private AssemblyMode currentMode = AssemblyMode.Armor;
@@ -96,20 +107,73 @@ namespace RobotGame.Testing
             {
                 mainCamera = Camera.main;
             }
+            
+            // Suscribirse a todas las estaciones existentes
+            SubscribeToAllStations();
+        }
+        
+        private void SubscribeToAllStations()
+        {
+            var stations = FindObjectsOfType<AssemblyStation>();
+            foreach (var station in stations)
+            {
+                station.OnEditModeStarted += OnStationEditModeStarted;
+                station.OnEditModeEnded += OnStationEditModeEnded;
+            }
+            Debug.Log($"AssemblyTester: Suscrito a {stations.Length} estaciones de ensamblaje");
+        }
+        
+        private void UnsubscribeFromAllStations()
+        {
+            var stations = FindObjectsOfType<AssemblyStation>();
+            foreach (var station in stations)
+            {
+                station.OnEditModeStarted -= OnStationEditModeStarted;
+                station.OnEditModeEnded -= OnStationEditModeEnded;
+            }
+        }
+        
+        private void OnStationEditModeStarted(AssemblyStation station, StationEditMode mode)
+        {
+            currentStation = station;
+            stationEditMode = mode;
+            
+            Debug.Log($"AssemblyTester: Estación activó modo {mode}");
+            
+            if (mode == StationEditMode.EditCurrentRobot)
+            {
+                // Editar robot con Core (plataforma del jugador) - usa snapshot
+                ActivateTesterForCurrentRobot();
+            }
+            else if (mode == StationEditMode.EditOtherPlatform)
+            {
+                // Editar cascarón (otra plataforma) - sin snapshot
+                ActivateTesterForOtherPlatform();
+            }
+        }
+        
+        private void OnStationEditModeEnded(AssemblyStation station)
+        {
+            if (station == currentStation && isActive)
+            {
+                DeactivateTester();
+            }
         }
         
         private void Update()
         {
-            if (Input.GetKeyDown(KeyCode.P))
+            // La tecla P ya no activa/desactiva directamente
+            // Ahora se maneja a través de AssemblyStation
+            
+            // ESC para salir (si está activo)
+            if (isActive && Input.GetKeyDown(KeyCode.Escape))
             {
-                if (!isActive)
+                // Notificar a la estación que queremos salir
+                if (currentStation != null)
                 {
-                    ActivateTester();
+                    currentStation.ExitEditMode();
                 }
-                else
-                {
-                    DeactivateTester();
-                }
+                return;
             }
             
             if (!isActive) return;
@@ -817,23 +881,90 @@ namespace RobotGame.Testing
         
         private void ActivateTester()
         {
+            // Método legacy - ya no se usa directamente
+            ActivateTesterForCurrentRobot();
+        }
+        
+        /// <summary>
+        /// Activa el modo edición para el robot actual (donde está el jugador, con Core).
+        /// Usa snapshot - si sale con config inválida, restaura.
+        /// </summary>
+        private void ActivateTesterForCurrentRobot()
+        {
+            if (currentStation == null)
+            {
+                Debug.LogError("AssemblyTester: No hay estación activa");
+                return;
+            }
+            
+            // El robot a editar es el de la plataforma del jugador
+            targetRobot = currentStation.PlayerPlatform?.CurrentRobot;
+            
+            if (targetRobot == null)
+            {
+                Debug.LogError("AssemblyTester: No hay robot en tu plataforma");
+                return;
+            }
+            
+            if (!PrepareForActivation()) return;
+            
+            // CON snapshot
+            editSnapshot = RobotSnapshot.Capture(targetRobot);
+            pendingValidation = true;
+            
+            FinishActivation();
+            
+            Debug.Log("AssemblyTester activado - Robot actual (CON snapshot)");
+        }
+        
+        /// <summary>
+        /// Activa el modo edición para la otra plataforma (cascarón).
+        /// Sin snapshot - puede salir incompleto.
+        /// Centra la cámara en el robot de la otra plataforma.
+        /// </summary>
+        private void ActivateTesterForOtherPlatform()
+        {
+            if (currentStation == null)
+            {
+                Debug.LogError("AssemblyTester: No hay estación activa");
+                return;
+            }
+            
+            // El robot a editar es el de la otra plataforma
+            targetRobot = currentStation.OtherPlatform?.CurrentRobot;
+            
+            if (targetRobot == null)
+            {
+                Debug.LogError("AssemblyTester: No hay robot en la otra plataforma");
+                return;
+            }
+            
+            if (!PrepareForActivation()) return;
+            
+            // SIN snapshot
+            editSnapshot = null;
+            pendingValidation = false;
+            
+            // Centrar cámara en el robot de la otra plataforma
+            SetCameraTarget(targetRobot.transform);
+            
+            FinishActivation();
+            
+            Debug.Log("AssemblyTester activado - Otra plataforma (SIN snapshot)");
+        }
+        
+        /// <summary>
+        /// Preparación común para ambos modos de activación.
+        /// </summary>
+        private bool PrepareForActivation()
+        {
             if (mainCamera == null)
             {
                 mainCamera = Camera.main;
                 if (mainCamera == null)
                 {
                     Debug.LogError("AssemblyTester: No se encontró cámara principal.");
-                    return;
-                }
-            }
-            
-            if (targetRobot == null)
-            {
-                targetRobot = FindObjectOfType<Robot>();
-                if (targetRobot == null)
-                {
-                    Debug.LogError("AssemblyTester: No se encontró ningún robot en la escena.");
-                    return;
+                    return false;
                 }
             }
             
@@ -847,9 +978,6 @@ namespace RobotGame.Testing
                 cameraController = FindObjectOfType<CameraController>();
             }
             
-            // SNAPSHOT: Capturar estado actual antes de editar
-            editSnapshot = RobotSnapshot.Capture(targetRobot);
-            
             // Desactivar movimiento del Core del jugador
             RobotCore playerCore = FindPlayerCore();
             if (playerCore != null)
@@ -857,7 +985,7 @@ namespace RobotGame.Testing
                 playerCore.DisableMovement();
             }
             
-            // Notificar a la cámara (prioridad PlayerCamera)
+            // Notificar a la cámara que entramos en modo edición
             if (playerCamera != null)
             {
                 playerCamera.EnterEditMode();
@@ -867,25 +995,52 @@ namespace RobotGame.Testing
                 cameraController.EnterEditMode();
             }
             
+            return true;
+        }
+        
+        /// <summary>
+        /// Cambia el objetivo de la cámara.
+        /// </summary>
+        private void SetCameraTarget(Transform newTarget)
+        {
+            if (playerCamera != null)
+            {
+                playerCamera.SetTarget(newTarget, false);
+            }
+            else if (cameraController != null)
+            {
+                cameraController.SetTarget(newTarget, false);
+            }
+        }
+        
+        /// <summary>
+        /// Finalización común para ambos modos de activación.
+        /// </summary>
+        private void FinishActivation()
+        {
             isActive = true;
-            pendingValidation = false;
             currentMode = AssemblyMode.Armor;
             
             CollectAvailableGrids();
             CollectAvailableSockets();
             CreateGridHighlights();
             previewObject.SetActive(false);
-            
-            Debug.Log("AssemblyTester activado. Snapshot guardado. Tab=modo, A/D=rotar, R=rotar pieza, C=Core, ESC/P=salir");
         }
         
         private void DeactivateTester()
         {
-            // Validar configuración antes de salir
-            if (!ValidateAndHandleExit())
+            // Si hay snapshot (modo ModifyCurrent), validar antes de salir
+            if (editSnapshot != null && pendingValidation)
             {
-                return; // No salir si el usuario cancela
+                if (!ValidateAndHandleExit())
+                {
+                    return; // No salir si el usuario cancela
+                }
             }
+            
+            // Limpiar referencia a la estación
+            currentStation = null;
+            stationEditMode = StationEditMode.None;
             
             FinishDeactivation();
         }
@@ -968,21 +1123,28 @@ namespace RobotGame.Testing
                 playerCore.EnableMovement();
             }
             
-            // Actualizar cámara target (por si cambió el robot)
+            // La cámara SIEMPRE debe volver al robot con Core (el que controla el jugador)
+            Robot playerRobot = null;
+            if (playerCore != null && playerCore.CurrentRobot != null)
+            {
+                playerRobot = playerCore.CurrentRobot;
+            }
+            
+            // Salir del modo edición de la cámara y centrar en robot del jugador
             if (playerCamera != null)
             {
                 playerCamera.ExitEditMode();
-                if (targetRobot != null)
+                if (playerRobot != null)
                 {
-                    playerCamera.SetTarget(targetRobot.transform, false);
+                    playerCamera.SetTarget(playerRobot.transform, false);
                 }
             }
             else if (cameraController != null)
             {
                 cameraController.ExitEditMode();
-                if (targetRobot != null)
+                if (playerRobot != null)
                 {
-                    cameraController.SetTarget(targetRobot.transform, false);
+                    cameraController.SetTarget(playerRobot.transform, false);
                 }
             }
         }
@@ -1598,6 +1760,9 @@ namespace RobotGame.Testing
         
         private void OnDestroy()
         {
+            // Desuscribirse de todas las estaciones
+            UnsubscribeFromAllStations();
+            
             DestroyGridHighlights();
             RestoreSocketMaterials();
             

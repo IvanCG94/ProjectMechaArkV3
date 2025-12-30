@@ -34,7 +34,8 @@ namespace RobotGame.Control
         [SerializeField] private float defaultDistance = 6f;
         
         [Header("Suavizado")]
-        [SerializeField] private float followSpeed = 10f;
+        [SerializeField] private float positionSmoothTime = 0.15f;
+        [SerializeField] private float rotationSmoothTime = 0.1f;
         
         [Header("Control de Mouse")]
         [Tooltip("Tecla para liberar el mouse en modo normal")]
@@ -50,6 +51,12 @@ namespace RobotGame.Control
         private float currentDistance;
         private float currentHorizontalAngle = 0f;
         private float currentVerticalAngle = 30f;
+        
+        // SmoothDamp velocities
+        private Vector3 positionVelocity;
+        private float rotationVelocityX;
+        private float rotationVelocityY;
+        private float rotationVelocityZ;
         
         /// <summary>
         /// El objetivo que sigue la cámara.
@@ -157,7 +164,7 @@ namespace RobotGame.Control
             
             if (Mathf.Abs(mouseX) > 0.01f || Mathf.Abs(mouseY) > 0.01f)
             {
-                currentHorizontalAngle += mouseX * orbitSpeed;
+                currentHorizontalAngle -= mouseX * orbitSpeed;
                 currentVerticalAngle -= mouseY * orbitSpeed;
                 currentVerticalAngle = Mathf.Clamp(currentVerticalAngle, minVerticalAngle, maxVerticalAngle);
             }
@@ -175,7 +182,7 @@ namespace RobotGame.Control
                 
                 if (Mathf.Abs(mouseX) > 0.01f || Mathf.Abs(mouseY) > 0.01f)
                 {
-                    currentHorizontalAngle += mouseX * orbitSpeed;
+                    currentHorizontalAngle -= mouseX * orbitSpeed;
                     currentVerticalAngle -= mouseY * orbitSpeed;
                     currentVerticalAngle = Mathf.Clamp(currentVerticalAngle, minVerticalAngle, maxVerticalAngle);
                 }
@@ -207,12 +214,30 @@ namespace RobotGame.Control
             {
                 transform.position = desiredPosition;
                 transform.LookAt(focusPoint);
+                positionVelocity = Vector3.zero;
             }
             else
             {
-                transform.position = Vector3.Lerp(transform.position, desiredPosition, followSpeed * Time.deltaTime);
+                // Posición suave con SmoothDamp
+                transform.position = Vector3.SmoothDamp(
+                    transform.position, 
+                    desiredPosition, 
+                    ref positionVelocity, 
+                    positionSmoothTime
+                );
+                
+                // Rotación suave - mirar al punto focal
                 Quaternion desiredRotation = Quaternion.LookRotation(focusPoint - transform.position);
-                transform.rotation = Quaternion.Slerp(transform.rotation, desiredRotation, followSpeed * Time.deltaTime);
+                
+                // Suavizar cada componente del euler por separado para evitar problemas de gimbal
+                Vector3 currentEuler = transform.rotation.eulerAngles;
+                Vector3 targetEuler = desiredRotation.eulerAngles;
+                
+                float smoothX = Mathf.SmoothDampAngle(currentEuler.x, targetEuler.x, ref rotationVelocityX, rotationSmoothTime);
+                float smoothY = Mathf.SmoothDampAngle(currentEuler.y, targetEuler.y, ref rotationVelocityY, rotationSmoothTime);
+                float smoothZ = Mathf.SmoothDampAngle(currentEuler.z, targetEuler.z, ref rotationVelocityZ, rotationSmoothTime);
+                
+                transform.rotation = Quaternion.Euler(smoothX, smoothY, smoothZ);
             }
         }
         
