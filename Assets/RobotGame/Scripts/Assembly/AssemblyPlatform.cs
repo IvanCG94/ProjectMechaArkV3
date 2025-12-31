@@ -5,15 +5,16 @@ namespace RobotGame.Assembly
 {
     /// <summary>
     /// Plataforma individual dentro de una estación de ensamblaje.
-    /// Detecta cuando un robot está encima y puede mantener cascarones.
+    /// Detecta EN TIEMPO REAL qué robot está encima.
     /// 
     /// SETUP REQUERIDO:
-    /// - Collider marcado como Trigger para detectar robots
+    /// - Collider (Box o cualquier otro) para definir el área de detección
     /// - RobotAnchor como hijo para posicionar robots
     /// 
-    /// IMPORTANTE:
-    /// Las propiedades HasPlayerRobot y HasShellRobot verifican EN TIEMPO REAL
-    /// si el robot tiene Core o no, para manejar correctamente las transferencias.
+    /// SIMPLIFICADO:
+    /// - No usa triggers ni callbacks
+    /// - Detecta robots en cada consulta via Physics.OverlapBox
+    /// - Más robusto ante activaciones/desactivaciones de robots
     /// </summary>
     public class AssemblyPlatform : MonoBehaviour
     {
@@ -21,49 +22,80 @@ namespace RobotGame.Assembly
         [Tooltip("Transform donde se posiciona el robot (crear hijo vacío llamado RobotAnchor)")]
         [SerializeField] private Transform robotAnchor;
         
-        [Header("Estado (Solo lectura)")]
-        [SerializeField] private Robot currentRobot;
+        [Header("Detección")]
+        [Tooltip("Tamaño del área de detección")]
+        [SerializeField] private Vector3 detectionSize = new Vector3(2f, 2f, 2f);
+        
+        [Tooltip("Offset del área de detección desde el centro")]
+        [SerializeField] private Vector3 detectionOffset = new Vector3(0f, 1f, 0f);
+        
+        [Header("Debug")]
+        [SerializeField] private bool showDetectionArea = true;
         
         // Referencia a la estación padre
         private AssemblyStation parentStation;
         
+        // Cache del robot detectado (para cascarones que no se mueven)
+        private Robot cachedShellRobot;
+        
         #region Properties
         
         /// <summary>
-        /// Robot actualmente en la plataforma (puede ser jugador o cascarón).
+        /// Robot actualmente en la plataforma (detectado en tiempo real o cascarón cacheado).
         /// </summary>
-        public Robot CurrentRobot => currentRobot;
+        public Robot CurrentRobot
+        {
+            get
+            {
+                // Si hay un cascarón cacheado, verificar que siga ahí
+                if (cachedShellRobot != null)
+                {
+                    if (cachedShellRobot.gameObject.activeInHierarchy && cachedShellRobot.Core == null)
+                    {
+                        return cachedShellRobot;
+                    }
+                    else
+                    {
+                        // El cascarón ya no es válido
+                        cachedShellRobot = null;
+                    }
+                }
+                
+                // Detectar robot en tiempo real
+                return DetectRobotInArea();
+            }
+        }
         
         /// <summary>
-        /// Si la plataforma tiene el robot del jugador (con Core).
-        /// Verifica EN TIEMPO REAL si el robot tiene Core insertado.
+        /// Si la plataforma tiene el robot del jugador (con Core del jugador).
         /// </summary>
         public bool HasPlayerRobot
         {
             get
             {
-                if (currentRobot == null) return false;
-                return currentRobot.Core != null && currentRobot.Core.IsPlayerCore;
+                Robot robot = CurrentRobot;
+                if (robot == null) return false;
+                return robot.Core != null && robot.Core.IsPlayerCore;
             }
         }
         
         /// <summary>
         /// Si la plataforma tiene un cascarón (robot sin Core).
-        /// Verifica EN TIEMPO REAL si el robot NO tiene Core.
         /// </summary>
         public bool HasShellRobot
         {
             get
             {
-                if (currentRobot == null) return false;
-                return currentRobot.Core == null;
+                Robot robot = CurrentRobot;
+                if (robot == null) return false;
+                return robot.Core == null;
             }
         }
         
         /// <summary>
         /// Si la plataforma está vacía.
         /// </summary>
-        public bool IsEmpty => currentRobot == null;
+        public bool IsEmpty => CurrentRobot == null;
         
         /// <summary>
         /// Si la plataforma está disponible (vacía o tiene cascarón).
@@ -100,65 +132,30 @@ namespace RobotGame.Assembly
             }
         }
         
-        private void OnTriggerEnter(Collider other)
-        {
-            // Intentar obtener el Robot del objeto que entró
-            Robot robot = other.GetComponentInParent<Robot>();
-            
-            if (robot != null && currentRobot == null)
-            {
-                OnRobotEntered(robot);
-            }
-        }
-        
-        private void OnTriggerExit(Collider other)
-        {
-            Robot robot = other.GetComponentInParent<Robot>();
-            
-            if (robot != null && robot == currentRobot)
-            {
-                // Solo permitir salir si el robot tiene Core (es el jugador)
-                // Los cascarones no deberían salir caminando
-                if (HasPlayerRobot)
-                {
-                    OnRobotExited(robot);
-                }
-            }
-        }
-        
         #endregion
         
-        #region Robot Detection
+        #region Detection
         
-        private void OnRobotEntered(Robot robot)
+        /// <summary>
+        /// Detecta qué robot está dentro del área de la plataforma.
+        /// </summary>
+        private Robot DetectRobotInArea()
         {
-            currentRobot = robot;
+            Vector3 center = transform.position + transform.TransformDirection(detectionOffset);
+            Vector3 halfExtents = detectionSize * 0.5f;
             
-            // Verificar si tiene Core (es el jugador) - usando la propiedad que verifica en tiempo real
-            if (HasPlayerRobot)
+            Collider[] colliders = Physics.OverlapBox(center, halfExtents, transform.rotation);
+            
+            foreach (var col in colliders)
             {
-                // Notificar a la estación
-                parentStation?.OnPlayerEnteredPlatform(this);
-                
-                Debug.Log($"AssemblyPlatform: Robot del jugador entró en {gameObject.name}");
+                Robot robot = col.GetComponentInParent<Robot>();
+                if (robot != null && robot.gameObject.activeInHierarchy)
+                {
+                    return robot;
+                }
             }
-            else
-            {
-                Debug.Log($"AssemblyPlatform: Cascarón detectado en {gameObject.name}");
-            }
-        }
-        
-        private void OnRobotExited(Robot robot)
-        {
-            if (robot == currentRobot)
-            {
-                currentRobot = null;
-                
-                // Notificar a la estación
-                parentStation?.OnPlayerExitedPlatform(this);
-                
-                Debug.Log($"AssemblyPlatform: Robot del jugador salió de {gameObject.name}");
-            }
+            
+            return null;
         }
         
         #endregion
@@ -172,14 +169,15 @@ namespace RobotGame.Assembly
         {
             if (robot == null) return false;
             
-            // No permitir si ya hay algo
-            if (currentRobot != null)
+            // No permitir si ya hay un robot del jugador
+            if (HasPlayerRobot)
             {
-                Debug.LogWarning("AssemblyPlatform: La plataforma ya tiene un robot");
+                Debug.LogWarning("AssemblyPlatform: La plataforma tiene al jugador");
                 return false;
             }
             
-            currentRobot = robot;
+            // Cachear el cascarón
+            cachedShellRobot = robot;
             
             // Posicionar el robot en el anchor
             robot.transform.SetParent(robotAnchor);
@@ -195,46 +193,59 @@ namespace RobotGame.Assembly
         /// </summary>
         public Robot RemoveShell()
         {
-            if (!HasShellRobot || currentRobot == null)
+            if (!HasShellRobot)
             {
                 return null;
             }
             
-            Robot shell = currentRobot;
+            Robot shell = CurrentRobot;
             
             // Desparentar
-            shell.transform.SetParent(null);
+            if (shell != null)
+            {
+                shell.transform.SetParent(null);
+            }
             
-            currentRobot = null;
+            // Limpiar cache
+            cachedShellRobot = null;
             
             Debug.Log($"AssemblyPlatform: Cascarón removido de {gameObject.name}");
             return shell;
         }
         
         /// <summary>
-        /// Convierte el robot en cascarón (parenteándolo al anchor para que no se mueva).
-        /// Nota: La verificación de si es cascarón o jugador ahora es automática via Core.
+        /// Convierte el robot actual en cascarón (parenteándolo al anchor).
         /// </summary>
         public void ConvertToShell()
         {
-            if (currentRobot == null) return;
+            Robot robot = CurrentRobot;
+            if (robot == null) return;
+            
+            // Cachear como cascarón
+            cachedShellRobot = robot;
             
             // Parentear al anchor para que permanezca en la plataforma
-            currentRobot.transform.SetParent(robotAnchor);
+            robot.transform.SetParent(robotAnchor);
             
             Debug.Log($"AssemblyPlatform: Robot anclado como cascarón en {gameObject.name}");
         }
         
         /// <summary>
         /// Libera el robot para que pueda moverse (desparentea del anchor).
-        /// Nota: La verificación de si es jugador ahora es automática via Core.
         /// </summary>
         public void ReleaseRobot()
         {
-            if (currentRobot == null) return;
+            Robot robot = CurrentRobot;
+            if (robot == null) return;
             
             // Desparentar para que pueda moverse
-            currentRobot.transform.SetParent(null);
+            robot.transform.SetParent(null);
+            
+            // Limpiar cache si era cascarón
+            if (cachedShellRobot == robot)
+            {
+                cachedShellRobot = null;
+            }
             
             Debug.Log($"AssemblyPlatform: Robot liberado en {gameObject.name}");
         }
@@ -244,7 +255,16 @@ namespace RobotGame.Assembly
         /// </summary>
         public void Clear()
         {
-            currentRobot = null;
+            cachedShellRobot = null;
+        }
+        
+        /// <summary>
+        /// Fuerza re-detección (para compatibilidad, ahora no hace nada especial).
+        /// </summary>
+        public void ForceRedetect()
+        {
+            // La detección ya es en tiempo real, solo limpiamos el cache
+            cachedShellRobot = null;
         }
         
         #endregion
@@ -253,16 +273,31 @@ namespace RobotGame.Assembly
         
         private void OnDrawGizmos()
         {
-            // Visualizar el área de la plataforma
-            Gizmos.color = IsEmpty ? Color.green : (HasPlayerRobot ? Color.blue : Color.yellow);
+            if (!showDetectionArea) return;
             
-            if (robotAnchor != null)
+            Vector3 center = transform.position + transform.TransformDirection(detectionOffset);
+            
+            // Color según estado
+            if (Application.isPlaying)
             {
-                Gizmos.DrawWireCube(robotAnchor.position, new Vector3(1f, 0.1f, 1f));
+                Gizmos.color = IsEmpty ? Color.green : (HasPlayerRobot ? Color.blue : Color.yellow);
             }
             else
             {
-                Gizmos.DrawWireCube(transform.position, new Vector3(1f, 0.1f, 1f));
+                Gizmos.color = Color.green;
+            }
+            
+            // Dibujar área de detección
+            Matrix4x4 oldMatrix = Gizmos.matrix;
+            Gizmos.matrix = Matrix4x4.TRS(center, transform.rotation, Vector3.one);
+            Gizmos.DrawWireCube(Vector3.zero, detectionSize);
+            Gizmos.matrix = oldMatrix;
+            
+            // Dibujar anchor
+            if (robotAnchor != null)
+            {
+                Gizmos.color = Color.cyan;
+                Gizmos.DrawWireSphere(robotAnchor.position, 0.2f);
             }
         }
         

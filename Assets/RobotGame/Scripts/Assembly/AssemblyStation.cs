@@ -194,6 +194,18 @@ namespace RobotGame.Assembly
             Debug.Log("AssemblyStation: Jugador salió de la estación");
         }
         
+        /// <summary>
+        /// Fuerza la re-detección de robots en ambas plataformas.
+        /// Llamar después de que un robot se active/desactive.
+        /// </summary>
+        public void ForceRedetect()
+        {
+            platformA?.ForceRedetect();
+            platformB?.ForceRedetect();
+            
+            Debug.Log($"AssemblyStation: Re-detección forzada. PlayerInStation: {PlayerInStation}");
+        }
+        
         #endregion
         
         #region Menu

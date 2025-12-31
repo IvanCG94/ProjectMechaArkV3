@@ -18,7 +18,7 @@ MonoBehaviour:
   icon: {fileID: 0}
   prefab: {fileID: 1936397245534839864, guid: 2da68837bc7cfbc4697bebe8e480f3dd, type: 3}
   category: 1
-  tier: 0
+  tier: 3
   weight: 1
   durability: 100
   tailGrid:

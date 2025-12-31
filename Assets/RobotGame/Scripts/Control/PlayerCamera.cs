@@ -33,7 +33,8 @@ namespace RobotGame.Control
         
         [Header("Órbita")]
         [SerializeField] private float orbitSensitivity = 3f;
-        [SerializeField] private float minVerticalAngle = -30f;
+        [Tooltip("Ángulo mínimo vertical (negativo = mirar arriba). Valores muy negativos causan que la cámara colisione con el suelo.")]
+        [SerializeField] private float minVerticalAngle = -10f;
         [SerializeField] private float maxVerticalAngle = 70f;
         
         [Header("Control de Mouse")]
@@ -53,6 +54,7 @@ namespace RobotGame.Control
         [Header("Colisión")]
         [SerializeField] private bool enableCollision = true;
         [SerializeField] private float collisionRadius = 0.2f;
+        [Tooltip("Layers con los que la cámara colisiona. IMPORTANTE: Excluir el layer 'Player' para evitar colisión con el propio robot.")]
         [SerializeField] private LayerMask collisionLayers = ~0;
         [SerializeField] private float collisionSmoothTime = 0.1f;
         
@@ -267,7 +269,7 @@ namespace RobotGame.Control
             
             if (Mathf.Abs(mouseX) > 0.01f || Mathf.Abs(mouseY) > 0.01f)
             {
-                horizontalAngle += mouseX * orbitSensitivity;
+                horizontalAngle -= mouseX * orbitSensitivity; // Invertido: mouse izquierda = cámara izquierda
                 verticalAngle -= mouseY * orbitSensitivity;
                 verticalAngle = Mathf.Clamp(verticalAngle, minVerticalAngle, maxVerticalAngle);
                 
@@ -290,7 +292,7 @@ namespace RobotGame.Control
                 
                 if (Mathf.Abs(mouseX) > 0.01f || Mathf.Abs(mouseY) > 0.01f)
                 {
-                    horizontalAngle += mouseX * orbitSensitivity;
+                    horizontalAngle -= mouseX * orbitSensitivity; // Invertido: mouse izquierda = cámara izquierda
                     verticalAngle -= mouseY * orbitSensitivity;
                     verticalAngle = Mathf.Clamp(verticalAngle, minVerticalAngle, maxVerticalAngle);
                     

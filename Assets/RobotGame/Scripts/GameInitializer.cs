@@ -141,18 +141,10 @@ namespace RobotGame
             
             if (mainCamera != null)
             {
-                // Buscar PlayerCamera o CameraController (compatibilidad)
+                // Buscar PlayerCamera
                 playerCamera = mainCamera.GetComponent<PlayerCamera>();
                 if (playerCamera == null)
                 {
-                    // Intentar con el nombre antiguo
-                    var oldController = mainCamera.GetComponent<CameraController>();
-                    if (oldController != null)
-                    {
-                        oldController.SetTarget(playerRobot.transform, true);
-                        return;
-                    }
-                    
                     // Crear nuevo PlayerCamera
                     playerCamera = mainCamera.gameObject.AddComponent<PlayerCamera>();
                 }

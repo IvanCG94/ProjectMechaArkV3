@@ -11,15 +11,6 @@ using RobotGame.Assembly;
 namespace RobotGame.Testing
 {
     /// <summary>
-    /// Modo de ensamblaje actual.
-    /// </summary>
-    public enum AssemblyMode
-    {
-        Armor,
-        Structural
-    }
-    
-    /// <summary>
     /// Script de prueba para ensamblar piezas interactivamente.
     /// Soporta tanto piezas de armadura (en grillas) como piezas estructurales (en sockets).
     /// 
@@ -47,7 +38,6 @@ namespace RobotGame.Testing
         [Header("Referencias (Auto-asignadas)")]
         [SerializeField] private Robot targetRobot;
         [SerializeField] private Camera mainCamera;
-        [SerializeField] private CameraController cameraController;
         [SerializeField] private PlayerCamera playerCamera;
         
         // Referencia a la estación actual
@@ -392,7 +382,8 @@ namespace RobotGame.Testing
             
             GridHead newHoveredGrid = null;
             
-            if (Physics.Raycast(ray, out hit, 100f, gridLayerMask))
+            // QueryTriggerInteraction.Collide para detectar colliders trigger
+            if (Physics.Raycast(ray, out hit, 100f, gridLayerMask, QueryTriggerInteraction.Collide))
             {
                 GridHead grid = hit.collider.GetComponent<GridHead>();
                 if (grid != null && availableGrids.Contains(grid))
@@ -489,6 +480,13 @@ namespace RobotGame.Testing
             
             var armorData = GetCurrentArmorData();
             if (armorData == null) return;
+            
+            // Validar compatibilidad de tier
+            if (!armorData.IsCompatibleWith(targetRobot.CurrentTier))
+            {
+                Debug.LogWarning($"Armadura '{armorData.displayName}' (Tier {armorData.tier}) no es compatible con el robot (Tier {targetRobot.CurrentTier})");
+                return;
+            }
             
             if (!hoveredGrid.CanPlace(armorData, currentPositionX, currentPositionY, currentRotation))
             {
@@ -598,7 +596,8 @@ namespace RobotGame.Testing
             
             StructuralSocket newHoveredSocket = null;
             
-            if (Physics.Raycast(ray, out hit, 100f))
+            // QueryTriggerInteraction.Collide para detectar colliders trigger
+            if (Physics.Raycast(ray, out hit, 100f, ~0, QueryTriggerInteraction.Collide))
             {
                 // Buscar socket en el objeto golpeado o sus padres
                 StructuralSocket socket = hit.collider.GetComponent<StructuralSocket>();
@@ -647,6 +646,13 @@ namespace RobotGame.Testing
             // Verificar compatibilidad de tipo
             if (structuralData.partType != hoveredSocket.SocketType)
             {
+                return;
+            }
+            
+            // Validar compatibilidad de tier
+            if (!structuralData.IsCompatibleWith(targetRobot.CurrentTier))
+            {
+                Debug.LogWarning($"Pieza '{structuralData.displayName}' (Tier {structuralData.tier}) no es compatible con el robot (Tier {targetRobot.CurrentTier})");
                 return;
             }
             
@@ -968,14 +974,10 @@ namespace RobotGame.Testing
                 }
             }
             
-            // Buscar cámara (PlayerCamera o CameraController legacy)
+            // Buscar PlayerCamera
             if (playerCamera == null)
             {
                 playerCamera = FindObjectOfType<PlayerCamera>();
-            }
-            if (cameraController == null)
-            {
-                cameraController = FindObjectOfType<CameraController>();
             }
             
             // Desactivar movimiento del Core del jugador
@@ -990,10 +992,6 @@ namespace RobotGame.Testing
             {
                 playerCamera.EnterEditMode();
             }
-            else if (cameraController != null)
-            {
-                cameraController.EnterEditMode();
-            }
             
             return true;
         }
@@ -1006,10 +1004,6 @@ namespace RobotGame.Testing
             if (playerCamera != null)
             {
                 playerCamera.SetTarget(newTarget, false);
-            }
-            else if (cameraController != null)
-            {
-                cameraController.SetTarget(newTarget, false);
             }
         }
         
@@ -1137,14 +1131,6 @@ namespace RobotGame.Testing
                 if (playerRobot != null)
                 {
                     playerCamera.SetTarget(playerRobot.transform, false);
-                }
-            }
-            else if (cameraController != null)
-            {
-                cameraController.ExitEditMode();
-                if (playerRobot != null)
-                {
-                    cameraController.SetTarget(playerRobot.transform, false);
                 }
             }
         }
@@ -1449,9 +1435,15 @@ namespace RobotGame.Testing
             
             Color previewColor;
             
+            // Verificar compatibilidad de tier
+            bool tierCompatible = armorData.IsCompatibleWith(targetRobot.CurrentTier);
+            
             if (hoveredGrid == null)
             {
-                previewColor = new Color(0f, 0.5f, 1f, 0.5f);
+                // Sin grid: azul si compatible, rojo si no
+                previewColor = tierCompatible ? 
+                    new Color(0f, 0.5f, 1f, 0.5f) : 
+                    new Color(1f, 0.3f, 0f, 0.5f); // Naranja/rojo para incompatible
                 
                 Ray ray = mainCamera.ScreenPointToRay(Input.mousePosition);
                 Vector3 worldPos = ray.origin + ray.direction * 2f;
@@ -1462,13 +1454,14 @@ namespace RobotGame.Testing
             {
                 bool canPlace = hoveredGrid.CanPlace(armorData, currentPositionX, currentPositionY, currentRotation);
                 
-                if (canPlace)
+                // Verde solo si puede colocar Y es compatible con el tier
+                if (canPlace && tierCompatible)
                 {
-                    previewColor = new Color(0f, 1f, 0f, 0.5f);
+                    previewColor = new Color(0f, 1f, 0f, 0.5f); // Verde
                 }
                 else
                 {
-                    previewColor = new Color(1f, 0f, 0f, 0.5f);
+                    previewColor = new Color(1f, 0f, 0f, 0.5f); // Rojo
                 }
                 
                 Vector3 cellPos = hoveredGrid.CellToWorldPosition(currentPositionX, currentPositionY);
@@ -1554,6 +1547,9 @@ namespace RobotGame.Testing
                 return;
             }
             
+            // Verificar compatibilidad de tier
+            bool tierCompatible = structuralData.IsCompatibleWith(targetRobot.CurrentTier);
+            
             if (hoveredSocket == null || hoveredSocket.IsOccupied || 
                 hoveredSocket.SocketType != structuralData.partType)
             {
@@ -1564,6 +1560,36 @@ namespace RobotGame.Testing
             structuralPreviewObject.SetActive(true);
             structuralPreviewObject.transform.position = hoveredSocket.transform.position;
             structuralPreviewObject.transform.rotation = hoveredSocket.transform.rotation;
+            
+            // Actualizar color según compatibilidad de tier
+            Color previewColor = tierCompatible ? 
+                new Color(0f, 1f, 0.5f, 0.5f) :  // Verde/cyan si compatible
+                new Color(1f, 0.3f, 0f, 0.5f);   // Naranja/rojo si incompatible
+            
+            UpdateStructuralPreviewColor(previewColor);
+        }
+        
+        private void UpdateStructuralPreviewColor(Color color)
+        {
+            if (structuralPreviewObject == null) return;
+            
+            var renderers = structuralPreviewObject.GetComponentsInChildren<MeshRenderer>();
+            foreach (var renderer in renderers)
+            {
+                foreach (var mat in renderer.materials)
+                {
+                    mat.color = color;
+                }
+            }
+            
+            var skinnedRenderers = structuralPreviewObject.GetComponentsInChildren<SkinnedMeshRenderer>();
+            foreach (var renderer in skinnedRenderers)
+            {
+                foreach (var mat in renderer.materials)
+                {
+                    mat.color = color;
+                }
+            }
         }
         
         private void UpdateStructuralPreviewModel()
