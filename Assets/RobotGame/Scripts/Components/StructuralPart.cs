@@ -118,6 +118,8 @@ namespace RobotGame.Components
         {
             armorGrids.Clear();
             
+            Debug.Log($"StructuralPart.CreateArmorGrids: Creando {partData.armorGrids.Count} grillas para {partData.displayName}");
+            
             foreach (var gridDef in partData.armorGrids)
             {
                 // Buscar el transform hijo por nombre
@@ -131,6 +133,11 @@ namespace RobotGame.Components
                     gridTransform.SetParent(transform);
                     gridTransform.localPosition = Vector3.zero;
                     gridTransform.localRotation = Quaternion.identity;
+                    Debug.Log($"  - Creado nuevo GameObject para grid: {gridDef.gridInfo.gridName}");
+                }
+                else
+                {
+                    Debug.Log($"  - Encontrado transform existente para grid: {gridDef.transformName}");
                 }
                 
                 // Agregar el componente GridHead
@@ -138,10 +145,19 @@ namespace RobotGame.Components
                 if (grid == null)
                 {
                     grid = gridTransform.gameObject.AddComponent<GridHead>();
+                    Debug.Log($"  - Agregado componente GridHead a: {gridTransform.name}");
+                }
+                else
+                {
+                    Debug.Log($"  - GridHead ya existía en: {gridTransform.name}");
                 }
                 
                 grid.Initialize(gridDef.gridInfo);
                 armorGrids.Add(grid);
+                
+                // Verificar que el collider se creó
+                BoxCollider col = grid.GetComponent<BoxCollider>();
+                Debug.Log($"  - Grid {grid.name}: Collider={col != null}, IsTrigger={col?.isTrigger}, Size={col?.size}");
             }
         }
         

@@ -1,0 +1,61 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0b980c5627308d5458fee39217d364a3, type: 3}
+  m_Name: RaptorThinhPlate
+  m_EditorClassIdentifier: Assembly-CSharp::RobotGame.Data.ArmorPartData
+  partId: RaptorThinhPlate
+  displayName: Raptor thinh plate
+  description: 
+  icon: {fileID: 0}
+  prefab: {fileID: 3977803187263729657, guid: 84512f62ad6635e4584f1c2ba6d00000, type: 3}
+  category: 1
+  tier: 3
+  weight: 1
+  durability: 100
+  tailGrid:
+    gridInfo:
+      isHead: 0
+      sizeX: 4
+      sizeY: 7
+      surrounding:
+        level: 5
+        edges: 0
+        fullType: 1
+      gridName: RaptorThinhPlate
+    transformName: Tail_4x7_S5FH_RaptorThinhPlate
+  additionalHeadGrids:
+  - gridInfo:
+      isHead: 1
+      sizeX: 1
+      sizeY: 4
+      surrounding:
+        level: 0
+        edges: 0
+        fullType: 0
+      gridName: PlacaTest1
+    transformName: Head_1x4_SN_PlacaTest1
+  - gridInfo:
+      isHead: 1
+      sizeX: 1
+      sizeY: 4
+      surrounding:
+        level: 0
+        edges: 0
+        fullType: 0
+      gridName: PlacaTest2
+    transformName: Head_1x4_SN_PlacaTest2
+  armor: 0
+  physicalResistance: 0
+  energyResistance: 0
+  explosiveResistance: 0
+  damagedMaterial: {fileID: 0}
+  hitEffectPrefab: {fileID: 0}

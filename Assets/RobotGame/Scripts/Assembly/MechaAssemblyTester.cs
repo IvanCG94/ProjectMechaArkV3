@@ -139,6 +139,9 @@ namespace RobotGame.Assembly
         
         #region Activation
         
+        // Lista de colliders desactivados para restaurar
+        private List<Collider> disabledColliders = new List<Collider>();
+        
         private void ActivateTester()
         {
             targetMecha = station.CurrentMecha;
@@ -168,20 +171,17 @@ namespace RobotGame.Assembly
                 playerCamera.SetTarget(targetRobot.transform, false);
             }
             
+            // Desactivar colliders principales del mecha para que no bloqueen raycasts
+            DisableMechaMainColliders();
+            
             // Resetear estado
             currentRotation = GridRotation.Rotation.Deg0;
             currentPreviewData = null;
             currentStructuralPreviewData = null;
             
-            // Inicializar según modo
-            if (currentMode == AssemblyMode.Armor)
-            {
-                CollectAvailableGrids();
-            }
-            else
-            {
-                CollectAvailableSockets();
-            }
+            // Inicializar ambos modos (necesitamos grillas Y sockets disponibles)
+            CollectAvailableGrids();
+            CollectAvailableSockets();
             
             Debug.Log($"MechaAssemblyTester: Activado para '{targetMecha.WildData?.speciesName}'");
         }
@@ -189,6 +189,9 @@ namespace RobotGame.Assembly
         private void DeactivateTester()
         {
             isActive = false;
+            
+            // Restaurar colliders principales del mecha
+            RestoreMechaMainColliders();
             
             // Ocultar previews
             if (armorPreviewObject != null) armorPreviewObject.SetActive(false);
@@ -211,6 +214,52 @@ namespace RobotGame.Assembly
             targetRobot = null;
             
             Debug.Log("MechaAssemblyTester: Desactivado");
+        }
+        
+        /// <summary>
+        /// Desactiva los colliders principales del mecha para que no bloqueen raycasts a las grillas.
+        /// Solo desactiva colliders que NO son triggers (los triggers son de las grillas/sockets).
+        /// </summary>
+        private void DisableMechaMainColliders()
+        {
+            disabledColliders.Clear();
+            
+            if (targetRobot == null) return;
+            
+            // Buscar todos los colliders en el mecha
+            var allColliders = targetRobot.GetComponentsInChildren<Collider>();
+            
+            foreach (var col in allColliders)
+            {
+                // Solo desactivar colliders que NO son triggers (los triggers son de grillas/sockets)
+                // Y que no son de GridHead ni StructuralSocket
+                if (!col.isTrigger && 
+                    col.GetComponent<GridHead>() == null && 
+                    col.GetComponent<StructuralSocket>() == null)
+                {
+                    col.enabled = false;
+                    disabledColliders.Add(col);
+                }
+            }
+            
+            Debug.Log($"MechaAssemblyTester: {disabledColliders.Count} colliders principales desactivados");
+        }
+        
+        /// <summary>
+        /// Restaura los colliders principales del mecha.
+        /// </summary>
+        private void RestoreMechaMainColliders()
+        {
+            foreach (var col in disabledColliders)
+            {
+                if (col != null)
+                {
+                    col.enabled = true;
+                }
+            }
+            
+            Debug.Log($"MechaAssemblyTester: {disabledColliders.Count} colliders restaurados");
+            disabledColliders.Clear();
         }
         
         private RobotCore FindPlayerCore()
@@ -328,14 +377,52 @@ namespace RobotGame.Assembly
             
             GridHead newHoveredGrid = null;
             
+            // Debug con tecla G
+            bool debugMode = Input.GetKey(KeyCode.G);
+            
             if (Physics.Raycast(ray, out hit, 100f, ~0, QueryTriggerInteraction.Collide))
             {
+                if (debugMode)
+                {
+                    Debug.Log($"=== RAYCAST HIT ===");
+                    Debug.Log($"  Hit Object: {hit.collider.gameObject.name}");
+                    Debug.Log($"  Hit Collider: {hit.collider.GetType().Name}");
+                    Debug.Log($"  IsTrigger: {hit.collider.isTrigger}");
+                    Debug.Log($"  Collider Enabled: {hit.collider.enabled}");
+                    Debug.Log($"  GameObject Active: {hit.collider.gameObject.activeInHierarchy}");
+                }
+                
                 GridHead grid = hit.collider.GetComponent<GridHead>();
+                
+                if (debugMode)
+                {
+                    Debug.Log($"  Has GridHead: {grid != null}");
+                    if (grid != null)
+                    {
+                        Debug.Log($"  Grid Name: {grid.name}");
+                        Debug.Log($"  In availableGrids: {availableGrids.Contains(grid)}");
+                        Debug.Log($"  availableGrids Count: {availableGrids.Count}");
+                        
+                        // Listar todas las grillas disponibles
+                        Debug.Log($"  === Available Grids ===");
+                        for (int i = 0; i < availableGrids.Count; i++)
+                        {
+                            var g = availableGrids[i];
+                            Debug.Log($"    [{i}] {g?.name} (InstanceID: {g?.GetInstanceID()})");
+                        }
+                        Debug.Log($"  Hit Grid InstanceID: {grid.GetInstanceID()}");
+                    }
+                }
+                
                 if (grid != null && availableGrids.Contains(grid))
                 {
                     newHoveredGrid = grid;
                     CalculateGridPosition(grid, hit.point);
                 }
+            }
+            else if (debugMode)
+            {
+                Debug.Log("=== RAYCAST MISS - No hit ===");
             }
             
             if (newHoveredGrid != hoveredGrid)
@@ -385,12 +472,7 @@ namespace RobotGame.Assembly
             ArmorPartData armorData = GetCurrentArmorData();
             if (armorData == null) return;
             
-            // Validar tier
-            if (!armorData.IsCompatibleWith(targetRobot.CurrentTier))
-            {
-                Debug.LogWarning($"Armadura no compatible con robot Tier {targetRobot.CurrentTier}");
-                return;
-            }
+            // Las armaduras no tienen restricción de tier (son estéticas)
             
             // Verificar si se puede colocar
             if (!hoveredGrid.CanPlace(armorData, currentPositionX, currentPositionY, currentRotation))
@@ -451,19 +533,28 @@ namespace RobotGame.Assembly
             if (targetRobot == null) return;
             
             var parts = targetRobot.GetAllStructuralParts();
+            
+            Debug.Log($"=== CollectAvailableGrids ===");
+            Debug.Log($"  Total StructuralParts: {parts.Count}");
+            
             foreach (var part in parts)
             {
+                Debug.Log($"  Part: {part.name} - ArmorGrids: {part.ArmorGrids.Count}");
+                
                 foreach (var grid in part.ArmorGrids)
                 {
                     availableGrids.Add(grid);
                     EnsureGridCollider(grid);
+                    
+                    var col = grid.GetComponent<BoxCollider>();
+                    Debug.Log($"    Grid: {grid.name} (ID: {grid.GetInstanceID()}) - Collider: {col != null}, Enabled: {col?.enabled}, IsTrigger: {col?.isTrigger}");
                 }
                 
                 // También recolectar grillas de armaduras existentes
                 CollectArmorPartGrids(part.ArmorGrids);
             }
             
-            Debug.Log($"MechaAssemblyTester: {availableGrids.Count} grillas disponibles");
+            Debug.Log($"  Total availableGrids: {availableGrids.Count}");
         }
         
         private void CollectArmorPartGrids(IReadOnlyList<GridHead> grids)
@@ -491,17 +582,14 @@ namespace RobotGame.Assembly
         
         private void EnsureGridCollider(GridHead grid)
         {
-            BoxCollider collider = grid.GetComponent<BoxCollider>();
-            if (collider == null)
+            if (grid == null)
             {
-                collider = grid.gameObject.AddComponent<BoxCollider>();
+                Debug.LogError("MechaAssemblyTester: Grid es NULL en EnsureGridCollider!");
+                return;
             }
             
-            float sizeX = grid.GridInfo.sizeX * 0.1f;
-            float sizeY = grid.GridInfo.sizeY * 0.1f;
-            collider.size = new Vector3(sizeX, sizeY, 0.1f);
-            collider.center = new Vector3(sizeX / 2f, sizeY / 2f, -0.05f);
-            collider.isTrigger = true;
+            // Usar el método del componente GridHead
+            grid.EnsureCollider();
         }
         
         #endregion
@@ -541,15 +629,13 @@ namespace RobotGame.Assembly
             pivotContainer.transform.localRotation = GridRotation.ToQuaternion(currentRotation);
             
             // Determinar color del preview
+            // Las armaduras no tienen restricción de tier (son estéticas)
             Color previewColor;
-            bool tierCompatible = armorData.IsCompatibleWith(targetRobot.CurrentTier);
             
             if (hoveredGrid == null)
             {
-                // Sin grid: azul si compatible, naranja si no
-                previewColor = tierCompatible ? 
-                    new Color(0f, 0.5f, 1f, 0.5f) : 
-                    new Color(1f, 0.3f, 0f, 0.5f);
+                // Sin grid: azul (holográfico)
+                previewColor = new Color(0f, 0.5f, 1f, 0.5f);
                 
                 // Posicionar en el espacio frente a la cámara
                 Ray ray = mainCamera.ScreenPointToRay(Input.mousePosition);
@@ -561,8 +647,8 @@ namespace RobotGame.Assembly
             {
                 bool canPlace = hoveredGrid.CanPlace(armorData, currentPositionX, currentPositionY, currentRotation);
                 
-                // Verde si puede colocar Y es compatible, rojo si no
-                if (canPlace && tierCompatible)
+                // Verde si puede colocar, rojo si no
+                if (canPlace)
                 {
                     previewColor = new Color(0f, 1f, 0f, 0.5f); // Verde
                 }
@@ -738,6 +824,9 @@ namespace RobotGame.Assembly
                 return;
             }
             
+            Debug.Log($"=== TryPlaceStructural ===");
+            Debug.Log($"  Creando pieza: {partData.displayName}");
+            
             // Crear la pieza
             StructuralPart part = RobotFactory.Instance.CreateStructuralPart(partData, hoveredSocket.transform);
             if (part == null)
@@ -746,15 +835,55 @@ namespace RobotGame.Assembly
                 return;
             }
             
-            // Intentar conectar
-            if (hoveredSocket.TryAttach(part))
+            Debug.Log($"  Pieza creada: {part.name}");
+            Debug.Log($"  ArmorGrids en la pieza: {part.ArmorGrids.Count}");
+            foreach (var grid in part.ArmorGrids)
             {
-                Debug.Log($"Pieza '{partData.displayName}' colocada");
-                CollectAvailableSockets();
+                var col = grid.GetComponent<BoxCollider>();
+                Debug.Log($"    Grid: {grid.name} (ID: {grid.GetInstanceID()}) - Collider: {col != null}, Enabled: {col?.enabled}");
+            }
+            
+            // Caso especial: si es el HipsSocket, usar AttachHips del Robot
+            if (hoveredSocket == targetRobot.HipsSocket)
+            {
+                if (targetRobot.AttachHips(part))
+                {
+                    Debug.Log($"  Hips conectadas via AttachHips");
+                    
+                    // Forzar sincronización de física
+                    Physics.SyncTransforms();
+                    
+                    CollectAvailableSockets();
+                    CollectAvailableGrids();
+                    
+                    Debug.Log($"  Grillas recolectadas. Total: {availableGrids.Count}");
+                }
+                else
+                {
+                    Debug.LogError("  Error al conectar las Hips al robot");
+                    Destroy(part.gameObject);
+                }
             }
             else
             {
-                Destroy(part.gameObject);
+                // Intentar conectar al socket normal
+                if (hoveredSocket.TryAttach(part))
+                {
+                    Debug.Log($"  Pieza conectada exitosamente");
+                    
+                    // Forzar sincronización de física para que los nuevos colliders sean detectables
+                    Physics.SyncTransforms();
+                    
+                    CollectAvailableSockets();
+                    CollectAvailableGrids();
+                    
+                    Debug.Log($"  Grillas recolectadas. Total: {availableGrids.Count}");
+                }
+                else
+                {
+                    Debug.LogError("  Error al conectar pieza al socket");
+                    Destroy(part.gameObject);
+                }
             }
         }
         
@@ -786,6 +915,7 @@ namespace RobotGame.Assembly
                 Destroy(part.gameObject);
                 Debug.Log("Pieza estructural removida");
                 CollectAvailableSockets();
+                CollectAvailableGrids(); // Actualizar grillas
             }
         }
         
@@ -818,13 +948,10 @@ namespace RobotGame.Assembly
         
         private void EnsureSocketCollider(StructuralSocket socket)
         {
-            Collider collider = socket.GetComponent<Collider>();
-            if (collider == null)
-            {
-                SphereCollider sphereCollider = socket.gameObject.AddComponent<SphereCollider>();
-                sphereCollider.radius = 0.15f;
-                sphereCollider.isTrigger = true;
-            }
+            if (socket == null) return;
+            
+            // Usar el método del componente StructuralSocket
+            socket.EnsureCollider();
         }
         
         #endregion

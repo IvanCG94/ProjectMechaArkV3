@@ -47,6 +47,23 @@ namespace RobotGame.Components
             isRequired = definition.isRequired;
             isOccupied = false;
             attachedPart = null;
+            
+            // Crear collider para raycast detection
+            EnsureCollider();
+        }
+        
+        /// <summary>
+        /// Asegura que el socket tenga un Collider configurado correctamente.
+        /// </summary>
+        public void EnsureCollider()
+        {
+            Collider collider = GetComponent<Collider>();
+            if (collider == null)
+            {
+                SphereCollider sphereCollider = gameObject.AddComponent<SphereCollider>();
+                sphereCollider.radius = 0.1f;
+                sphereCollider.isTrigger = true;
+            }
         }
         
         /// <summary>

@@ -1,0 +1,101 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0b980c5627308d5458fee39217d364a3, type: 3}
+  m_Name: RaptorCorazaEsqueleto
+  m_EditorClassIdentifier: Assembly-CSharp::RobotGame.Data.ArmorPartData
+  partId: RaptorCorazaEsqueleto
+  displayName: Coraza esqueleto
+  description: 
+  icon: {fileID: 0}
+  prefab: {fileID: 7714268194462194878, guid: 64b2e1247d8fad34bab6ff0b00cb2a47, type: 3}
+  category: 1
+  tier: 3
+  weight: 1
+  durability: 100
+  tailGrid:
+    gridInfo:
+      isHead: 0
+      sizeX: 3
+      sizeY: 7
+      surrounding:
+        level: 3
+        edges: 3
+        fullType: 0
+      gridName: CorazaEsqueleto
+    transformName: Tail_3x7_S3_LR_CorazaEsqueleto
+  additionalHeadGrids:
+  - gridInfo:
+      isHead: 1
+      sizeX: 3
+      sizeY: 1
+      surrounding:
+        level: 1
+        edges: 12
+        fullType: 0
+      gridName: Placa1
+    transformName: Head_3x1_S1_TB_Placa1
+  - gridInfo:
+      isHead: 1
+      sizeX: 3
+      sizeY: 1
+      surrounding:
+        level: 1
+        edges: 12
+        fullType: 0
+      gridName: Placa2
+    transformName: Head_3x1_S1_TB_Placa2
+  - gridInfo:
+      isHead: 1
+      sizeX: 3
+      sizeY: 1
+      surrounding:
+        level: 1
+        edges: 12
+        fullType: 0
+      gridName: Placa3
+    transformName: Head_3x1_S1_TB_Placa3
+  - gridInfo:
+      isHead: 1
+      sizeX: 3
+      sizeY: 1
+      surrounding:
+        level: 1
+        edges: 12
+        fullType: 0
+      gridName: Placa4
+    transformName: Head_3x1_S1_TB_Placa4
+  - gridInfo:
+      isHead: 1
+      sizeX: 3
+      sizeY: 1
+      surrounding:
+        level: 1
+        edges: 12
+        fullType: 0
+      gridName: Placa5
+    transformName: Head_3x1_S1_TB_Placa5
+  - gridInfo:
+      isHead: 1
+      sizeX: 3
+      sizeY: 1
+      surrounding:
+        level: 1
+        edges: 12
+        fullType: 0
+      gridName: Placa6
+    transformName: Head_3x1_S1_TB_Placa6
+  armor: 0
+  physicalResistance: 0
+  energyResistance: 0
+  explosiveResistance: 0
+  damagedMaterial: {fileID: 0}
+  hitEffectPrefab: {fileID: 0}

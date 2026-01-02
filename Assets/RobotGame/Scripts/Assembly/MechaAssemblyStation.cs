@@ -47,8 +47,7 @@ namespace RobotGame.Assembly
         [Header("Debug")]
         [SerializeField] private bool showDebugUI = true;
         
-        // Referencias
-        private RobotCore playerCore;
+        // Referencias - PlayerCore se busca dinámicamente
         
         // Eventos
         public event System.Action<MechaAssemblyStation> OnEditModeStarted;
@@ -104,8 +103,7 @@ namespace RobotGame.Assembly
         
         private void Start()
         {
-            // Buscar el PlayerCore
-            playerCore = FindPlayerCore();
+            // PlayerCore se busca dinámicamente cuando se necesita
         }
         
         private void Update()
@@ -176,7 +174,7 @@ namespace RobotGame.Assembly
                 return MechaValidationResult.NotTamed;
             
             // Verificar propiedad
-            if (playerCore == null || !mecha.BelongsTo(playerCore))
+            if (PlayerCore == null || !mecha.BelongsTo(PlayerCore))
                 return MechaValidationResult.NotOwned;
             
             // Verificar que el jugador no esté montado
@@ -224,17 +222,23 @@ namespace RobotGame.Assembly
             }
         }
         
-        private RobotCore FindPlayerCore()
+        /// <summary>
+        /// Obtiene el PlayerCore actual (búsqueda dinámica).
+        /// </summary>
+        private RobotCore PlayerCore
         {
-            var cores = FindObjectsOfType<RobotCore>();
-            foreach (var core in cores)
+            get
             {
-                if (core.IsPlayerCore)
+                var cores = FindObjectsOfType<RobotCore>();
+                foreach (var core in cores)
                 {
-                    return core;
+                    if (core.IsPlayerCore)
+                    {
+                        return core;
+                    }
                 }
+                return null;
             }
-            return null;
         }
         
         #endregion
@@ -246,12 +250,6 @@ namespace RobotGame.Assembly
         /// </summary>
         public void TryEnterEditMode()
         {
-            // Buscar PlayerCore si no lo tenemos
-            if (playerCore == null)
-            {
-                playerCore = FindPlayerCore();
-            }
-            
             // Obtener y validar el mecha
             WildRobot mecha = GetMechaOnPlatform();
             MechaValidationResult result = ValidateMecha(mecha);

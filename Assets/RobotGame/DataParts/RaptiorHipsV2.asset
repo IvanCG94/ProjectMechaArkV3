@@ -1,0 +1,154 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 844f020186c0c954bb872a9bedbc9590, type: 3}
+  m_Name: RaptiorHipsV2
+  m_EditorClassIdentifier: Assembly-CSharp::RobotGame.Data.StructuralPartData
+  partId: RaptorHipsV2
+  displayName: Raptor hips V2
+  description: 
+  icon: {fileID: 0}
+  prefab: {fileID: 6382230133338644052, guid: 49870eacb51c3c44b81e384df287931a, type: 3}
+  category: 0
+  tier: 3
+  weight: 1
+  durability: 100
+  partType: 0
+  canBeRoot: 0
+  structuralSockets:
+  - socketType: 1
+    transformName: Socket_torso
+    isRequired: 0
+    localPosition: {x: 2.7576621e-14, y: 2.7894297, z: 0.57818}
+    localRotation: {x: -0.000014570996, y: 4.1983273e-13, z: 3.651277e-12}
+  armorGrids:
+  - gridInfo:
+      isHead: 1
+      sizeX: 3
+      sizeY: 3
+      surrounding:
+        level: 1
+        edges: 3
+        fullType: 0
+      gridName: RaptorFootL
+    transformName: Head_3x3_S1_LR_RaptorFootL
+  - gridInfo:
+      isHead: 1
+      sizeX: 3
+      sizeY: 6
+      surrounding:
+        level: 3
+        edges: 3
+        fullType: 0
+      gridName: RaptorFootBoneL
+    transformName: Head_3x6_S3_LR_RaptorFootBoneL
+  - gridInfo:
+      isHead: 1
+      sizeX: 1
+      sizeY: 4
+      surrounding:
+        level: 1
+        edges: 3
+        fullType: 0
+      gridName: RaptorShinL
+    transformName: Head_1x4_S1_LR_RaptorShinL
+  - gridInfo:
+      isHead: 1
+      sizeX: 3
+      sizeY: 7
+      surrounding:
+        level: 3
+        edges: 3
+        fullType: 0
+      gridName: RaptorShinBackL
+    transformName: Head_3x7_S3_LR_RaptorShinBackL
+  - gridInfo:
+      isHead: 1
+      sizeX: 4
+      sizeY: 7
+      surrounding:
+        level: 5
+        edges: 0
+        fullType: 1
+      gridName: RaptorThinhL
+    transformName: Head_4x7_S5FH_RaptorThinhL
+  - gridInfo:
+      isHead: 1
+      sizeX: 3
+      sizeY: 3
+      surrounding:
+        level: 1
+        edges: 3
+        fullType: 0
+      gridName: RaptorFootR
+    transformName: Head_3x3_S1_LR_RaptorFootR
+  - gridInfo:
+      isHead: 1
+      sizeX: 3
+      sizeY: 6
+      surrounding:
+        level: 3
+        edges: 3
+        fullType: 0
+      gridName: RaptorFootBoneR
+    transformName: Head_3x6_S3_LR_RaptorFootBoneR
+  - gridInfo:
+      isHead: 1
+      sizeX: 1
+      sizeY: 4
+      surrounding:
+        level: 1
+        edges: 3
+        fullType: 0
+      gridName: RaptorShinR
+    transformName: Head_1x4_S1_LR_RaptorShinR
+  - gridInfo:
+      isHead: 1
+      sizeX: 3
+      sizeY: 7
+      surrounding:
+        level: 3
+        edges: 3
+        fullType: 0
+      gridName: RaptorShinBackR
+    transformName: Head_3x7_S3_LR_RaptorShinBackR
+  - gridInfo:
+      isHead: 1
+      sizeX: 4
+      sizeY: 7
+      surrounding:
+        level: 5
+        edges: 0
+        fullType: 1
+      gridName: RaptorThinhR
+    transformName: Head_4x7_S5FH_RaptorThinhR
+  - gridInfo:
+      isHead: 1
+      sizeX: 5
+      sizeY: 3
+      surrounding:
+        level: 1
+        edges: 4
+        fullType: 0
+      gridName: RaptorHipL
+    transformName: Head_5x3_S1_T_RaptorHipL
+  - gridInfo:
+      isHead: 1
+      sizeX: 5
+      sizeY: 3
+      surrounding:
+        level: 1
+        edges: 4
+        fullType: 0
+      gridName: RaptorHipR
+    transformName: Head_5x3_S1_T_RaptorHipR
+  animatorController: {fileID: 0}
+  animatorAvatar: {fileID: 0}

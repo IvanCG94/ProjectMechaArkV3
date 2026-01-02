@@ -481,12 +481,7 @@ namespace RobotGame.Testing
             var armorData = GetCurrentArmorData();
             if (armorData == null) return;
             
-            // Validar compatibilidad de tier
-            if (!armorData.IsCompatibleWith(targetRobot.CurrentTier))
-            {
-                Debug.LogWarning($"Armadura '{armorData.displayName}' (Tier {armorData.tier}) no es compatible con el robot (Tier {targetRobot.CurrentTier})");
-                return;
-            }
+            // Las armaduras no tienen restricción de tier (son estéticas)
             
             if (!hoveredGrid.CanPlace(armorData, currentPositionX, currentPositionY, currentRotation))
             {
@@ -676,6 +671,9 @@ namespace RobotGame.Testing
             {
                 if (targetRobot.AttachHips(part))
                 {
+                    // Forzar sincronización de física para que los nuevos colliders sean detectables
+                    Physics.SyncTransforms();
+                    
                     RefreshAvailableSockets();
                     RefreshAvailableGrids();
                 }
@@ -690,6 +688,9 @@ namespace RobotGame.Testing
                 // Intentar conectar al socket (esto reposiciona la pieza)
                 if (hoveredSocket.TryAttach(part))
                 {
+                    // Forzar sincronización de física para que los nuevos colliders sean detectables
+                    Physics.SyncTransforms();
+                    
                     RefreshAvailableSockets();
                     RefreshAvailableGrids();
                 }
@@ -1141,30 +1142,18 @@ namespace RobotGame.Testing
         
         private void EnsureGridCollider(GridHead grid)
         {
-            BoxCollider collider = grid.GetComponent<BoxCollider>();
-            if (collider == null)
-            {
-                collider = grid.gameObject.AddComponent<BoxCollider>();
-            }
+            if (grid == null) return;
             
-            float sizeX = grid.GridInfo.sizeX * 0.1f;
-            float sizeY = grid.GridInfo.sizeY * 0.1f;
-            collider.size = new Vector3(sizeX, sizeY, 0.1f);
-            collider.center = new Vector3(sizeX / 2f, sizeY / 2f, -0.05f);
-            collider.isTrigger = true;
+            // Usar el método del componente GridHead
+            grid.EnsureCollider();
         }
         
         private void EnsureSocketCollider(StructuralSocket socket)
         {
-            // Si el socket ya tiene collider (del mesh), no hacer nada
-            Collider collider = socket.GetComponent<Collider>();
-            if (collider == null)
-            {
-                // Agregar un collider esférico pequeño
-                SphereCollider sphereCollider = socket.gameObject.AddComponent<SphereCollider>();
-                sphereCollider.radius = 0.1f;
-                sphereCollider.isTrigger = true;
-            }
+            if (socket == null) return;
+            
+            // Usar el método del componente StructuralSocket
+            socket.EnsureCollider();
         }
         
         #endregion
@@ -1435,15 +1424,13 @@ namespace RobotGame.Testing
             
             Color previewColor;
             
-            // Verificar compatibilidad de tier
-            bool tierCompatible = armorData.IsCompatibleWith(targetRobot.CurrentTier);
+            // Las armaduras no tienen restricción de tier (son estéticas)
+            // Solo validamos si cabe en la grilla
             
             if (hoveredGrid == null)
             {
-                // Sin grid: azul si compatible, rojo si no
-                previewColor = tierCompatible ? 
-                    new Color(0f, 0.5f, 1f, 0.5f) : 
-                    new Color(1f, 0.3f, 0f, 0.5f); // Naranja/rojo para incompatible
+                // Sin grid: azul (holográfico)
+                previewColor = new Color(0f, 0.5f, 1f, 0.5f);
                 
                 Ray ray = mainCamera.ScreenPointToRay(Input.mousePosition);
                 Vector3 worldPos = ray.origin + ray.direction * 2f;
@@ -1454,8 +1441,8 @@ namespace RobotGame.Testing
             {
                 bool canPlace = hoveredGrid.CanPlace(armorData, currentPositionX, currentPositionY, currentRotation);
                 
-                // Verde solo si puede colocar Y es compatible con el tier
-                if (canPlace && tierCompatible)
+                // Verde si puede colocar, rojo si no
+                if (canPlace)
                 {
                     previewColor = new Color(0f, 1f, 0f, 0.5f); // Verde
                 }

@@ -59,7 +59,7 @@ namespace RobotGame.Control
         [SerializeField] private Vector3 colliderCenter = new Vector3(0f, 1f, 0f);
         
         [Header("Ground Detection")]
-        [SerializeField] private float groundCheckDistance = 0.1f;
+        [SerializeField] private float groundCheckDistance = 0.2f;
         [SerializeField] private float groundCheckRadius = 0.3f;
         [SerializeField] private LayerMask groundLayers = ~0;
         [SerializeField] private float groundOffset = 0.05f;
@@ -225,6 +225,29 @@ namespace RobotGame.Control
             
             isEnabled = true;
             Debug.Log("PlayerMovement: Movimiento HABILITADO");
+        }
+        
+        /// <summary>
+        /// Fuerza un ground check inmediato y resetea velocidades.
+        /// Útil después de teletransportar o reactivar el jugador.
+        /// </summary>
+        public void ForceGroundCheck()
+        {
+            // Resetear velocidades
+            verticalVelocity = 0f;
+            horizontalVelocity = Vector3.zero;
+            velocity = Vector3.zero;
+            
+            // Forzar ground check
+            CheckGround();
+            
+            // Si está en el suelo, asegurar que verticalVelocity sea 0
+            if (isGrounded)
+            {
+                verticalVelocity = 0f;
+            }
+            
+            Debug.Log($"PlayerMovement: ForceGroundCheck - IsGrounded: {isGrounded}, Position: {target?.position}");
         }
         
         /// <summary>
@@ -714,7 +737,7 @@ namespace RobotGame.Control
                 if (maxFall < fallDistance)
                 {
                     // Iba a atravesar, detener en el punto de impacto
-                    verticalVelocity = 0f; // Detener la velocidad vertical
+                    verticalVelocity = 0f;
                     isGrounded = true;
                     
                     return -Mathf.Max(maxFall, 0f);

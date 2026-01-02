@@ -347,6 +347,8 @@ MonoBehaviour:
   - {fileID: 11400000, guid: d71eb8d52c8927e4b8f509e80c86b559, type: 2}
   - {fileID: 11400000, guid: a2a64132e77cf3c47a2f6a230a50d0b6, type: 2}
   - {fileID: 11400000, guid: 9c6f12b5e01172b4d842c4adaef0033e, type: 2}
+  - {fileID: 11400000, guid: 3081732170b818e4c9bbfdd3149d34d4, type: 2}
+  - {fileID: 11400000, guid: dbe5c0e02dc241e43b538152919b6f88, type: 2}
   testStructuralParts:
   - {fileID: 11400000, guid: 541ccf4624a5ba244adeac4ef2872493, type: 2}
   - {fileID: 11400000, guid: 441a199948f58464e86b04f41192090f, type: 2}
@@ -650,11 +652,15 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::RobotGame.Assembly.MechaAssemblyTester
   station: {fileID: 0}
   testArmorParts:
+  - {fileID: 11400000, guid: 3081732170b818e4c9bbfdd3149d34d4, type: 2}
+  - {fileID: 11400000, guid: dbe5c0e02dc241e43b538152919b6f88, type: 2}
   - {fileID: 11400000, guid: 764c6a1d836dd91418c087bff306f96f, type: 2}
-  testStructuralParts: []
-  previewMaterial: {fileID: 0}
-  validColor: {r: 0, g: 1, b: 0, a: 0.5}
-  invalidColor: {r: 1, g: 0, b: 0, a: 0.5}
+  - {fileID: 11400000, guid: a6c324dbda5575c41822f1f98263f4a1, type: 2}
+  - {fileID: 11400000, guid: b056d3f276463e146827e759f3070819, type: 2}
+  testStructuralParts:
+  - {fileID: 11400000, guid: 1b2564a08ef89a840a8942dfde089298, type: 2}
+  - {fileID: 11400000, guid: 92c14f69cfcc786448f6423e5f7d2ba8, type: 2}
+  - {fileID: 11400000, guid: b0269f0487d35de4cbc264c5b9835025, type: 2}
   isActive: 0
   currentMode: 0
 --- !u!1 &400482066
@@ -1279,7 +1285,7 @@ Transform:
   m_GameObject: {fileID: 1301325820}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: -3.93}
+  m_LocalPosition: {x: 0, y: 0, z: -3.95}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:

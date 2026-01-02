@@ -50,6 +50,31 @@ namespace RobotGame.Components
                     cellOccupants[x, y] = null;
                 }
             }
+            
+            // Crear collider para raycast detection
+            EnsureCollider();
+        }
+        
+        /// <summary>
+        /// Asegura que la grilla tenga un BoxCollider configurado correctamente.
+        /// </summary>
+        public void EnsureCollider()
+        {
+            BoxCollider collider = GetComponent<BoxCollider>();
+            bool wasCreated = collider == null;
+            
+            if (collider == null)
+            {
+                collider = gameObject.AddComponent<BoxCollider>();
+            }
+            
+            float sizeX = gridInfo.sizeX * 0.1f;
+            float sizeY = gridInfo.sizeY * 0.1f;
+            collider.size = new Vector3(sizeX, sizeY, 0.1f);
+            collider.center = new Vector3(sizeX / 2f, sizeY / 2f, -0.05f);
+            collider.isTrigger = true;
+            
+            Debug.Log($"GridHead.EnsureCollider: {gameObject.name} - {(wasCreated ? "CREADO" : "actualizado")} - Size: {collider.size}, Enabled: {collider.enabled}");
         }
         
         /// <summary>

@@ -16,7 +16,7 @@ MonoBehaviour:
   description: 
   icon: {fileID: 0}
   tier: 3
-  hips: {fileID: 11400000, guid: 92c14f69cfcc786448f6423e5f7d2ba8, type: 2}
+  hips: {fileID: 11400000, guid: 1b2564a08ef89a840a8942dfde089298, type: 2}
   hipsArmorPieces: []
   attachedParts:
   - partData: {fileID: 11400000, guid: b0269f0487d35de4cbc264c5b9835025, type: 2}

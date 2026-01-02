@@ -40,6 +40,9 @@ namespace RobotGame.Systems
         [Tooltip("Layers que contienen robots montables")]
         [SerializeField] private LayerMask mountableLayers = ~0;
         
+        [Tooltip("Layers del suelo para calcular posición de desmontaje")]
+        [SerializeField] private LayerMask groundLayers = ~0;
+        
         [Header("Estado (Solo lectura)")]
         [SerializeField] private bool isMounted = false;
         [SerializeField] private WildRobot currentMount;
@@ -259,14 +262,14 @@ namespace RobotGame.Systems
             
             Debug.Log($"MountSystem: Desmontando de '{currentMount.WildData?.speciesName}'");
             
-            // Calcular posición de desmonte (debajo del mecha)
-            Vector3 dismountPos = currentMount.transform.position;
+            // Calcular posición de desmonte (al lado del mecha, sobre el suelo)
+            Vector3 dismountPos = CalculateSafeDismountPosition();
             Quaternion dismountRot = currentMount.transform.rotation;
             
             // Liberar control del mecha ANTES de reactivar al jugador
             currentMount.ReleaseControl();
             
-            // Reactivar el robot del jugador DEBAJO DEL MECHA
+            // Reactivar el robot del jugador en posición segura
             if (playerRobot != null)
             {
                 playerRobot.transform.position = dismountPos;
@@ -285,6 +288,9 @@ namespace RobotGame.Systems
             {
                 playerMovement.SetTarget(playerRobot.transform);
                 playerMovement.Enable();
+                
+                // Forzar un ground check inmediato
+                playerMovement.ForceGroundCheck();
             }
             
             // Limpiar estado
@@ -292,6 +298,42 @@ namespace RobotGame.Systems
             isMounted = false;
             
             Debug.Log($"MountSystem: Desmontado. Jugador en {dismountPos}");
+        }
+        
+        /// <summary>
+        /// Calcula una posición segura para desmontar (sobre el suelo, al lado del mecha).
+        /// </summary>
+        private Vector3 CalculateSafeDismountPosition()
+        {
+            if (currentMount == null) return Vector3.zero;
+            
+            // Intentar varias posiciones alrededor del mecha
+            Vector3[] offsets = new Vector3[]
+            {
+                -currentMount.transform.forward * 1.5f,  // Atrás
+                currentMount.transform.right * 1.5f,     // Derecha
+                -currentMount.transform.right * 1.5f,    // Izquierda
+                currentMount.transform.forward * 1.5f,   // Adelante
+                Vector3.zero                              // Centro (fallback)
+            };
+            
+            foreach (var offset in offsets)
+            {
+                Vector3 testPos = currentMount.transform.position + offset + Vector3.up * 2f;
+                
+                // Raycast hacia abajo para encontrar el suelo
+                if (Physics.Raycast(testPos, Vector3.down, out RaycastHit hit, 5f, groundLayers))
+                {
+                    // Posición segura: sobre el suelo con un pequeño margen
+                    Vector3 safePos = hit.point + Vector3.up * 0.1f;
+                    Debug.Log($"MountSystem: Posición de desmonte encontrada en {safePos}");
+                    return safePos;
+                }
+            }
+            
+            // Fallback: usar la posición del mecha directamente
+            Debug.LogWarning("MountSystem: No se encontró suelo, usando posición del mecha");
+            return currentMount.transform.position;
         }
         
         /// <summary>

@@ -302,6 +302,28 @@ namespace RobotGame.Control
         }
         
         /// <summary>
+        /// Fuerza un ground check inmediato y resetea la velocidad vertical.
+        /// Útil después de teletransportar o reactivar el robot.
+        /// </summary>
+        public void ForceGroundCheck()
+        {
+            // Resetear velocidades
+            verticalVelocity = 0f;
+            horizontalVelocity = Vector3.zero;
+            
+            // Forzar ground check
+            CheckGround();
+            
+            // Si está en el suelo, asegurar que verticalVelocity sea 0
+            if (isGrounded)
+            {
+                verticalVelocity = 0f;
+            }
+            
+            Debug.Log($"RobotMovement: ForceGroundCheck - IsGrounded: {isGrounded}, Position: {transform.position}");
+        }
+        
+        /// <summary>
         /// Mira hacia una posición específica.
         /// </summary>
         public void LookAt(Vector3 targetPosition)
