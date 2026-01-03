@@ -182,6 +182,100 @@ namespace RobotGame.Data
             return newRobot;
         }
         
+        /// <summary>
+        /// Restaura un robot SIN destruir el GameObject.
+        /// Útil para mechas que tienen WildRobot y otros componentes que deben preservarse.
+        /// Limpia todas las partes estructurales y las reconstruye.
+        /// </summary>
+        public bool RestoreInPlace(Robot robot, RobotCore playerCore = null)
+        {
+            if (robot == null)
+            {
+                Debug.LogWarning("RobotSnapshot: Robot es null, no se puede restaurar in-place.");
+                return false;
+            }
+            
+            if (hipsData == null)
+            {
+                Debug.LogWarning("RobotSnapshot: No hay datos de Hips para restaurar.");
+                return false;
+            }
+            
+            Debug.Log($"RobotSnapshot: Restaurando in-place robot '{robot.name}'");
+            
+            RobotFactory factory = RobotFactory.Instance;
+            
+            // Extraer el Core temporalmente si está insertado
+            bool hadCore = false;
+            if (playerCore != null && robot.Core == playerCore && playerCore.IsActive)
+            {
+                playerCore.Extract();
+                hadCore = true;
+            }
+            
+            // Destruir todas las piezas estructurales actuales (excepto el Robot base)
+            ClearRobotParts(robot);
+            
+            // Crear y conectar las nuevas Hips
+            StructuralPart newHips = factory.CreateStructuralPart(hipsData);
+            if (newHips == null)
+            {
+                Debug.LogError("RobotSnapshot: No se pudo crear las Hips desde el snapshot.");
+                return false;
+            }
+            
+            robot.SetHips(newHips);
+            
+            // Restaurar armaduras de las Hips
+            RestoreArmorsToStructural(newHips, hipsArmors);
+            
+            // Restaurar piezas estructurales recursivamente
+            RestoreStructuralParts(newHips, attachedParts);
+            
+            // Reinsertar el Core si estaba insertado
+            if (hadCore && playerCore != null && coreWasInserted)
+            {
+                playerCore.InsertInto(robot);
+            }
+            
+            Debug.Log($"RobotSnapshot: Robot '{robot.name}' restaurado in-place exitosamente.");
+            return true;
+        }
+        
+        /// <summary>
+        /// Limpia todas las piezas estructurales de un robot.
+        /// Extrae cualquier Core antes de destruir las piezas.
+        /// </summary>
+        private void ClearRobotParts(Robot robot)
+        {
+            // Primero, extraer cualquier Core que esté en el robot
+            var cores = robot.GetComponentsInChildren<RobotCore>(true);
+            foreach (var core in cores)
+            {
+                if (core != null && core.IsActive)
+                {
+                    Debug.Log($"RobotSnapshot.ClearRobotParts: Extrayendo Core '{core.name}' antes de limpiar");
+                    core.Extract();
+                }
+            }
+            
+            // Obtener todas las piezas estructurales
+            var allParts = robot.GetAllStructuralParts();
+            
+            // Destruir cada pieza (en orden inverso para evitar problemas de jerarquía)
+            for (int i = allParts.Count - 1; i >= 0; i--)
+            {
+                var part = allParts[i];
+                if (part != null && part.gameObject != null)
+                {
+                    Object.Destroy(part.gameObject);
+                }
+            }
+            
+            // Limpiar la referencia a Hips en el robot
+            robot.ClearHips();
+        }
+        
         private void RestoreStructuralParts(StructuralPart parent, List<StructuralSnapshot> snapshots)
         {
             RobotFactory factory = RobotFactory.Instance;

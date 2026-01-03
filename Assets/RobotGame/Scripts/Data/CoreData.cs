@@ -42,25 +42,25 @@ namespace RobotGame.Data
         /// </summary>
         public bool CanUsePart(PartDataBase part)
         {
-            return part.IsCompatibleWith(this.tier);
+            return tier.IsCompatibleWith(part.tier);
         }
         
         /// <summary>
         /// Obtiene una lista descriptiva de las piezas compatibles.
-        /// Por ejemplo, para Tier1_2: "Compatible con piezas Tier 1-1 y Tier 1-2"
+        /// Por ejemplo, para Tier 1.2: "Compatible con piezas Tier 1.1 y Tier 1.2"
         /// </summary>
         public string GetCompatibilityDescription()
         {
-            int mainTier = MainTier;
-            int variant = TierVariant;
+            int mainTier = tier.MainTier;
+            int subTier = tier.SubTier;
             
-            if (variant == 1)
+            if (subTier == 1)
             {
-                return $"Compatible con piezas Tier {mainTier}-1";
+                return $"Compatible con piezas Tier {mainTier}.1";
             }
             else
             {
-                return $"Compatible con piezas Tier {mainTier}-1 hasta Tier {mainTier}-{variant}";
+                return $"Compatible con piezas Tier {mainTier}.1 hasta Tier {mainTier}.{subTier}";
             }
         }
         

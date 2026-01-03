@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using RobotGame.Enums;
+using RobotGame.Inventory;
 
 namespace RobotGame.Data
 {
@@ -54,6 +55,39 @@ namespace RobotGame.Data
         
         [Tooltip("Avatar para el animator (si usa humanoid/generic rig)")]
         public Avatar animatorAvatar;
+        
+        #region IInventoryItem Override
+        
+        /// <summary>
+        /// Subcategoría basada en el tipo de pieza estructural.
+        /// </summary>
+        public override InventorySubCategory SubCategory
+        {
+            get
+            {
+                switch (partType)
+                {
+                    case StructuralSocketType.Head:
+                        return InventorySubCategory.Head;
+                    case StructuralSocketType.Torso:
+                        return InventorySubCategory.Torso;
+                    case StructuralSocketType.Hips:
+                        return InventorySubCategory.Hips;
+                    case StructuralSocketType.LegLeft:
+                    case StructuralSocketType.LegRight:
+                        return InventorySubCategory.Legs;
+                    case StructuralSocketType.ArmLeft:
+                    case StructuralSocketType.ArmRight:
+                        return InventorySubCategory.Arms;
+                    case StructuralSocketType.Tail:
+                        return InventorySubCategory.Tail;
+                    default:
+                        return InventorySubCategory.None;
+                }
+            }
+        }
+        
+        #endregion
         
         /// <summary>
         /// Busca un socket por tipo.

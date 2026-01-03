@@ -6,33 +6,30 @@ using RobotGame.Data;
 using RobotGame.Systems;
 using RobotGame.Utils;
 using RobotGame.Enums;
+using RobotGame.Inventory;
+using RobotGame.UI;
 
 namespace RobotGame.Assembly
 {
     /// <summary>
-    /// Controlador de ensamblaje unificado.
-    /// Maneja la lógica de edición de robots independiente del tier.
+    /// Controlador de ensamblaje unificado con integración de inventario.
     /// 
     /// FUNCIONALIDAD:
     /// - Colocar/remover piezas de armadura en grillas
     /// - Colocar/remover piezas estructurales en sockets
     /// - Preview holográfico de piezas
-    /// - Detección de grillas y sockets bajo el mouse
+    /// - Integración con sistema de inventario y UI
     /// 
-    /// INTEGRACIÓN:
-    /// - Se activa cuando UnifiedAssemblyStation entra en modo edición
-    /// - Escucha eventos OnEditModeStarted/OnEditModeEnded
-    /// - Funciona igual para Tier 1 (jugador) y Tier 2+ (mechas)
+    /// FLUJO:
+    /// 1. Estación activa el modo edición
+    /// 2. Se abre el panel de inventario
+    /// 3. Usuario selecciona item del inventario o usa scroll
+    /// 4. Click para colocar (resta del inventario)
+    /// 5. Click derecho para remover (suma al inventario)
     /// </summary>
     public class RobotAssemblyController : MonoBehaviour
     {
         #region Serialized Fields
-        
-        [Header("Piezas Disponibles - Armadura")]
-        [SerializeField] private List<ArmorPartData> armorParts = new List<ArmorPartData>();
-        
-        [Header("Piezas Disponibles - Estructurales")]
-        [SerializeField] private List<StructuralPartData> structuralParts = new List<StructuralPartData>();
         
         [Header("Controles")]
         [SerializeField] private KeyCode toggleModeKey = KeyCode.Tab;
@@ -46,6 +43,11 @@ namespace RobotGame.Assembly
         
         [Header("Referencias")]
         [SerializeField] private UnifiedAssemblyStation station;
+        [SerializeField] private InventoryPanelUI inventoryPanel;
+        
+        [Header("Fallback - Piezas sin inventario (para testing)")]
+        [SerializeField] private List<ArmorPartData> fallbackArmorParts = new List<ArmorPartData>();
+        [SerializeField] private List<StructuralPartData> fallbackStructuralParts = new List<StructuralPartData>();
         
         #endregion
         
@@ -55,15 +57,20 @@ namespace RobotGame.Assembly
         private bool isActive = false;
         private Robot targetRobot;
         private AssemblyMode currentMode = AssemblyMode.Armor;
+        private AssemblyEditMode currentEditMode = AssemblyEditMode.None;
+        private bool useInventory = true;
         
         // Cámara
         private Camera mainCamera;
         private PlayerCamera playerCamera;
         
+        // Pieza seleccionada actual
+        private ArmorPartData selectedArmorData;
+        private StructuralPartData selectedStructuralData;
+        
         // Armor
         private List<GridHead> availableGrids = new List<GridHead>();
         private GridHead hoveredGrid = null;
-        private int currentArmorIndex = 0;
         private int currentPositionX = 0;
         private int currentPositionY = 0;
         private GridRotation.Rotation currentRotation = GridRotation.Rotation.Deg0;
@@ -71,7 +78,10 @@ namespace RobotGame.Assembly
         // Structural
         private List<StructuralSocket> availableSockets = new List<StructuralSocket>();
         private StructuralSocket hoveredSocket = null;
-        private int currentStructuralIndex = 0;
+        
+        // Índices para fallback (sin inventario)
+        private int fallbackArmorIndex = 0;
+        private int fallbackStructuralIndex = 0;
         
         // Preview Armor
         private GameObject armorPreviewObject;
@@ -99,6 +109,8 @@ namespace RobotGame.Assembly
         public bool IsActive => isActive;
         public Robot TargetRobot => targetRobot;
         public AssemblyMode CurrentMode => currentMode;
+        public ArmorPartData SelectedArmor => selectedArmorData;
+        public StructuralPartData SelectedStructural => selectedStructuralData;
         
         #endregion
         
@@ -128,6 +140,22 @@ namespace RobotGame.Assembly
                 station.OnEditModeEnded += OnEditModeEnded;
             }
             
+            // Buscar panel de inventario si no está asignado
+            if (inventoryPanel == null)
+            {
+                inventoryPanel = FindObjectOfType<InventoryPanelUI>();
+            }
+            
+            // Suscribirse a eventos del inventario
+            if (inventoryPanel != null)
+            {
+                inventoryPanel.OnItemSelected += OnInventoryItemSelected;
+                inventoryPanel.OnCategoryChanged += OnInventoryCategoryChanged;
+            }
+            
+            // Verificar si hay inventario disponible
+            useInventory = PlayerInventory.Instance != null && inventoryPanel != null;
+            
             mainCamera = Camera.main;
             playerCamera = FindObjectOfType<PlayerCamera>();
         }
@@ -140,6 +168,12 @@ namespace RobotGame.Assembly
                 station.OnEditModeEnded -= OnEditModeEnded;
             }
             
+            if (inventoryPanel != null)
+            {
+                inventoryPanel.OnItemSelected -= OnInventoryItemSelected;
+                inventoryPanel.OnCategoryChanged -= OnInventoryCategoryChanged;
+            }
+            
             CleanupPreviewObjects();
         }
         
@@ -147,7 +181,7 @@ namespace RobotGame.Assembly
         {
             if (!isActive) return;
             
-            // Toggle modo
+            // Toggle modo con Tab
             if (Input.GetKeyDown(toggleModeKey))
             {
                 ToggleMode();
@@ -168,7 +202,11 @@ namespace RobotGame.Assembly
         {
             if (!isActive) return;
             
-            DrawEditModeUI();
+            // Solo mostrar UI de debug si no hay panel de inventario
+            if (inventoryPanel == null || !inventoryPanel.IsOpen)
+            {
+                DrawEditModeUI();
+            }
         }
         
         #endregion
@@ -180,6 +218,7 @@ namespace RobotGame.Assembly
             if (s != station) return;
             
             targetRobot = robot;
+            currentEditMode = mode;
             
             // Determinar si usar snapshot
             useSnapshot = (mode == AssemblyEditMode.EditOwnRobot || mode == AssemblyEditMode.EditMecha);
@@ -187,6 +226,12 @@ namespace RobotGame.Assembly
             if (useSnapshot)
             {
                 editSnapshot = RobotSnapshot.Capture(targetRobot);
+                Debug.Log($"RobotAssemblyController: Snapshot capturado para '{targetRobot.name}'");
+            }
+            else
+            {
+                editSnapshot = null;
+                Debug.Log($"RobotAssemblyController: Sin snapshot (modo cascarón)");
             }
             
             ActivateController();
@@ -196,7 +241,185 @@ namespace RobotGame.Assembly
         {
             if (s != station) return;
             
+            // Validar antes de salir si hay snapshot
+            if (useSnapshot && editSnapshot != null)
+            {
+                if (!ValidateAndExit())
+                {
+                    // No se puede salir, la configuración es inválida
+                    return;
+                }
+            }
+            
             DeactivateController();
+            
+            // Notificar a la estación que complete la salida
+            station.CompleteExitEditMode();
+        }
+        
+        /// <summary>
+        /// Valida la configuración actual y restaura si es inválida.
+        /// </summary>
+        /// <returns>True si se puede salir, False si se restauró snapshot.</returns>
+        private bool ValidateAndExit()
+        {
+            if (editSnapshot == null)
+            {
+                return true; // Sin snapshot, siempre se puede salir
+            }
+            
+            if (targetRobot == null)
+            {
+                Debug.LogWarning("RobotAssemblyController: No hay robot. Restaurando desde snapshot...");
+                RestoreFromSnapshot();
+                return true;
+            }
+            
+            // Capturar estado actual
+            RobotSnapshot currentState = RobotSnapshot.Capture(targetRobot);
+            
+            // Validar que la configuración sea válida
+            List<string> errors;
+            if (!currentState.IsValid(out errors))
+            {
+                Debug.LogWarning($"RobotAssemblyController: Configuración inválida ({string.Join(", ", errors)}). Restaurando desde snapshot...");
+                RestoreFromSnapshot();
+                return true;
+            }
+            
+            // Configuración válida, limpiar snapshot
+            Debug.Log("RobotAssemblyController: Configuración válida. Guardando cambios.");
+            editSnapshot = null;
+            return true;
+        }
+        
+        /// <summary>
+        /// Restaura el robot desde el snapshot guardado.
+        /// También restaura el inventario (devuelve piezas colocadas, quita piezas removidas).
+        /// </summary>
+        private void RestoreFromSnapshot()
+        {
+            if (editSnapshot == null)
+            {
+                Debug.LogWarning("RobotAssemblyController: No hay snapshot para restaurar.");
+                return;
+            }
+            
+            // Capturar estado actual antes de restaurar (para calcular diferencias de inventario)
+            RobotSnapshot currentState = null;
+            if (targetRobot != null)
+            {
+                currentState = RobotSnapshot.Capture(targetRobot);
+            }
+            
+            RobotCore playerCore = FindPlayerCore();
+            
+            // Determinar si es un mecha (tiene WildRobot)
+            bool isMecha = targetRobot != null && targetRobot.GetComponent<RobotGame.AI.WildRobot>() != null;
+            
+            if (isMecha)
+            {
+                // Para mechas: restaurar in-place para preservar WildRobot y otros componentes
+                Debug.Log("RobotAssemblyController: Restaurando mecha in-place...");
+                
+                if (editSnapshot.RestoreInPlace(targetRobot, playerCore))
+                {
+                    Debug.Log("RobotAssemblyController: Mecha restaurado in-place exitosamente.");
+                    
+                    // Restaurar inventario si está activo
+                    if (useInventory && currentState != null)
+                    {
+                        RestoreInventoryFromSnapshot(editSnapshot, currentState);
+                    }
+                }
+                else
+                {
+                    Debug.LogError("RobotAssemblyController: Error al restaurar mecha in-place.");
+                }
+            }
+            else
+            {
+                // Para robots normales: destruir y recrear
+                Robot restoredRobot = editSnapshot.Restore(targetRobot, playerCore);
+                
+                if (restoredRobot != null)
+                {
+                    targetRobot = restoredRobot;
+                    Debug.Log("RobotAssemblyController: Configuración restaurada desde snapshot.");
+                    
+                    // Restaurar inventario si está activo
+                    if (useInventory && currentState != null)
+                    {
+                        RestoreInventoryFromSnapshot(editSnapshot, currentState);
+                    }
+                }
+                else
+                {
+                    Debug.LogError("RobotAssemblyController: Error al restaurar desde snapshot.");
+                }
+            }
+            
+            editSnapshot = null;
+        }
+        
+        /// <summary>
+        /// Restaura el inventario calculando la diferencia entre snapshot y estado actual.
+        /// </summary>
+        private void RestoreInventoryFromSnapshot(RobotSnapshot originalSnapshot, RobotSnapshot currentSnapshot)
+        {
+            // TODO: Implementar lógica detallada de restauración de inventario
+            // Por ahora, esto requeriría que RobotSnapshot almacene las piezas
+            // y compare qué se agregó/quitó
+            
+            Debug.Log("RobotAssemblyController: Inventario restaurado (pendiente implementación detallada)");
+        }
+        
+        #endregion
+        
+        #region Inventory Events
+        
+        private void OnInventoryItemSelected(IInventoryItem item)
+        {
+            if (item == null) return;
+            
+            // Determinar tipo de item y seleccionarlo
+            if (item is ArmorPartData armorData)
+            {
+                selectedArmorData = armorData;
+                
+                // Cambiar a modo armor si no estamos en él
+                if (currentMode != AssemblyMode.Armor)
+                {
+                    SetMode(AssemblyMode.Armor);
+                }
+                
+                Debug.Log($"RobotAssemblyController: Armadura seleccionada - {armorData.displayName}");
+            }
+            else if (item is StructuralPartData structuralData)
+            {
+                selectedStructuralData = structuralData;
+                
+                // Cambiar a modo structural si no estamos en él
+                if (currentMode != AssemblyMode.Structural)
+                {
+                    SetMode(AssemblyMode.Structural);
+                }
+                
+                Debug.Log($"RobotAssemblyController: Estructural seleccionada - {structuralData.displayName}");
+            }
+        }
+        
+        private void OnInventoryCategoryChanged(InventoryCategory category)
+        {
+            // Sincronizar modo con categoría del inventario
+            if (category == InventoryCategory.StructuralParts)
+            {
+                SetMode(AssemblyMode.Structural);
+            }
+            else if (category == InventoryCategory.ArmorParts)
+            {
+                SetMode(AssemblyMode.Armor);
+            }
         }
         
         #endregion
@@ -228,10 +451,19 @@ namespace RobotGame.Assembly
             currentRotation = GridRotation.Rotation.Deg0;
             currentPreviewData = null;
             currentStructuralPreviewData = null;
+            selectedArmorData = null;
+            selectedStructuralData = null;
             
             // Recolectar grillas y sockets
             CollectAvailableGrids();
             CollectAvailableSockets();
+            
+            // Abrir panel de inventario con el tier de la estación
+            if (inventoryPanel != null)
+            {
+                TierInfo stationTier = station != null ? station.StationTier : TierInfo.Tier1_1;
+                inventoryPanel.EnterEditMode(currentMode, stationTier);
+            }
             
             Debug.Log($"RobotAssemblyController: Activado para '{targetRobot.name}'");
         }
@@ -239,6 +471,7 @@ namespace RobotGame.Assembly
         private void DeactivateController()
         {
             isActive = false;
+            currentEditMode = AssemblyEditMode.None;
             
             // Restaurar colliders
             RestoreRobotMainColliders();
@@ -247,12 +480,17 @@ namespace RobotGame.Assembly
             if (armorPreviewObject != null) armorPreviewObject.SetActive(false);
             if (structuralPreviewObject != null) structuralPreviewObject.SetActive(false);
             
+            // Cerrar panel de inventario
+            if (inventoryPanel != null)
+            {
+                inventoryPanel.ExitEditMode();
+            }
+            
             // Restaurar cámara
             if (playerCamera != null)
             {
                 playerCamera.ExitEditMode();
                 
-                // Buscar el robot del jugador
                 RobotCore playerCore = FindPlayerCore();
                 if (playerCore != null && playerCore.CurrentRobot != null)
                 {
@@ -265,6 +503,8 @@ namespace RobotGame.Assembly
             editSnapshot = null;
             availableGrids.Clear();
             availableSockets.Clear();
+            selectedArmorData = null;
+            selectedStructuralData = null;
             
             Debug.Log("RobotAssemblyController: Desactivado");
         }
@@ -282,6 +522,48 @@ namespace RobotGame.Assembly
         
         #endregion
         
+        #region Mode Management
+        
+        private void ToggleMode()
+        {
+            AssemblyMode newMode = currentMode == AssemblyMode.Armor 
+                ? AssemblyMode.Structural 
+                : AssemblyMode.Armor;
+            
+            SetMode(newMode);
+        }
+        
+        private void SetMode(AssemblyMode mode)
+        {
+            if (currentMode == mode) return;
+            
+            // Ocultar preview actual
+            if (currentMode == AssemblyMode.Armor)
+            {
+                if (armorPreviewObject != null) armorPreviewObject.SetActive(false);
+            }
+            else
+            {
+                if (structuralPreviewObject != null) structuralPreviewObject.SetActive(false);
+            }
+            
+            currentMode = mode;
+            
+            // Sincronizar con panel de inventario
+            if (inventoryPanel != null && inventoryPanel.IsOpen)
+            {
+                InventoryCategory targetCategory = mode == AssemblyMode.Structural 
+                    ? InventoryCategory.StructuralParts 
+                    : InventoryCategory.ArmorParts;
+                
+                inventoryPanel.SelectCategory(targetCategory);
+            }
+            
+            Debug.Log($"RobotAssemblyController: Modo cambiado a {mode}");
+        }
+        
+        #endregion
+        
         #region Collider Management
         
         private void DisableRobotMainColliders()
@@ -294,7 +576,6 @@ namespace RobotGame.Assembly
             
             foreach (var col in allColliders)
             {
-                // Solo desactivar colliders que NO son triggers
                 if (!col.isTrigger && 
                     col.GetComponent<GridHead>() == null && 
                     col.GetComponent<StructuralSocket>() == null)
@@ -317,30 +598,7 @@ namespace RobotGame.Assembly
                 }
             }
             
-            Debug.Log($"RobotAssemblyController: {disabledColliders.Count} colliders restaurados");
             disabledColliders.Clear();
-        }
-        
-        #endregion
-        
-        #region Mode Toggle
-        
-        private void ToggleMode()
-        {
-            // Ocultar preview actual
-            if (currentMode == AssemblyMode.Armor)
-            {
-                if (armorPreviewObject != null) armorPreviewObject.SetActive(false);
-            }
-            else
-            {
-                if (structuralPreviewObject != null) structuralPreviewObject.SetActive(false);
-            }
-            
-            // Cambiar modo
-            currentMode = currentMode == AssemblyMode.Armor ? AssemblyMode.Structural : AssemblyMode.Armor;
-            
-            Debug.Log($"RobotAssemblyController: Modo cambiado a {currentMode}");
         }
         
         #endregion
@@ -351,11 +609,11 @@ namespace RobotGame.Assembly
         {
             DetectGridUnderMouse();
             
-            // Cambiar pieza con scroll
+            // Cambiar pieza con scroll (solo si no hay inventario o no hay selección)
             float scroll = Input.GetAxis("Mouse ScrollWheel");
-            if (scroll != 0)
+            if (scroll != 0 && !useInventory)
             {
-                ChangeArmorPiece(scroll > 0 ? 1 : -1);
+                CycleFallbackArmor(scroll > 0 ? 1 : -1);
             }
             
             // Rotar con R
@@ -392,18 +650,10 @@ namespace RobotGame.Assembly
             {
                 if (debugMode)
                 {
-                    Debug.Log($"=== RAYCAST HIT ===");
-                    Debug.Log($"  Object: {hit.collider.gameObject.name}");
-                    Debug.Log($"  IsTrigger: {hit.collider.isTrigger}");
+                    Debug.Log($"=== RAYCAST HIT: {hit.collider.gameObject.name} ===");
                 }
                 
                 GridHead grid = hit.collider.GetComponent<GridHead>();
-                
-                if (debugMode && grid != null)
-                {
-                    Debug.Log($"  GridHead: {grid.name}");
-                    Debug.Log($"  In availableGrids: {availableGrids.Contains(grid)}");
-                }
                 
                 if (grid != null && availableGrids.Contains(grid))
                 {
@@ -434,23 +684,35 @@ namespace RobotGame.Assembly
             currentPositionY = cellY;
         }
         
-        private void ChangeArmorPiece(int direction)
-        {
-            if (armorParts.Count == 0) return;
-            
-            currentArmorIndex += direction;
-            
-            if (currentArmorIndex < 0)
-                currentArmorIndex = armorParts.Count - 1;
-            else if (currentArmorIndex >= armorParts.Count)
-                currentArmorIndex = 0;
-        }
-        
         private ArmorPartData GetCurrentArmorData()
         {
-            if (armorParts.Count == 0 || currentArmorIndex < 0 || currentArmorIndex >= armorParts.Count)
-                return null;
-            return armorParts[currentArmorIndex];
+            // Prioridad: selección del inventario
+            if (selectedArmorData != null)
+            {
+                return selectedArmorData;
+            }
+            
+            // Fallback: lista local
+            if (fallbackArmorParts.Count > 0 && fallbackArmorIndex >= 0 && fallbackArmorIndex < fallbackArmorParts.Count)
+            {
+                return fallbackArmorParts[fallbackArmorIndex];
+            }
+            
+            return null;
+        }
+        
+        private void CycleFallbackArmor(int direction)
+        {
+            if (fallbackArmorParts.Count == 0) return;
+            
+            fallbackArmorIndex += direction;
+            
+            if (fallbackArmorIndex < 0)
+                fallbackArmorIndex = fallbackArmorParts.Count - 1;
+            else if (fallbackArmorIndex >= fallbackArmorParts.Count)
+                fallbackArmorIndex = 0;
+            
+            selectedArmorData = fallbackArmorParts[fallbackArmorIndex];
         }
         
         private void TryPlaceArmor()
@@ -458,9 +720,18 @@ namespace RobotGame.Assembly
             if (hoveredGrid == null) return;
             
             ArmorPartData armorData = GetCurrentArmorData();
-            if (armorData == null) return;
+            if (armorData == null) 
+            {
+                Debug.LogWarning("RobotAssemblyController: No hay armadura seleccionada");
+                return;
+            }
             
-            // Las armaduras no tienen restricción de tier
+            // Verificar inventario
+            if (useInventory && !PlayerInventory.Instance.HasItem(armorData, 1))
+            {
+                Debug.LogWarning($"RobotAssemblyController: No tienes {armorData.displayName} en el inventario");
+                return;
+            }
             
             if (!hoveredGrid.CanPlace(armorData, currentPositionX, currentPositionY, currentRotation))
             {
@@ -476,6 +747,12 @@ namespace RobotGame.Assembly
             
             if (hoveredGrid.TryPlace(armorPart, currentPositionX, currentPositionY, currentRotation))
             {
+                // Restar del inventario
+                if (useInventory)
+                {
+                    PlayerInventory.Instance.RemoveItem(armorData, 1);
+                }
+                
                 Debug.Log($"Armadura '{armorData.displayName}' colocada");
                 
                 if (armorPart.AdditionalGrids != null && armorPart.AdditionalGrids.Count > 0)
@@ -497,12 +774,19 @@ namespace RobotGame.Assembly
             ArmorPart part = hoveredGrid.GetPartAtCell(currentPositionX, currentPositionY);
             if (part != null)
             {
+                ArmorPartData partData = part.ArmorData;
                 bool hadAdditionalGrids = part.AdditionalGrids != null && part.AdditionalGrids.Count > 0;
                 
                 if (hoveredGrid.Remove(part))
                 {
+                    // Devolver al inventario
+                    if (useInventory && partData != null)
+                    {
+                        PlayerInventory.Instance.AddItem(partData, 1);
+                    }
+                    
                     Destroy(part.gameObject);
-                    Debug.Log("Armadura removida");
+                    Debug.Log($"Armadura removida{(useInventory ? " y devuelta al inventario" : "")}");
                     
                     if (hadAdditionalGrids)
                     {
@@ -520,11 +804,11 @@ namespace RobotGame.Assembly
         {
             DetectSocketUnderMouse();
             
-            // Cambiar pieza con scroll
+            // Cambiar pieza con scroll (solo sin inventario)
             float scroll = Input.GetAxis("Mouse ScrollWheel");
-            if (scroll != 0)
+            if (scroll != 0 && !useInventory)
             {
-                ChangeStructuralPiece(scroll > 0 ? 1 : -1);
+                CycleFallbackStructural(scroll > 0 ? 1 : -1);
             }
             
             // Colocar con click izquierdo
@@ -561,32 +845,55 @@ namespace RobotGame.Assembly
             hoveredSocket = newHoveredSocket;
         }
         
-        private void ChangeStructuralPiece(int direction)
-        {
-            if (structuralParts.Count == 0) return;
-            
-            currentStructuralIndex += direction;
-            
-            if (currentStructuralIndex < 0)
-                currentStructuralIndex = structuralParts.Count - 1;
-            else if (currentStructuralIndex >= structuralParts.Count)
-                currentStructuralIndex = 0;
-        }
-        
         private StructuralPartData GetCurrentStructuralData()
         {
-            if (structuralParts.Count == 0 || currentStructuralIndex < 0 || currentStructuralIndex >= structuralParts.Count)
-                return null;
-            return structuralParts[currentStructuralIndex];
+            // Prioridad: selección del inventario
+            if (selectedStructuralData != null)
+            {
+                return selectedStructuralData;
+            }
+            
+            // Fallback: lista local
+            if (fallbackStructuralParts.Count > 0 && fallbackStructuralIndex >= 0 && fallbackStructuralIndex < fallbackStructuralParts.Count)
+            {
+                return fallbackStructuralParts[fallbackStructuralIndex];
+            }
+            
+            return null;
+        }
+        
+        private void CycleFallbackStructural(int direction)
+        {
+            if (fallbackStructuralParts.Count == 0) return;
+            
+            fallbackStructuralIndex += direction;
+            
+            if (fallbackStructuralIndex < 0)
+                fallbackStructuralIndex = fallbackStructuralParts.Count - 1;
+            else if (fallbackStructuralIndex >= fallbackStructuralParts.Count)
+                fallbackStructuralIndex = 0;
+            
+            selectedStructuralData = fallbackStructuralParts[fallbackStructuralIndex];
         }
         
         private void TryPlaceStructural()
         {
-            if (hoveredSocket == null || structuralParts.Count == 0) return;
+            if (hoveredSocket == null) return;
             if (hoveredSocket.IsOccupied) return;
             
             StructuralPartData partData = GetCurrentStructuralData();
-            if (partData == null) return;
+            if (partData == null)
+            {
+                Debug.LogWarning("RobotAssemblyController: No hay pieza estructural seleccionada");
+                return;
+            }
+            
+            // Verificar inventario
+            if (useInventory && !PlayerInventory.Instance.HasItem(partData, 1))
+            {
+                Debug.LogWarning($"RobotAssemblyController: No tienes {partData.displayName} en el inventario");
+                return;
+            }
             
             // Validar tipo de socket
             if (partData.partType != hoveredSocket.SocketType)
@@ -595,7 +902,7 @@ namespace RobotGame.Assembly
                 return;
             }
             
-            // Validar tier para piezas estructurales
+            // Validar tier
             if (!partData.IsCompatibleWith(targetRobot.CurrentTier))
             {
                 Debug.LogWarning($"Pieza no compatible con robot Tier {targetRobot.CurrentTier}");
@@ -610,36 +917,35 @@ namespace RobotGame.Assembly
                 return;
             }
             
-            // Caso especial: si es el HipsSocket, usar AttachHips del Robot
+            bool success = false;
+            
+            // Caso especial: HipsSocket
             if (hoveredSocket == targetRobot.HipsSocket)
             {
-                if (targetRobot.AttachHips(part))
-                {
-                    Debug.Log($"Hips '{partData.displayName}' conectadas");
-                    Physics.SyncTransforms();
-                    CollectAvailableSockets();
-                    CollectAvailableGrids();
-                }
-                else
-                {
-                    Debug.LogError("Error al conectar las Hips");
-                    Destroy(part.gameObject);
-                }
+                success = targetRobot.AttachHips(part);
             }
             else
             {
-                if (hoveredSocket.TryAttach(part))
+                success = hoveredSocket.TryAttach(part);
+            }
+            
+            if (success)
+            {
+                // Restar del inventario
+                if (useInventory)
                 {
-                    Debug.Log($"Pieza '{partData.displayName}' colocada");
-                    Physics.SyncTransforms();
-                    CollectAvailableSockets();
-                    CollectAvailableGrids();
+                    PlayerInventory.Instance.RemoveItem(partData, 1);
                 }
-                else
-                {
-                    Debug.LogError("Error al conectar la pieza");
-                    Destroy(part.gameObject);
-                }
+                
+                Debug.Log($"Pieza '{partData.displayName}' colocada");
+                Physics.SyncTransforms();
+                CollectAvailableSockets();
+                CollectAvailableGrids();
+            }
+            else
+            {
+                Debug.LogError("Error al conectar la pieza");
+                Destroy(part.gameObject);
             }
         }
         
@@ -660,12 +966,45 @@ namespace RobotGame.Assembly
                 }
             }
             
+            StructuralPartData partData = part.PartData;
+            
+            // IMPORTANTE: Extraer cualquier Core antes de destruir la pieza
+            ExtractCoreFromPart(part);
+            
             hoveredSocket.Detach();
+            
+            // Devolver al inventario
+            if (useInventory && partData != null)
+            {
+                PlayerInventory.Instance.AddItem(partData, 1);
+            }
+            
             Destroy(part.gameObject);
-            Debug.Log("Pieza estructural removida");
+            Debug.Log($"Pieza estructural removida{(useInventory ? " y devuelta al inventario" : "")}");
             
             CollectAvailableSockets();
             CollectAvailableGrids();
+        }
+        
+        /// <summary>
+        /// Extrae cualquier Core que esté dentro de una pieza estructural antes de destruirla.
+        /// Esto protege tanto el Core del jugador como los Cores de mechas.
+        /// </summary>
+        private void ExtractCoreFromPart(StructuralPart part)
+        {
+            if (part == null) return;
+            
+            // Buscar cualquier RobotCore en la pieza y sus hijos
+            var cores = part.GetComponentsInChildren<RobotCore>(true);
+            
+            foreach (var core in cores)
+            {
+                if (core != null && core.IsActive)
+                {
+                    Debug.Log($"RobotAssemblyController: Extrayendo Core '{core.name}' antes de destruir la pieza");
+                    core.Extract();
+                }
+            }
         }
         
         #endregion
@@ -688,7 +1027,6 @@ namespace RobotGame.Assembly
                     grid.EnsureCollider();
                 }
                 
-                // También grillas de armaduras existentes
                 CollectArmorPartGrids(part.ArmorGrids);
             }
             
@@ -723,14 +1061,12 @@ namespace RobotGame.Assembly
             
             if (targetRobot == null) return;
             
-            // HipsSocket siempre disponible
             if (targetRobot.HipsSocket != null)
             {
                 availableSockets.Add(targetRobot.HipsSocket);
                 targetRobot.HipsSocket.EnsureCollider();
             }
             
-            // Sockets de todas las partes estructurales
             var parts = targetRobot.GetAllStructuralParts();
             foreach (var part in parts)
             {
@@ -763,7 +1099,7 @@ namespace RobotGame.Assembly
             
             // Material de preview
             previewMaterial = new Material(Shader.Find("Standard"));
-            previewMaterial.SetFloat("_Mode", 3); // Transparent
+            previewMaterial.SetFloat("_Mode", 3);
             previewMaterial.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
             previewMaterial.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
             previewMaterial.SetInt("_ZWrite", 0);
@@ -789,7 +1125,7 @@ namespace RobotGame.Assembly
         {
             ArmorPartData armorData = GetCurrentArmorData();
             
-            UpdateArmorPreviewModel();
+            UpdateArmorPreviewModel(armorData);
             
             if (armorData == null || armorData.prefab == null)
             {
@@ -829,6 +1165,13 @@ namespace RobotGame.Assembly
             else
             {
                 bool canPlace = hoveredGrid.CanPlace(armorData, currentPositionX, currentPositionY, currentRotation);
+                
+                // Verificar inventario también
+                if (canPlace && useInventory && !PlayerInventory.Instance.HasItem(armorData, 1))
+                {
+                    canPlace = false;
+                }
+                
                 previewColor = canPlace ? previewColorValid : previewColorInvalid;
                 
                 Vector3 cellPos = hoveredGrid.CellToWorldPosition(currentPositionX, currentPositionY);
@@ -839,15 +1182,12 @@ namespace RobotGame.Assembly
             previewMaterial.color = previewColor;
         }
         
-        private void UpdateArmorPreviewModel()
+        private void UpdateArmorPreviewModel(ArmorPartData armorData)
         {
-            ArmorPartData armorData = GetCurrentArmorData();
-            
             if (armorData != currentPreviewData)
             {
                 currentPreviewData = armorData;
                 
-                // Limpiar modelo anterior
                 foreach (Transform child in modelContainer.transform)
                 {
                     Destroy(child.gameObject);
@@ -860,7 +1200,6 @@ namespace RobotGame.Assembly
                     modelInstance.transform.localPosition = Vector3.zero;
                     modelInstance.transform.localRotation = Quaternion.identity;
                     
-                    // Desactivar colliders y aplicar material
                     foreach (var col in modelInstance.GetComponentsInChildren<Collider>())
                     {
                         col.enabled = false;
@@ -884,7 +1223,7 @@ namespace RobotGame.Assembly
         {
             StructuralPartData structuralData = GetCurrentStructuralData();
             
-            UpdateStructuralPreviewModel();
+            UpdateStructuralPreviewModel(structuralData);
             
             if (structuralData == null || structuralData.prefab == null || hoveredSocket == null)
             {
@@ -894,16 +1233,18 @@ namespace RobotGame.Assembly
             
             structuralPreviewObject.SetActive(true);
             
-            // Posicionar en el socket
             structuralPreviewObject.transform.position = hoveredSocket.transform.position;
             structuralPreviewObject.transform.rotation = hoveredSocket.transform.rotation;
             
-            // Color según validez
+            // Validaciones
             bool tierCompatible = structuralData.IsCompatibleWith(targetRobot.CurrentTier);
             bool typeMatches = structuralData.partType == hoveredSocket.SocketType;
             bool socketFree = !hoveredSocket.IsOccupied;
+            bool hasInInventory = !useInventory || PlayerInventory.Instance.HasItem(structuralData, 1);
             
-            Color previewColor = (tierCompatible && typeMatches && socketFree) ? previewColorValid : previewColorInvalid;
+            Color previewColor = (tierCompatible && typeMatches && socketFree && hasInInventory) 
+                ? previewColorValid 
+                : previewColorInvalid;
             
             foreach (var renderer in structuralPreviewObject.GetComponentsInChildren<MeshRenderer>())
             {
@@ -914,15 +1255,12 @@ namespace RobotGame.Assembly
             }
         }
         
-        private void UpdateStructuralPreviewModel()
+        private void UpdateStructuralPreviewModel(StructuralPartData structuralData)
         {
-            StructuralPartData structuralData = GetCurrentStructuralData();
-            
             if (structuralData != currentStructuralPreviewData)
             {
                 currentStructuralPreviewData = structuralData;
                 
-                // Limpiar modelo anterior
                 foreach (Transform child in structuralPreviewObject.transform)
                 {
                     Destroy(child.gameObject);
@@ -934,7 +1272,6 @@ namespace RobotGame.Assembly
                     modelInstance.transform.localPosition = Vector3.zero;
                     modelInstance.transform.localRotation = Quaternion.identity;
                     
-                    // Desactivar colliders y aplicar material transparente
                     foreach (var col in modelInstance.GetComponentsInChildren<Collider>())
                     {
                         col.enabled = false;
@@ -955,16 +1292,17 @@ namespace RobotGame.Assembly
         
         #endregion
         
-        #region UI
+        #region Debug UI
         
         private void DrawEditModeUI()
         {
-            GUILayout.BeginArea(new Rect(10, 60, 250, 200));
+            GUILayout.BeginArea(new Rect(10, 60, 250, 250));
             GUILayout.BeginVertical("box");
             
             GUILayout.Label($"=== EDITANDO ROBOT ===");
             GUILayout.Label($"Robot: {targetRobot?.name}");
             GUILayout.Label($"Tier: {targetRobot?.CurrentTier}");
+            GUILayout.Label($"Inventario: {(useInventory ? "Activo" : "Desactivado")}");
             GUILayout.Label("");
             GUILayout.Label($"Modo: {currentMode}");
             GUILayout.Label($"[Tab] Cambiar modo");
@@ -974,16 +1312,30 @@ namespace RobotGame.Assembly
             {
                 ArmorPartData armor = GetCurrentArmorData();
                 GUILayout.Label($"Pieza: {armor?.displayName ?? "Ninguna"}");
-                GUILayout.Label($"Tamaño: {armor?.tailGrid.gridInfo.sizeX}x{armor?.tailGrid.gridInfo.sizeY}");
-                GUILayout.Label("[Scroll] Cambiar pieza");
+                if (armor != null)
+                {
+                    GUILayout.Label($"Tamaño: {armor.tailGrid.gridInfo.sizeX}x{armor.tailGrid.gridInfo.sizeY}");
+                    if (useInventory)
+                    {
+                        int count = PlayerInventory.Instance.GetItemCount(armor);
+                        GUILayout.Label($"En inventario: {count}");
+                    }
+                }
                 GUILayout.Label("[R] Rotar");
             }
             else
             {
                 StructuralPartData structural = GetCurrentStructuralData();
                 GUILayout.Label($"Pieza: {structural?.displayName ?? "Ninguna"}");
-                GUILayout.Label($"Tipo: {structural?.partType}");
-                GUILayout.Label("[Scroll] Cambiar pieza");
+                if (structural != null)
+                {
+                    GUILayout.Label($"Tipo: {structural.partType}");
+                    if (useInventory)
+                    {
+                        int count = PlayerInventory.Instance.GetItemCount(structural);
+                        GUILayout.Label($"En inventario: {count}");
+                    }
+                }
             }
             
             GUILayout.Label("");

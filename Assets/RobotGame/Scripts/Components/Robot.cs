@@ -22,7 +22,7 @@ namespace RobotGame.Components
         [SerializeField] private Transform hipsAnchor;
         [SerializeField] private StructuralSocket hipsSocket;
         [SerializeField] private StructuralPart hips;
-        [SerializeField] private RobotTier currentTier;
+        [SerializeField] private TierInfo currentTier = TierInfo.Tier1_1;
         
         [Header("Estado")]
         [SerializeField] private bool isOperational = false;
@@ -55,7 +55,7 @@ namespace RobotGame.Components
         /// <summary>
         /// Tier actual del robot (definido por el core).
         /// </summary>
-        public RobotTier CurrentTier => currentTier;
+        public TierInfo CurrentTier => currentTier;
         
         /// <summary>
         /// Si el robot está operacional (tiene core y está activo).
@@ -65,7 +65,7 @@ namespace RobotGame.Components
         /// <summary>
         /// Inicializa el robot con su estructura base (crea el HipsAnchor y HipsSocket).
         /// </summary>
-        public void Initialize(string id, string name, RobotTier tier)
+        public void Initialize(string id, string name, TierInfo tier)
         {
             robotId = id ?? System.Guid.NewGuid().ToString();
             robotName = name ?? "Robot";
@@ -79,7 +79,7 @@ namespace RobotGame.Components
         /// <summary>
         /// Inicializa el robot con sus componentes base (versión legacy con hips ya creadas).
         /// </summary>
-        public void Initialize(string id, string name, StructuralPart hipsComponent, RobotTier tier)
+        public void Initialize(string id, string name, StructuralPart hipsComponent, TierInfo tier)
         {
             robotId = id ?? System.Guid.NewGuid().ToString();
             robotName = name ?? "Robot";
@@ -161,6 +161,21 @@ namespace RobotGame.Components
             hips = null;
             
             return detachedHips;
+        }
+        
+        /// <summary>
+        /// Limpia la referencia a Hips sin desconectar.
+        /// Usado cuando las piezas ya fueron destruidas externamente.
+        /// </summary>
+        public void ClearHips()
+        {
+            hips = null;
+            
+            // También limpiar el socket si existe
+            if (hipsSocket != null)
+            {
+                hipsSocket.ForceDetach();
+            }
         }
         
         /// <summary>

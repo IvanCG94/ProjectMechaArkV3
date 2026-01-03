@@ -38,7 +38,7 @@ namespace RobotGame.Data
         
         [Header("Tier")]
         [Tooltip("Tier del robot salvaje (define qué piezas puede usar)")]
-        public RobotTier tier = RobotTier.Tier2_1;
+        public TierInfo tier = TierInfo.Tier2_1;
         
         [Header("Estructura Base")]
         [Tooltip("Las Hips (piernas) - raíz del robot")]

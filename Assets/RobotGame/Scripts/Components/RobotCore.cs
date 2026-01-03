@@ -51,7 +51,7 @@ namespace RobotGame.Components
         /// <summary>
         /// Tier del core.
         /// </summary>
-        public RobotTier Tier => coreData != null ? coreData.tier : RobotTier.Tier1_1;
+        public TierInfo Tier => coreData != null ? coreData.tier : TierInfo.Tier1_1;
         
         /// <summary>
         /// Energía actual.

@@ -114,7 +114,7 @@ namespace RobotGame.Systems
         /// <summary>
         /// Crea un robot vacío (solo estructura, sin core).
         /// </summary>
-        public Robot CreateEmptyRobot(StructuralPartData hipsData, RobotTier tier, string name = "Empty Robot")
+        public Robot CreateEmptyRobot(StructuralPartData hipsData, TierInfo tier, string name = "Empty Robot")
         {
             if (hipsData == null || !hipsData.canBeRoot)
             {
@@ -144,7 +144,7 @@ namespace RobotGame.Systems
             robotGO.transform.position = spawnPoint != null ? spawnPoint.position : Vector3.zero;
             
             Robot robot = robotGO.AddComponent<Robot>();
-            robot.Initialize(null, name, RobotTier.Tier1_1);
+            robot.Initialize(null, name, TierInfo.Tier1_1);
             
             return robot;
         }
@@ -153,7 +153,7 @@ namespace RobotGame.Systems
         /// Crea un robot completamente vacío (sin hips, solo el anchor).
         /// Útil para ensamblar desde cero.
         /// </summary>
-        public Robot CreateShellRobot(RobotTier tier, string name = "Shell Robot")
+        public Robot CreateShellRobot(TierInfo tier, string name = "Shell Robot")
         {
             GameObject robotGO = new GameObject($"Robot_{name}");
             robotGO.transform.position = spawnPoint != null ? spawnPoint.position : Vector3.zero;

@@ -1,12 +1,14 @@
 using UnityEngine;
 using RobotGame.Enums;
+using RobotGame.Inventory;
 
 namespace RobotGame.Data
 {
     /// <summary>
     /// ScriptableObject base para todas las piezas del robot.
+    /// Implementa IInventoryItem para ser compatible con el sistema de inventario.
     /// </summary>
-    public abstract class PartDataBase : ScriptableObject
+    public abstract class PartDataBase : ScriptableObject, IInventoryItem
     {
         [Header("Información Básica")]
         [Tooltip("ID único de la pieza")]
@@ -29,8 +31,15 @@ namespace RobotGame.Data
         [Tooltip("Categoría de la pieza")]
         public PartCategory category;
         
-        [Tooltip("Tier de la pieza")]
-        public RobotTier tier;
+        [Tooltip("Tier de la pieza (tier.subtier)")]
+        public TierInfo tier = TierInfo.Tier1_1;
+        
+        [Header("Inventario")]
+        [Tooltip("Rareza del item")]
+        public ItemRarity rarity = ItemRarity.Common;
+        
+        [Tooltip("Cantidad máxima apilable (1 = no apilable, 99 para piezas)")]
+        public int maxStackSize = 99;
         
         [Header("Estadísticas Base")]
         [Tooltip("Peso de la pieza")]
@@ -39,6 +48,49 @@ namespace RobotGame.Data
         [Tooltip("Durabilidad/HP de la pieza")]
         public float durability = 100f;
         
+        #region IInventoryItem Implementation
+        
+        public string ItemId => partId;
+        public string DisplayName => displayName;
+        public string Description => description;
+        public Sprite Icon => icon;
+        public int MaxStackSize => maxStackSize;
+        public ItemRarity Rarity => rarity;
+        
+        /// <summary>
+        /// Categoría de inventario (derivada de PartCategory).
+        /// </summary>
+        public virtual InventoryCategory Category
+        {
+            get
+            {
+                switch (category)
+                {
+                    case PartCategory.Structural:
+                        return InventoryCategory.StructuralParts;
+                    case PartCategory.Armor:
+                    case PartCategory.Decorative:
+                        return InventoryCategory.ArmorParts;
+                    default:
+                        return InventoryCategory.StructuralParts;
+                }
+            }
+        }
+        
+        /// <summary>
+        /// Subcategoría de inventario (por defecto None, override en clases derivadas).
+        /// </summary>
+        public virtual InventorySubCategory SubCategory => InventorySubCategory.None;
+        
+        /// <summary>
+        /// Tier del item (1-4).
+        /// </summary>
+        public int Tier => MainTier;
+        
+        #endregion
+        
+        #region Tier Properties
+        
         /// <summary>
         /// Obtiene el tier principal (1, 2, 3 o 4) del tier de esta pieza.
         /// </summary>
@@ -46,52 +98,29 @@ namespace RobotGame.Data
         {
             get
             {
-                string tierName = tier.ToString();
-                // Tier1_1 -> 1, Tier2_3 -> 2, etc.
-                if (tierName.StartsWith("Tier"))
-                {
-                    return int.Parse(tierName[4].ToString());
-                }
-                return 1;
+                return tier.MainTier;
             }
         }
         
         /// <summary>
-        /// Obtiene la variante (1, 2 o 3) del tier de esta pieza.
+        /// Obtiene el subtier (1-6) del tier de esta pieza.
         /// </summary>
         public int TierVariant
         {
             get
             {
-                string tierName = tier.ToString();
-                // Tier1_1 -> 1, Tier1_2 -> 2, etc.
-                int underscoreIndex = tierName.IndexOf('_');
-                if (underscoreIndex >= 0 && underscoreIndex < tierName.Length - 1)
-                {
-                    return int.Parse(tierName[underscoreIndex + 1].ToString());
-                }
-                return 1;
+                return tier.SubTier;
             }
         }
         
         /// <summary>
-        /// Verifica si esta pieza es compatible con un core de cierto tier.
+        /// Verifica si esta pieza es compatible con un robot/estación del tier especificado.
         /// </summary>
-        public bool IsCompatibleWith(RobotTier coreTier)
+        public bool IsCompatibleWith(TierInfo targetTier)
         {
-            // Obtener tier principal y variante del core
-            string coreTierName = coreTier.ToString();
-            int coreMainTier = int.Parse(coreTierName[4].ToString());
-            int coreVariant = int.Parse(coreTierName[coreTierName.IndexOf('_') + 1].ToString());
-            
-            // Debe ser el mismo tier principal
-            if (MainTier != coreMainTier)
-            {
-                return false;
-            }
-            
-            // La variante de la pieza debe ser <= variante del core
-            return TierVariant <= coreVariant;
+            return targetTier.IsCompatibleWith(tier);
         }
+        
+        #endregion
     }
 }

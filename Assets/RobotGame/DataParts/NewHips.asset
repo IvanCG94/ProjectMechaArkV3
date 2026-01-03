@@ -15,10 +15,12 @@ MonoBehaviour:
   partId: newHips
   displayName: New Hips
   description: 
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: a67dd7604bf98ea479f00387ea1dfe28, type: 3}
   prefab: {fileID: 7410692846874625324, guid: 3219d01a3950afd41b90a52d094ae88e, type: 3}
   category: 0
   tier: 0
+  rarity: 0
+  maxStackSize: 99
   weight: 1
   durability: 100
   partType: 0

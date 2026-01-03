@@ -33,7 +33,7 @@ namespace RobotGame.Assembly
         [SerializeField] private bool showDetectionArea = true;
         
         // Referencia a la estación padre
-        private AssemblyStation parentStation;
+        private UnifiedAssemblyStation parentStation;
         
         // Cache del robot detectado (para cascarones que no se mueven)
         private Robot cachedShellRobot;
@@ -110,7 +110,7 @@ namespace RobotGame.Assembly
         /// <summary>
         /// Estación padre a la que pertenece esta plataforma.
         /// </summary>
-        public AssemblyStation ParentStation => parentStation;
+        public UnifiedAssemblyStation ParentStation => parentStation;
         
         #endregion
         
@@ -119,7 +119,7 @@ namespace RobotGame.Assembly
         private void Awake()
         {
             // Buscar estación padre
-            parentStation = GetComponentInParent<AssemblyStation>();
+            parentStation = GetComponentInParent<UnifiedAssemblyStation>();
             
             // Auto-crear RobotAnchor si no existe
             if (robotAnchor == null)

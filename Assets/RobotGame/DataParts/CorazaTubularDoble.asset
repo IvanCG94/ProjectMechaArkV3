@@ -15,10 +15,12 @@ MonoBehaviour:
   partId: CorazaTubularDoble
   displayName: Coraza tubular doble
   description: 
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: d7c015196095a7044a5ca5811bc64cc7, type: 3}
   prefab: {fileID: 1936397245534839864, guid: 2da68837bc7cfbc4697bebe8e480f3dd, type: 3}
   category: 1
   tier: 3
+  rarity: 0
+  maxStackSize: 99
   weight: 1
   durability: 100
   tailGrid:

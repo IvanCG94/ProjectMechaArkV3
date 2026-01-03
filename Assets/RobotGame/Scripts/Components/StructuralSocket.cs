@@ -127,6 +127,16 @@ namespace RobotGame.Components
             return part;
         }
         
+        /// <summary>
+        /// Limpia la referencia sin notificar a la pieza.
+        /// Usado cuando la pieza ya fue destruida externamente.
+        /// </summary>
+        public void ForceDetach()
+        {
+            attachedPart = null;
+            isOccupied = false;
+        }
+        
         private void OnDrawGizmos()
         {
             // Visualizar el socket en el editor

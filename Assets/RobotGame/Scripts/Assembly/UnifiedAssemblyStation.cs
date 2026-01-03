@@ -3,6 +3,7 @@ using RobotGame.Components;
 using RobotGame.Control;
 using RobotGame.AI;
 using RobotGame.Enums;
+using RobotGame.Data;
 
 namespace RobotGame.Assembly
 {
@@ -11,20 +12,8 @@ namespace RobotGame.Assembly
     /// </summary>
     public enum AssemblyStationType
     {
-        /// <summary>
-        /// Estación para el jugador (Tier 1).
-        /// - Dos plataformas: una para el jugador, otra para cascarones
-        /// - Permite editar robot propio (P) o crear cascarones (O)
-        /// </summary>
-        Player,
-        
-        /// <summary>
-        /// Estación para mechas domesticados (Tier 2+).
-        /// - Dos plataformas: una para el mecha, otra para el jugador
-        /// - Solo permite editar el mecha (P)
-        /// - Requiere que el mecha esté domesticado y pertenezca al jugador
-        /// </summary>
-        Mecha
+        Player,     // Para el jugador (Tier 1) - permite P y O
+        Mecha       // Para mechas domesticados (Tier 2+) - solo P
     }
     
     /// <summary>
@@ -35,7 +24,7 @@ namespace RobotGame.Assembly
         None,
         EditOwnRobot,       // Editando robot propio (con snapshot)
         EditShell,          // Editando cascarón vacío (sin snapshot)
-        EditMecha           // Editando mecha domesticado
+        EditMecha           // Editando mecha domesticado (con snapshot)
     }
     
     /// <summary>
@@ -56,15 +45,14 @@ namespace RobotGame.Assembly
     /// Estación de ensamblaje unificada.
     /// Funciona tanto para el jugador (Tier 1) como para mechas domesticados (Tier 2+).
     /// 
-    /// CONFIGURACIÓN:
-    /// - StationType.Player: Para robots del jugador, permite editar propio o crear cascarones
-    /// - StationType.Mecha: Para mechas domesticados, solo edición
+    /// PARA JUGADOR (StationType.Player):
+    /// - [P] Editar robot propio (con snapshot, valida al salir)
+    /// - [O] Editar/crear cascarón (sin snapshot, puede quedar incompleto)
+    /// - [C] Extraer/insertar Core
     /// 
-    /// SETUP:
-    /// 1. Crear GameObject con este componente
-    /// 2. Crear dos plataformas hijas con AssemblyPlatform
-    /// 3. Asignar platformA (jugador/mecha) y platformB (cascarón/jugador)
-    /// 4. Agregar RobotAssemblyController para la lógica de edición
+    /// PARA MECHA (StationType.Mecha):
+    /// - [P] Editar mecha domesticado (con snapshot)
+    /// - Requiere que el mecha esté domesticado y pertenezca al jugador
     /// </summary>
     public class UnifiedAssemblyStation : MonoBehaviour
     {
@@ -74,8 +62,10 @@ namespace RobotGame.Assembly
         [SerializeField] private AssemblyStationType stationType = AssemblyStationType.Player;
         
         [Header("Configuración de Tier")]
-        [Tooltip("Para Player: tier del jugador. Para Mecha: tier de mechas que acepta")]
-        [SerializeField] private int stationTier = 1;
+        [Tooltip("Tier de la estación. Determina qué piezas pueden usarse.\n" +
+                 "Solo piezas del MISMO tier principal y subtier IGUAL o INFERIOR son compatibles.\n" +
+                 "Ejemplo: Estación Tier 2.2 acepta piezas 2.1 y 2.2, pero NO 2.3 ni 1.x")]
+        [SerializeField] private TierInfo stationTier = TierInfo.Tier1_1;
         
         [Header("Plataformas")]
         [Tooltip("Player: plataforma del jugador. Mecha: plataforma del mecha")]
@@ -86,7 +76,8 @@ namespace RobotGame.Assembly
         
         [Header("Controles")]
         [SerializeField] private KeyCode editOwnKey = KeyCode.P;
-        [SerializeField] private KeyCode editOtherKey = KeyCode.O;
+        [SerializeField] private KeyCode editShellKey = KeyCode.O;
+        [SerializeField] private KeyCode coreKey = KeyCode.C;
         [SerializeField] private KeyCode cancelKey = KeyCode.Escape;
         
         [Header("Debug")]
@@ -101,6 +92,9 @@ namespace RobotGame.Assembly
         private WildRobot targetMecha;
         private bool showingMenu;
         
+        // Referencias
+        private PlayerMovement playerMovement;
+        
         #endregion
         
         #region Events
@@ -113,7 +107,18 @@ namespace RobotGame.Assembly
         #region Properties
         
         public AssemblyStationType StationType => stationType;
-        public int StationTier => stationTier;
+        public TierInfo StationTier => stationTier;
+        
+        /// <summary>
+        /// Tier principal de la estación (1, 2, 3, etc.)
+        /// </summary>
+        public int StationMainTier => stationTier.MainTier;
+        
+        /// <summary>
+        /// Subtier de la estación (1, 2, 3, etc.)
+        /// </summary>
+        public int StationSubTier => stationTier.SubTier;
+        
         public AssemblyEditMode CurrentEditMode => currentEditMode;
         public bool IsEditing => currentEditMode != AssemblyEditMode.None;
         public bool ShowingMenu => showingMenu;
@@ -122,7 +127,6 @@ namespace RobotGame.Assembly
         
         /// <summary>
         /// Si el jugador está en posición válida para editar.
-        /// Player: en platformA. Mecha: en platformB.
         /// </summary>
         public bool PlayerInStation
         {
@@ -150,8 +154,7 @@ namespace RobotGame.Assembly
         }
         
         /// <summary>
-        /// Plataforma del objetivo a editar.
-        /// Player: platformB (cascarón). Mecha: platformA (mecha).
+        /// Plataforma del objetivo (cascarón o mecha).
         /// </summary>
         public AssemblyPlatform TargetPlatform
         {
@@ -167,7 +170,7 @@ namespace RobotGame.Assembly
         /// <summary>
         /// Obtiene el PlayerCore actual (búsqueda dinámica).
         /// </summary>
-        private RobotCore PlayerCore
+        public RobotCore PlayerCore
         {
             get
             {
@@ -190,23 +193,41 @@ namespace RobotGame.Assembly
             AutoDetectPlatforms();
         }
         
+        private void Start()
+        {
+            playerMovement = FindObjectOfType<PlayerMovement>();
+        }
+        
         private void Update()
         {
+            // Si estamos editando, SIEMPRE procesar inputs (aunque el Core esté fuera)
+            if (IsEditing)
+            {
+                // En modo edición, ESC para salir
+                if (Input.GetKeyDown(cancelKey))
+                {
+                    RequestExitEditMode();
+                }
+                
+                // C para extraer/insertar Core (solo en Player station, solo en modo edición)
+                if (stationType == AssemblyStationType.Player && Input.GetKeyDown(coreKey))
+                {
+                    HandleCoreAction();
+                }
+                
+                return; // No procesar más mientras editamos
+            }
+            
+            // Fuera de modo edición, requerir que el jugador esté en la estación
             if (!PlayerInStation) return;
             
             if (showingMenu)
             {
                 HandleMenuInput();
             }
-            else if (IsEditing)
-            {
-                if (Input.GetKeyDown(cancelKey))
-                {
-                    ExitEditMode();
-                }
-            }
             else
             {
+                // No estamos editando - solo P para entrar al menú
                 if (Input.GetKeyDown(editOwnKey))
                 {
                     if (stationType == AssemblyStationType.Player)
@@ -214,13 +235,14 @@ namespace RobotGame.Assembly
                     else
                         TryEnterMechaEditMode();
                 }
+                
+                // C NO funciona fuera del modo edición
             }
         }
         
         private void OnGUI()
         {
             if (!showDebugUI) return;
-            
             DrawDebugUI();
         }
         
@@ -243,44 +265,60 @@ namespace RobotGame.Assembly
                     platformA = platforms[0];
                     Debug.LogWarning("UnifiedAssemblyStation: Solo se encontró una plataforma");
                 }
-                else
-                {
-                    Debug.LogError("UnifiedAssemblyStation: No se encontraron plataformas");
-                }
             }
         }
         
         #endregion
         
-        #region Player Station Logic (Tier 1)
+        #region Menu (Player Station)
         
         private void ShowSelectionMenu()
         {
             showingMenu = true;
-            Debug.Log("UnifiedAssemblyStation: Menú de selección abierto");
+            
+            // Deshabilitar movimiento
+            if (playerMovement != null)
+            {
+                playerMovement.Disable();
+            }
+            
+            Debug.Log("=== MENÚ DE ENSAMBLAJE ===");
+            Debug.Log("[P] Editar tu robot (con snapshot)");
+            Debug.Log("[O] Editar/crear cascarón (sin snapshot)");
+            Debug.Log("[ESC] Cancelar");
+        }
+        
+        private void HideSelectionMenu()
+        {
+            showingMenu = false;
+            
+            if (currentEditMode == AssemblyEditMode.None && playerMovement != null)
+            {
+                playerMovement.Enable();
+            }
         }
         
         private void HandleMenuInput()
         {
-            // P - Editar robot propio
             if (Input.GetKeyDown(editOwnKey))
             {
                 showingMenu = false;
                 TryEnterOwnRobotEditMode();
             }
-            // O - Editar cascarón (solo para Player)
-            else if (Input.GetKeyDown(editOtherKey) && stationType == AssemblyStationType.Player)
+            else if (Input.GetKeyDown(editShellKey))
             {
                 showingMenu = false;
                 TryEnterShellEditMode();
             }
-            // ESC - Cerrar menú
             else if (Input.GetKeyDown(cancelKey))
             {
-                showingMenu = false;
-                Debug.Log("UnifiedAssemblyStation: Menú cerrado");
+                HideSelectionMenu();
             }
         }
+        
+        #endregion
+        
+        #region Player Station - Edit Modes
         
         private void TryEnterOwnRobotEditMode()
         {
@@ -289,6 +327,15 @@ namespace RobotGame.Assembly
             if (playerRobot == null)
             {
                 Debug.LogWarning("UnifiedAssemblyStation: No hay robot del jugador en la plataforma");
+                HideSelectionMenu();
+                return;
+            }
+            
+            // Verificar tier
+            if (playerRobot.CurrentTier > stationTier)
+            {
+                Debug.LogWarning($"UnifiedAssemblyStation: Robot requiere estación de tier superior");
+                HideSelectionMenu();
                 return;
             }
             
@@ -296,17 +343,36 @@ namespace RobotGame.Assembly
             targetMecha = null;
             currentEditMode = AssemblyEditMode.EditOwnRobot;
             
-            Debug.Log($"UnifiedAssemblyStation: Editando robot propio '{targetRobot.name}'");
+            // Deshabilitar movimiento
+            if (playerMovement != null)
+            {
+                playerMovement.EnterEditMode();
+            }
+            
+            Debug.Log($"UnifiedAssemblyStation: Editando robot propio '{targetRobot.name}' (CON snapshot)");
             OnEditModeStarted?.Invoke(this, currentEditMode, targetRobot);
         }
         
         private void TryEnterShellEditMode()
         {
-            Robot shellRobot = TargetPlatform?.CurrentRobot;
+            // Si la otra plataforma está vacía, crear cascarón
+            if (TargetPlatform.IsEmpty || TargetPlatform.CurrentRobot == null)
+            {
+                Robot newShell = CreateEmptyShell();
+                if (newShell == null)
+                {
+                    Debug.LogWarning("UnifiedAssemblyStation: No se pudo crear el cascarón");
+                    HideSelectionMenu();
+                    return;
+                }
+            }
+            
+            Robot shellRobot = TargetPlatform.CurrentRobot;
             
             if (shellRobot == null)
             {
                 Debug.LogWarning("UnifiedAssemblyStation: No hay cascarón en la otra plataforma");
+                HideSelectionMenu();
                 return;
             }
             
@@ -314,6 +380,7 @@ namespace RobotGame.Assembly
             if (shellRobot.Core != null)
             {
                 Debug.LogWarning("UnifiedAssemblyStation: El robot tiene Core, no es un cascarón");
+                HideSelectionMenu();
                 return;
             }
             
@@ -321,13 +388,44 @@ namespace RobotGame.Assembly
             targetMecha = null;
             currentEditMode = AssemblyEditMode.EditShell;
             
-            Debug.Log($"UnifiedAssemblyStation: Editando cascarón '{targetRobot.name}'");
+            // Deshabilitar movimiento
+            if (playerMovement != null)
+            {
+                playerMovement.EnterEditMode();
+            }
+            
+            Debug.Log($"UnifiedAssemblyStation: Editando cascarón '{targetRobot.name}' (SIN snapshot)");
             OnEditModeStarted?.Invoke(this, currentEditMode, targetRobot);
+        }
+        
+        /// <summary>
+        /// Crea un robot vacío (cascarón) en la plataforma disponible.
+        /// </summary>
+        public Robot CreateEmptyShell()
+        {
+            if (TargetPlatform == null || !TargetPlatform.IsAvailable)
+            {
+                Debug.LogWarning("UnifiedAssemblyStation: No hay plataforma disponible");
+                return null;
+            }
+            
+            // Crear GameObject para el nuevo robot
+            GameObject shellGO = new GameObject("Robot_Shell");
+            shellGO.transform.position = TargetPlatform.transform.position;
+            
+            Robot shell = shellGO.AddComponent<Robot>();
+            shell.Initialize(null, "Cascarón Vacío", stationTier);
+            
+            // Colocar en la plataforma
+            TargetPlatform.PlaceShell(shell);
+            
+            Debug.Log("UnifiedAssemblyStation: Cascarón vacío creado");
+            return shell;
         }
         
         #endregion
         
-        #region Mecha Station Logic (Tier 2+)
+        #region Mecha Station - Edit Mode
         
         private void TryEnterMechaEditMode()
         {
@@ -344,7 +442,13 @@ namespace RobotGame.Assembly
             targetRobot = mecha.Robot;
             currentEditMode = AssemblyEditMode.EditMecha;
             
-            Debug.Log($"UnifiedAssemblyStation: Editando mecha '{mecha.WildData?.speciesName}'");
+            // Deshabilitar movimiento
+            if (playerMovement != null)
+            {
+                playerMovement.EnterEditMode();
+            }
+            
+            Debug.Log($"UnifiedAssemblyStation: Editando mecha '{mecha.WildData?.speciesName}' (CON snapshot)");
             OnEditModeStarted?.Invoke(this, currentEditMode, targetRobot);
         }
         
@@ -363,19 +467,15 @@ namespace RobotGame.Assembly
             if (mecha == null)
                 return MechaValidationResult.NoMecha;
             
-            // Verificar tier
-            if (mecha.Robot == null || GetMechaTier(mecha) != stationTier)
+            if (mecha.Robot == null || GetMechaTier(mecha) != StationMainTier)
                 return MechaValidationResult.WrongTier;
             
-            // Verificar domesticación
             if (!mecha.IsTamed)
                 return MechaValidationResult.NotTamed;
             
-            // Verificar propiedad
             if (PlayerCore == null || !mecha.BelongsTo(PlayerCore))
                 return MechaValidationResult.NotOwned;
             
-            // Verificar que no esté montado
             if (mecha.IsBeingControlled)
                 return MechaValidationResult.PlayerMounted;
             
@@ -385,7 +485,7 @@ namespace RobotGame.Assembly
         private int GetMechaTier(WildRobot mecha)
         {
             if (mecha.Robot == null) return 0;
-            return mecha.Robot.CurrentTier.GetMainTier();
+            return mecha.Robot.CurrentTier.MainTier;
         }
         
         private string GetValidationMessage(MechaValidationResult result)
@@ -395,15 +495,13 @@ namespace RobotGame.Assembly
                 case MechaValidationResult.NoMecha:
                     return "No hay mecha en la plataforma";
                 case MechaValidationResult.WrongTier:
-                    return $"El mecha debe ser Tier {stationTier}";
+                    return $"El mecha debe ser Tier {StationMainTier}";
                 case MechaValidationResult.NotTamed:
                     return "El mecha no está domesticado";
                 case MechaValidationResult.NotOwned:
                     return "El mecha no te pertenece";
                 case MechaValidationResult.PlayerMounted:
                     return "Desmonta del mecha primero";
-                case MechaValidationResult.MultipleMechas:
-                    return "Hay más de un mecha en la plataforma";
                 default:
                     return "Error desconocido";
             }
@@ -411,19 +509,136 @@ namespace RobotGame.Assembly
         
         #endregion
         
+        #region Core Management
+        
+        private void HandleCoreAction()
+        {
+            RobotCore core = PlayerCore;
+            
+            if (core == null)
+            {
+                Debug.LogWarning("UnifiedAssemblyStation: No hay PlayerCore");
+                return;
+            }
+            
+            Debug.Log($"UnifiedAssemblyStation: HandleCoreAction - Core en robot: {core.CurrentRobot != null}");
+            
+            // Si el Core está en un robot, extraerlo
+            if (core.CurrentRobot != null)
+            {
+                Robot robotWithCore = core.CurrentRobot;
+                
+                // Extraer Core
+                Robot extracted = core.Extract();
+                if (extracted != null)
+                {
+                    Debug.Log($"UnifiedAssemblyStation: Core extraído de '{extracted.name}'");
+                    
+                    // Forzar re-detección de plataformas
+                    platformA?.ForceRedetect();
+                    platformB?.ForceRedetect();
+                }
+                else
+                {
+                    Debug.LogWarning("UnifiedAssemblyStation: No se pudo extraer el Core");
+                }
+            }
+            else
+            {
+                // Core está libre, intentar insertar
+                // Buscar el robot objetivo actual (el que estamos editando)
+                Robot robotToInsert = targetRobot;
+                
+                // Si no hay targetRobot, buscar en las plataformas
+                if (robotToInsert == null || robotToInsert.Core != null)
+                {
+                    // Buscar un robot sin Core
+                    Robot platformARobot = platformA?.CurrentRobot;
+                    Robot platformBRobot = platformB?.CurrentRobot;
+                    
+                    if (platformARobot != null && platformARobot.Core == null)
+                    {
+                        robotToInsert = platformARobot;
+                    }
+                    else if (platformBRobot != null && platformBRobot.Core == null)
+                    {
+                        robotToInsert = platformBRobot;
+                    }
+                }
+                
+                if (robotToInsert != null && robotToInsert.Core == null)
+                {
+                    Debug.Log($"UnifiedAssemblyStation: Intentando insertar Core en '{robotToInsert.name}'");
+                    
+                    if (core.InsertInto(robotToInsert))
+                    {
+                        Debug.Log($"UnifiedAssemblyStation: Core insertado exitosamente en '{robotToInsert.name}'");
+                        
+                        // Forzar re-detección
+                        platformA?.ForceRedetect();
+                        platformB?.ForceRedetect();
+                    }
+                    else
+                    {
+                        Debug.LogWarning("UnifiedAssemblyStation: InsertInto retornó false");
+                    }
+                }
+                else
+                {
+                    Debug.LogWarning($"UnifiedAssemblyStation: No hay robot disponible para insertar. targetRobot={targetRobot?.name}, Core={targetRobot?.Core}");
+                }
+            }
+        }
+        
+        #endregion
+        
         #region Exit Edit Mode
         
-        public void ExitEditMode()
+        /// <summary>
+        /// Solicita salir del modo edición.
+        /// El RobotAssemblyController validará antes de permitir la salida.
+        /// </summary>
+        public void RequestExitEditMode()
         {
             if (!IsEditing) return;
             
+            Debug.Log($"UnifiedAssemblyStation: Solicitando salir del modo {currentEditMode}");
+            
+            // El evento notifica al controller para que valide
+            OnEditModeEnded?.Invoke(this);
+        }
+        
+        /// <summary>
+        /// Completa la salida del modo edición (llamado por el controller después de validar).
+        /// </summary>
+        public void CompleteExitEditMode()
+        {
             Debug.Log($"UnifiedAssemblyStation: Saliendo del modo {currentEditMode}");
             
             currentEditMode = AssemblyEditMode.None;
             targetRobot = null;
             targetMecha = null;
             
-            OnEditModeEnded?.Invoke(this);
+            // Rehabilitar movimiento
+            if (playerMovement != null)
+            {
+                playerMovement.ExitEditMode();
+            }
+        }
+        
+        /// <summary>
+        /// Fuerza la salida sin validación (para casos especiales).
+        /// </summary>
+        public void ForceExitEditMode()
+        {
+            currentEditMode = AssemblyEditMode.None;
+            targetRobot = null;
+            targetMecha = null;
+            
+            if (playerMovement != null)
+            {
+                playerMovement.ExitEditMode();
+            }
         }
         
         #endregion
@@ -432,9 +647,11 @@ namespace RobotGame.Assembly
         
         private void DrawDebugUI()
         {
-            string stationTypeStr = stationType == AssemblyStationType.Player ? "JUGADOR" : $"MECHA (Tier {stationTier})";
+            string stationTypeStr = stationType == AssemblyStationType.Player 
+                ? $"JUGADOR (Tier {stationTier})" 
+                : $"MECHA (Tier {stationTier})";
             
-            GUILayout.BeginArea(new Rect(10, 450, 300, 200));
+            GUILayout.BeginArea(new Rect(10, 450, 350, 250));
             GUILayout.BeginVertical("box");
             
             GUILayout.Label($"=== ASSEMBLY STATION ({stationTypeStr}) ===");
@@ -445,8 +662,17 @@ namespace RobotGame.Assembly
                 Robot playerRobot = PlayerPlatform?.CurrentRobot;
                 Robot shellRobot = TargetPlatform?.CurrentRobot;
                 
-                GUILayout.Label($"Robot jugador: {(playerRobot != null ? playerRobot.name : "Ninguno")}");
+                GUILayout.Label($"Tu robot: {(playerRobot != null ? playerRobot.name : "Ninguno")}");
                 GUILayout.Label($"Cascarón: {(shellRobot != null ? shellRobot.name : "Ninguno")}");
+                
+                RobotCore core = PlayerCore;
+                if (core != null)
+                {
+                    string coreStatus = core.CurrentRobot != null 
+                        ? $"En {core.CurrentRobot.name}" 
+                        : "Libre";
+                    GUILayout.Label($"Core: {coreStatus}");
+                }
             }
             else
             {
@@ -459,25 +685,33 @@ namespace RobotGame.Assembly
             
             GUILayout.Label($"Modo: {currentEditMode}");
             
-            if (PlayerInStation && !IsEditing)
+            if (PlayerInStation && !IsEditing && !showingMenu)
             {
                 if (stationType == AssemblyStationType.Player)
+                {
                     GUILayout.Label("[P] Menú de edición");
+                }
                 else
+                {
                     GUILayout.Label("[P] Editar mecha");
+                }
             }
             
             if (showingMenu)
             {
-                GUILayout.Label("[P] Editar robot propio");
-                if (stationType == AssemblyStationType.Player)
-                    GUILayout.Label("[O] Editar cascarón");
-                GUILayout.Label("[Escape] Cerrar menú");
+                GUILayout.Label("--- MENÚ ---");
+                GUILayout.Label("[P] Editar tu robot");
+                GUILayout.Label("[O] Editar/crear cascarón");
+                GUILayout.Label("[ESC] Cancelar");
             }
             
             if (IsEditing)
             {
-                GUILayout.Label("[Escape] Salir del modo edición");
+                GUILayout.Label("[ESC] Salir del modo edición");
+                if (stationType == AssemblyStationType.Player)
+                {
+                    GUILayout.Label("[C] Extraer/Insertar Core");
+                }
             }
             
             GUILayout.EndVertical();

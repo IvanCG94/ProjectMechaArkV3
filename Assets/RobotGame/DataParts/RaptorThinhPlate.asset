@@ -15,10 +15,12 @@ MonoBehaviour:
   partId: RaptorThinhPlate
   displayName: Raptor thinh plate
   description: 
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: b67649657201f0547bc6242cddba4f3c, type: 3}
   prefab: {fileID: 3977803187263729657, guid: 84512f62ad6635e4584f1c2ba6d00000, type: 3}
   category: 1
   tier: 3
+  rarity: 0
+  maxStackSize: 99
   weight: 1
   durability: 100
   tailGrid:

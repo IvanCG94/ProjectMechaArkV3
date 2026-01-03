@@ -18,7 +18,11 @@ MonoBehaviour:
   icon: {fileID: 0}
   prefab: {fileID: 6382230133338644052, guid: 49870eacb51c3c44b81e384df287931a, type: 3}
   category: 0
-  tier: 3
+  tier:
+    tier: 2
+    subTier: 1
+  rarity: 0
+  maxStackSize: 99
   weight: 1
   durability: 100
   partType: 0
