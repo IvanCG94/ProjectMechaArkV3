@@ -18,7 +18,9 @@ MonoBehaviour:
   icon: {fileID: 21300000, guid: b67649657201f0547bc6242cddba4f3c, type: 3}
   prefab: {fileID: 3977803187263729657, guid: 84512f62ad6635e4584f1c2ba6d00000, type: 3}
   category: 1
-  tier: 3
+  tier:
+    tier: 1
+    subTier: 1
   rarity: 0
   maxStackSize: 99
   weight: 1
@@ -26,6 +28,7 @@ MonoBehaviour:
   tailGrid:
     gridInfo:
       isHead: 0
+      tier: 1
       sizeX: 4
       sizeY: 7
       surrounding:
@@ -37,6 +40,7 @@ MonoBehaviour:
   additionalHeadGrids:
   - gridInfo:
       isHead: 1
+      tier: 0
       sizeX: 1
       sizeY: 4
       surrounding:
@@ -47,6 +51,7 @@ MonoBehaviour:
     transformName: Head_1x4_SN_PlacaTest1
   - gridInfo:
       isHead: 1
+      tier: 0
       sizeX: 1
       sizeY: 4
       surrounding:

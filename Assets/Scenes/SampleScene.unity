@@ -362,7 +362,6 @@ GameObject:
   - component: {fileID: 98802576}
   - component: {fileID: 98802579}
   - component: {fileID: 98802580}
-  - component: {fileID: 98802581}
   - component: {fileID: 98802582}
   - component: {fileID: 98802583}
   m_Layer: 0
@@ -431,18 +430,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7c273a65fa0547946a40f0767b6f5234, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::RobotGame.Testing.GridRotationTester
---- !u!114 &98802581
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 98802575}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 69599c7e09c29914fbc99b739169c9c3, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::RobotGame.Testing.AssemblyTester
 --- !u!114 &98802582
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2151,6 +2138,8 @@ MonoBehaviour:
     quantity: 1
   - item: {fileID: 11400000, guid: 0e20e43e5631b164ab1188f748bb4c5f, type: 2}
     quantity: 1
+  - item: {fileID: 11400000, guid: c2d5b7d2fb2367445a46cd55ebf708ab, type: 2}
+    quantity: 4
   - item: {fileID: 11400000, guid: d69586ac1b364a242a67b9e737b84e8e, type: 2}
     quantity: 4
   allItems: []

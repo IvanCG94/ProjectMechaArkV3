@@ -8,28 +8,35 @@ namespace RobotGame.Utils
 {
     /// <summary>
     /// Parser para la nomenclatura de Blender.
-    /// Formatos soportados:
-    ///   Head_NxM_SX_nombre           (solo piezas SN)
-    ///   Head_NxM_SX_L_nombre         (borde izquierdo abierto)
-    ///   Head_NxM_SX_LRTB_nombre      (todos los bordes abiertos)
-    ///   Head_NxM_SXFH_nombre         (Full horizontal)
-    ///   Head_NxM_SXFV_nombre         (Full vertical)
-    ///   Tail_NxM_SN_nombre           (plana)
-    ///   Tail_NxM_SX_R_nombre         (envuelve derecha)
-    ///   Tail_NxM_SXF_nombre          (envuelve completamente)
+    /// 
+    /// NUEVO FORMATO CON TIER:
+    ///   Head_T1_NxM_SX_nombre           (tier 1, solo SN o SX)
+    ///   Head_T2_NxM_SX_L_nombre         (tier 2, borde izquierdo abierto)
+    ///   Head_T1_NxM_SX_LRTB_nombre      (tier 1, todos los bordes abiertos)
+    ///   Head_T3_NxM_SXFH_nombre         (tier 3, Full horizontal)
+    ///   Tail_T1_NxM_SN_nombre           (tier 1, plana)
+    ///   Tail_T2_NxM_SX_R_nombre         (tier 2, envuelve derecha)
+    ///   Tail_T4_NxM_SXF_nombre          (tier 4, envuelve completamente)
+    /// 
+    /// FORMATO LEGACY (sin tier, asume T1):
+    ///   Head_NxM_SX_nombre
+    ///   Tail_NxM_SX_nombre
     /// </summary>
     public static class NomenclatureParser
     {
-        // Regex actualizado para la nueva nomenclatura
-        // Grupos: 1=Type, 2=SizeX, 3=SizeY, 4=SurroundingBase, 5=FullType(opcional), 6=Edges(opcional), 7=Name
-        private static readonly Regex NomenclatureRegex = new Regex(
-            @"^(Head|Tail)_(\d+)x(\d+)_(SN|S\d+)(FH|FV|F)?(?:_([LRTB]+))?_(.+)$",
+        // Regex para el NUEVO formato con Tier
+        // Head_T2_4x7_S5FH_RaptorThighR
+        // Grupos: 1=Type, 2=Tier, 3=SizeX, 4=SizeY, 5=SurroundingLevel(número), 6=FullType(opcional), 7=Edges(opcional), 8=Name
+        private static readonly Regex TierNomenclatureRegex = new Regex(
+            @"^(Head|Tail)_T(\d+)_(\d+)x(\d+)_(SN|S(\d+)(FH|FV|F)?)(?:_([LRTB]+))?_(.+)$",
             RegexOptions.IgnoreCase | RegexOptions.Compiled
         );
         
-        // Regex alternativo para nomenclatura sin bordes (compatibilidad hacia atrás)
-        private static readonly Regex LegacyRegex = new Regex(
-            @"^(Head|Tail)_(\d+)x(\d+)_(SN|S\d+F?)_(.+)$",
+        // Regex para formato LEGACY (sin tier)
+        // Head_4x7_S5FH_RaptorThighR
+        // Grupos: 1=Type, 2=SizeX, 3=SizeY, 4=SurroundingLevel(número), 5=FullType(opcional), 6=Edges(opcional), 7=Name
+        private static readonly Regex NomenclatureRegex = new Regex(
+            @"^(Head|Tail)_(\d+)x(\d+)_(SN|S(\d+)(FH|FV|F)?)(?:_([LRTB]+))?_(.+)$",
             RegexOptions.IgnoreCase | RegexOptions.Compiled
         );
         
@@ -45,17 +52,15 @@ namespace RobotGame.Utils
                 return false;
             }
             
-            // Intentar con el nuevo formato primero
-            Match match = NomenclatureRegex.Match(objectName);
-            
+            // Intentar con el NUEVO formato con tier primero
+            Match match = TierNomenclatureRegex.Match(objectName);
             if (match.Success)
             {
-                return ParseNewFormat(match, out gridInfo);
+                return ParseTierFormat(match, out gridInfo);
             }
             
-            // Intentar con formato legacy
-            match = LegacyRegex.Match(objectName);
-            
+            // Intentar con formato sin tier (asume T1)
+            match = NomenclatureRegex.Match(objectName);
             if (match.Success)
             {
                 return ParseLegacyFormat(match, out gridInfo);
@@ -64,47 +69,63 @@ namespace RobotGame.Utils
             return false;
         }
         
-        private static bool ParseNewFormat(Match match, out GridInfo gridInfo)
+        /// <summary>
+        /// Parsea el nuevo formato con Tier explícito.
+        /// Ejemplo: Head_T2_4x7_S5FH_RaptorThighR
+        /// Regex grupos: 1=Type, 2=Tier, 3=SizeX, 4=SizeY, 5=SurroundingFull, 6=Level, 7=FullType, 8=Edges, 9=Name
+        /// </summary>
+        private static bool ParseTierFormat(Match match, out GridInfo gridInfo)
         {
             gridInfo = default;
             
             try
             {
                 bool isHead = match.Groups[1].Value.Equals("Head", StringComparison.OrdinalIgnoreCase);
-                int sizeX = int.Parse(match.Groups[2].Value);
-                int sizeY = int.Parse(match.Groups[3].Value);
+                int tier = int.Parse(match.Groups[2].Value);
+                int sizeX = int.Parse(match.Groups[3].Value);
+                int sizeY = int.Parse(match.Groups[4].Value);
                 
-                // Parsear surrounding base (SN, S1, S2, etc.)
-                string surroundingBase = match.Groups[4].Value.ToUpper();
+                // Validar tier
+                tier = Mathf.Clamp(tier, 1, 6);
+                
+                // Parsear surrounding
+                string surroundingFull = match.Groups[5].Value.ToUpper(); // SN o S5FH etc
                 int level = 0;
-                if (surroundingBase != "SN")
-                {
-                    level = int.Parse(surroundingBase.Substring(1));
-                }
-                
-                // Parsear Full type (FH, FV)
                 FullType fullType = FullType.None;
-                string fullStr = match.Groups[5].Value.ToUpper();
-                if (!string.IsNullOrEmpty(fullStr))
+                
+                if (surroundingFull != "SN")
                 {
-                    if (fullStr == "FH") fullType = FullType.FH;
-                    else if (fullStr == "FV") fullType = FullType.FV;
-                    // Nota: "F" solo ya no es válido, debe ser FH o FV
+                    // Grupo 6 es el número del level
+                    if (match.Groups[6].Success)
+                    {
+                        level = int.Parse(match.Groups[6].Value);
+                    }
+                    
+                    // Grupo 7 es el tipo Full (FH, FV, F)
+                    string fullStr = match.Groups[7].Value.ToUpper();
+                    if (!string.IsNullOrEmpty(fullStr))
+                    {
+                        if (fullStr == "FH") fullType = FullType.FH;
+                        else if (fullStr == "FV") fullType = FullType.FV;
+                        else if (fullStr == "F") fullType = FullType.FH; // F solo = FH por defecto
+                    }
                 }
                 
-                // Parsear edges (L, R, T, B, LR, LRTB, etc.)
+                // Parsear edges (L, R, T, B, LR, LRTB, etc.) - Grupo 8
                 EdgeFlags edges = EdgeFlags.None;
-                string edgesStr = match.Groups[6].Value;
+                string edgesStr = match.Groups[8].Value;
                 if (!string.IsNullOrEmpty(edgesStr))
                 {
                     edges = SurroundingLevel.ParseEdges(edgesStr);
                 }
                 
-                string gridName = match.Groups[7].Value;
+                // Nombre - Grupo 9
+                string gridName = match.Groups[9].Value;
                 
                 gridInfo = new GridInfo
                 {
                     isHead = isHead,
+                    tier = tier,
                     sizeX = sizeX,
                     sizeY = sizeY,
                     surrounding = SurroundingLevel.Create(level, edges, fullType),
@@ -113,12 +134,18 @@ namespace RobotGame.Utils
                 
                 return true;
             }
-            catch
+            catch (Exception e)
             {
+                Debug.LogWarning($"NomenclatureParser: Error parseando '{match.Value}': {e.Message}");
                 return false;
             }
         }
         
+        /// <summary>
+        /// Parsea formato sin tier explícito (asume Tier 1).
+        /// Ejemplo: Head_4x7_S5FH_RaptorThighR
+        /// Regex grupos: 1=Type, 2=SizeX, 3=SizeY, 4=SurroundingFull, 5=Level, 6=FullType, 7=Edges, 8=Name
+        /// </summary>
         private static bool ParseLegacyFormat(Match match, out GridInfo gridInfo)
         {
             gridInfo = default;
@@ -129,25 +156,55 @@ namespace RobotGame.Utils
                 int sizeX = int.Parse(match.Groups[2].Value);
                 int sizeY = int.Parse(match.Groups[3].Value);
                 
-                // Parsear surrounding (SN, S1, S2F, etc.) - formato legacy
-                string surroundingStr = match.Groups[4].Value;
-                SurroundingLevel surrounding = SurroundingLevel.Parse(surroundingStr);
+                // Parsear surrounding
+                string surroundingFull = match.Groups[4].Value.ToUpper(); // SN o S5FH etc
+                int level = 0;
+                FullType fullType = FullType.None;
                 
-                string gridName = match.Groups[5].Value;
+                if (surroundingFull != "SN")
+                {
+                    // Grupo 5 es el número del level
+                    if (match.Groups[5].Success)
+                    {
+                        level = int.Parse(match.Groups[5].Value);
+                    }
+                    
+                    // Grupo 6 es el tipo Full (FH, FV, F)
+                    string fullStr = match.Groups[6].Value.ToUpper();
+                    if (!string.IsNullOrEmpty(fullStr))
+                    {
+                        if (fullStr == "FH") fullType = FullType.FH;
+                        else if (fullStr == "FV") fullType = FullType.FV;
+                        else if (fullStr == "F") fullType = FullType.FH;
+                    }
+                }
+                
+                // Parsear edges - Grupo 7
+                EdgeFlags edges = EdgeFlags.None;
+                string edgesStr = match.Groups[7].Value;
+                if (!string.IsNullOrEmpty(edgesStr))
+                {
+                    edges = SurroundingLevel.ParseEdges(edgesStr);
+                }
+                
+                // Nombre - Grupo 8
+                string gridName = match.Groups[8].Value;
                 
                 gridInfo = new GridInfo
                 {
                     isHead = isHead,
+                    tier = 1, // Default tier 1 para formato legacy
                     sizeX = sizeX,
                     sizeY = sizeY,
-                    surrounding = surrounding,
+                    surrounding = SurroundingLevel.Create(level, edges, fullType),
                     gridName = gridName
                 };
                 
                 return true;
             }
-            catch
+            catch (Exception e)
             {
+                Debug.LogWarning($"NomenclatureParser: Error parseando legacy '{match.Value}': {e.Message}");
                 return false;
             }
         }
@@ -164,11 +221,11 @@ namespace RobotGame.Utils
             
             throw new FormatException($"Invalid nomenclature format: '{objectName}'.\n" +
                 "Expected formats:\n" +
-                "  Head_NxM_SX_name\n" +
+                "  Head_T1_NxM_SX_name (nuevo con tier)\n" +
+                "  Head_T2_NxM_S5FH_name (tier 2, surrounding 5, full horizontal)\n" +
+                "  Head_NxM_SX_name (legacy, asume T1)\n" +
                 "  Head_NxM_SX_LRTB_name\n" +
-                "  Head_NxM_SXFH_name\n" +
-                "  Tail_NxM_SX_R_name\n" +
-                "  Tail_NxM_SXF_name");
+                "  Tail_T2_NxM_SX_R_name");
         }
         
         /// <summary>
@@ -177,13 +234,14 @@ namespace RobotGame.Utils
         public static bool IsValidNomenclature(string objectName)
         {
             if (string.IsNullOrEmpty(objectName)) return false;
-            return NomenclatureRegex.IsMatch(objectName) || LegacyRegex.IsMatch(objectName);
+            return TierNomenclatureRegex.IsMatch(objectName) || 
+                   NomenclatureRegex.IsMatch(objectName);
         }
         
         /// <summary>
-        /// Genera un nombre de nomenclatura a partir de los componentes.
+        /// Genera un nombre de nomenclatura a partir de los componentes (con tier).
         /// </summary>
-        public static string Generate(bool isHead, int sizeX, int sizeY, SurroundingLevel surrounding, string name)
+        public static string Generate(bool isHead, int tier, int sizeX, int sizeY, SurroundingLevel surrounding, string name)
         {
             string type = isHead ? "Head" : "Tail";
             string surroundingStr;
@@ -205,10 +263,18 @@ namespace RobotGame.Utils
             if (surrounding.HasEdges && !surrounding.IsFull)
             {
                 string edgesStr = SurroundingLevel.EdgesToString(surrounding.edges);
-                return $"{type}_{sizeX}x{sizeY}_{surroundingStr}_{edgesStr}_{name}";
+                return $"{type}_T{tier}_{sizeX}x{sizeY}_{surroundingStr}_{edgesStr}_{name}";
             }
             
-            return $"{type}_{sizeX}x{sizeY}_{surroundingStr}_{name}";
+            return $"{type}_T{tier}_{sizeX}x{sizeY}_{surroundingStr}_{name}";
+        }
+        
+        /// <summary>
+        /// Genera un nombre de nomenclatura (versión legacy sin tier, para compatibilidad).
+        /// </summary>
+        public static string Generate(bool isHead, int sizeX, int sizeY, SurroundingLevel surrounding, string name)
+        {
+            return Generate(isHead, 1, sizeX, sizeY, surrounding, name);
         }
         
         /// <summary>
@@ -236,6 +302,19 @@ namespace RobotGame.Utils
             }
             
             return false;
+        }
+        
+        /// <summary>
+        /// Extrae el tier de un nombre de nomenclatura.
+        /// Retorna 1 si no tiene tier explícito (formato legacy).
+        /// </summary>
+        public static int GetTier(string objectName)
+        {
+            if (TryParse(objectName, out GridInfo info))
+            {
+                return info.tier;
+            }
+            return 1; // Default
         }
     }
 }

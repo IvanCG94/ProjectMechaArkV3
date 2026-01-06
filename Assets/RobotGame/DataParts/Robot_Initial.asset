@@ -16,12 +16,8 @@ MonoBehaviour:
   description: 
   icon: {fileID: 0}
   core: {fileID: 11400000, guid: aed3484aaaf2de845ae492ba4872ea26, type: 2}
-  hips: {fileID: 11400000, guid: b4817d8946b531a4dbdb2fe894dc7052, type: 2}
-  hipsArmorPieces:
-  - armorData: {fileID: 11400000, guid: a6c324dbda5575c41822f1f98263f4a1, type: 2}
-    targetGridName: ThighL
-    gridPositionX: 0
-    gridPositionY: 0
+  hips: {fileID: 11400000, guid: 9355feb6de61b2b4ca34607c2e0df38e, type: 2}
+  hipsArmorPieces: []
   attachedParts:
   - partData: {fileID: 11400000, guid: cdd0e5b2fbabb9e4e91dbb9ae759614a, type: 2}
     attachedToSocket: 1

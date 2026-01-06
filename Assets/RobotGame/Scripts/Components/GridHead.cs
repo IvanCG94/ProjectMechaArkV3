@@ -3,11 +3,16 @@ using UnityEngine;
 using RobotGame.Data;
 using RobotGame.Enums;
 using RobotGame.Utils;
+using RobotGame.Config;
 
 namespace RobotGame.Components
 {
     /// <summary>
     /// Componente runtime que representa una grilla Head donde se pueden insertar piezas de armadura.
+    /// 
+    /// El tier de la grilla determina:
+    /// - El tamaño físico de cada celda (configurado en GridTierConfig)
+    /// - Qué piezas armor pueden colocarse (solo del mismo tier)
     /// </summary>
     public class GridHead : MonoBehaviour
     {
@@ -25,6 +30,16 @@ namespace RobotGame.Components
         /// Información de la grilla.
         /// </summary>
         public GridInfo GridInfo => gridInfo;
+        
+        /// <summary>
+        /// Tier de la grilla (1-6). Retorna 1 si no está configurado.
+        /// </summary>
+        public int Tier => gridInfo.Tier;
+        
+        /// <summary>
+        /// Tamaño de cada celda en unidades de Unity.
+        /// </summary>
+        public float CellSize => gridInfo.CellSize;
         
         /// <summary>
         /// Piezas de armadura colocadas en esta grilla.
@@ -57,6 +72,7 @@ namespace RobotGame.Components
         
         /// <summary>
         /// Asegura que la grilla tenga un BoxCollider configurado correctamente.
+        /// Usa el cellSize del tier de la grilla.
         /// </summary>
         public void EnsureCollider()
         {
@@ -68,13 +84,14 @@ namespace RobotGame.Components
                 collider = gameObject.AddComponent<BoxCollider>();
             }
             
-            float sizeX = gridInfo.sizeX * 0.1f;
-            float sizeY = gridInfo.sizeY * 0.1f;
-            collider.size = new Vector3(sizeX, sizeY, 0.1f);
-            collider.center = new Vector3(sizeX / 2f, sizeY / 2f, -0.05f);
+            float cellSize = CellSize;
+            float sizeX = gridInfo.sizeX * cellSize;
+            float sizeY = gridInfo.sizeY * cellSize;
+            collider.size = new Vector3(sizeX, sizeY, cellSize);
+            collider.center = new Vector3(sizeX / 2f, sizeY / 2f, -cellSize / 2f);
             collider.isTrigger = true;
             
-            Debug.Log($"GridHead.EnsureCollider: {gameObject.name} - {(wasCreated ? "CREADO" : "actualizado")} - Size: {collider.size}, Enabled: {collider.enabled}");
+            Debug.Log($"GridHead.EnsureCollider: {gameObject.name} (Tier {Tier}) - {(wasCreated ? "CREADO" : "actualizado")} - Size: {collider.size}, CellSize: {cellSize}");
         }
         
         /// <summary>
@@ -91,6 +108,13 @@ namespace RobotGame.Components
         public bool CanPlace(ArmorPartData armorData, int startX, int startY, GridRotation.Rotation rotation)
         {
             if (armorData == null || armorData.tailGrid == null) return false;
+            
+            // Verificar compatibilidad de tier
+            if (armorData.ArmorTier != Tier)
+            {
+                Debug.LogWarning($"GridHead.CanPlace: Pieza tier {armorData.ArmorTier} no compatible con grilla tier {Tier}");
+                return false;
+            }
             
             // Obtener GridInfo rotado
             GridInfo rotatedTail = GridRotation.RotateGridInfo(armorData.tailGrid.gridInfo, rotation);
@@ -500,11 +524,12 @@ namespace RobotGame.Components
         /// <summary>
         /// Convierte una posición de celda a posición local.
         /// El pivote está en la esquina inferior-izquierda-trasera (-X, -Y, -Z).
+        /// Usa el cellSize del tier de la grilla.
         /// </summary>
         public Vector3 CellToLocalPosition(int cellX, int cellY)
         {
-            // Cada celda es 0.1 unidades
-            return new Vector3(cellX * 0.1f, cellY * 0.1f, 0f);
+            float cellSize = CellSize;
+            return new Vector3(cellX * cellSize, cellY * cellSize, 0f);
         }
         
         /// <summary>
@@ -518,6 +543,7 @@ namespace RobotGame.Components
         
         /// <summary>
         /// Obtiene todas las posiciones válidas donde una pieza puede colocarse (sin rotación).
+        /// Nota: Solo considera piezas del mismo tier que la grilla.
         /// </summary>
         public List<Vector2Int> GetValidPlacements(ArmorPartData armorData)
         {
@@ -532,6 +558,12 @@ namespace RobotGame.Components
             List<Vector2Int> validPositions = new List<Vector2Int>();
             
             if (armorData == null || armorData.tailGrid == null) return validPositions;
+            
+            // Verificar compatibilidad de tier primero
+            if (armorData.ArmorTier != Tier)
+            {
+                return validPositions; // Lista vacía si tiers no coinciden
+            }
             
             GridInfo rotatedTail = GridRotation.RotateGridInfo(armorData.tailGrid.gridInfo, rotation);
             
@@ -560,6 +592,12 @@ namespace RobotGame.Components
                 return new GridRotation.Rotation[0];
             }
             
+            // Verificar compatibilidad de tier
+            if (armorData.ArmorTier != Tier)
+            {
+                return new GridRotation.Rotation[0];
+            }
+            
             return GridRotation.GetValidRotations(armorData.tailGrid.gridInfo, gridInfo);
         }
         
@@ -583,7 +621,7 @@ namespace RobotGame.Components
             // Dibujar la grilla
             Gizmos.color = Color.cyan;
             
-            float cellSize = 0.1f;
+            float cellSize = CellSize;
             
             for (int x = 0; x <= gridInfo.sizeX; x++)
             {
@@ -622,11 +660,11 @@ namespace RobotGame.Components
         
         private void DrawEdgeIndicators()
         {
-            float cellSize = 0.1f;
+            float cellSize = CellSize;
             EdgeFlags edges = gridInfo.surrounding.edges;
             
             Gizmos.color = Color.green;
-            float indicatorSize = 0.02f;
+            float indicatorSize = cellSize * 0.2f; // Proporcional al tamaño de celda
             
             // Indicador L (borde izquierdo)
             if ((edges & EdgeFlags.L) != 0 || gridInfo.surrounding.IsFull)

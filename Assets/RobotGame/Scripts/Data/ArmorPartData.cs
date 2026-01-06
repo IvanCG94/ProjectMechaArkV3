@@ -7,6 +7,9 @@ namespace RobotGame.Data
     /// <summary>
     /// ScriptableObject para piezas de armadura, armas y decorativas.
     /// Estas piezas se insertan en las grillas Head de las piezas estructurales.
+    /// 
+    /// IMPORTANTE: El tier de la pieza armor (definido en tailGrid.gridInfo.tier)
+    /// debe coincidir con el tier de la grilla Head donde se inserta.
     /// </summary>
     [CreateAssetMenu(fileName = "NewArmorPart", menuName = "RobotGame/Parts/Armor Part")]
     public class ArmorPartData : PartDataBase
@@ -41,6 +44,13 @@ namespace RobotGame.Data
         public GameObject hitEffectPrefab;
         
         /// <summary>
+        /// Tier de la pieza armor (1-6). Obtenido del tailGrid.
+        /// Solo puede colocarse en grillas Head del mismo tier.
+        /// Retorna 1 si no está configurado (datos legacy).
+        /// </summary>
+        public int ArmorTier => tailGrid?.gridInfo.Tier ?? 1;
+        
+        /// <summary>
         /// Tamaño de la pieza en celdas.
         /// </summary>
         public Vector2Int Size => new Vector2Int(tailGrid.gridInfo.sizeX, tailGrid.gridInfo.sizeY);
@@ -55,6 +65,12 @@ namespace RobotGame.Data
         /// </summary>
         public bool CanFitIn(GridInfo headGrid)
         {
+            // Verificar compatibilidad de Tier
+            if (!headGrid.CanAcceptTier(ArmorTier))
+            {
+                return false;
+            }
+            
             // Verificar compatibilidad de Surrounding
             if (!headGrid.surrounding.CanAccept(tailGrid.gridInfo.surrounding))
             {

@@ -1,6 +1,7 @@
 using System;
 using UnityEngine;
 using RobotGame.Enums;
+using RobotGame.Config;
 
 namespace RobotGame.Data
 {
@@ -34,31 +35,62 @@ namespace RobotGame.Data
     
     /// <summary>
     /// Representa la información de una grilla parseada desde la nomenclatura de Blender.
-    /// Nomenclatura: Head_2x3_S1F_nombre o Tail_2x3_S1_nombre
+    /// 
+    /// Nueva nomenclatura con Tier:
+    ///   Head_T1_2x3_S1F_nombre
+    ///   Tail_T2_2x3_S1_nombre
+    /// 
+    /// El tier determina el tamaño físico de cada celda (configurado en GridTierConfig).
+    /// Una pieza armor solo puede colocarse en una grilla del mismo tier.
     /// </summary>
     [Serializable]
     public struct GridInfo
     {
         public bool isHead;             // True = Head (receptora), False = Tail (ocupación)
-        public int sizeX;               // Ancho de la grilla
-        public int sizeY;               // Alto de la grilla
+        
+        [Tooltip("Tier de la grilla (1-6). Determina el tamaño de celda y compatibilidad con piezas armor.")]
+        [Range(1, 6)]
+        public int tier;                // Tier de la grilla (1-6)
+        
+        public int sizeX;               // Ancho de la grilla en celdas
+        public int sizeY;               // Alto de la grilla en celdas
         public SurroundingLevel surrounding;
         public string gridName;         // Nombre identificador
         
         /// <summary>
-        /// Tamaño total en unidades Unity (cada celda = 0.1)
+        /// Tier efectivo de la grilla. Retorna 1 si tier es 0 (datos legacy sin tier).
         /// </summary>
-        public Vector2 WorldSize => new Vector2(sizeX * 0.1f, sizeY * 0.1f);
+        public int Tier => tier <= 0 ? 1 : tier;
         
         /// <summary>
-        /// Cantidad total de celdas
+        /// Tamaño de cada celda en unidades de Unity (obtenido del GridTierConfig).
+        /// </summary>
+        public float CellSize => GridTierConfig.Instance.GetCellSize(Tier);
+        
+        /// <summary>
+        /// Tamaño total en unidades Unity.
+        /// </summary>
+        public Vector2 WorldSize => new Vector2(sizeX * CellSize, sizeY * CellSize);
+        
+        /// <summary>
+        /// Cantidad total de celdas.
         /// </summary>
         public int TotalCells => sizeX * sizeY;
+        
+        /// <summary>
+        /// Verifica si esta grilla puede aceptar una pieza del tier especificado.
+        /// Solo acepta piezas del mismo tier. Tier 0 se trata como 1.
+        /// </summary>
+        public bool CanAcceptTier(int pieceTier)
+        {
+            int effectivePieceTier = pieceTier <= 0 ? 1 : pieceTier;
+            return Tier == effectivePieceTier;
+        }
         
         public override string ToString()
         {
             string type = isHead ? "Head" : "Tail";
-            return $"{type}_{sizeX}x{sizeY}_{surrounding}_{gridName}";
+            return $"{type}_T{Tier}_{sizeX}x{sizeY}_{surrounding}_{gridName}";
         }
     }
     
@@ -191,10 +223,12 @@ namespace RobotGame.Data
         
         /// <summary>
         /// Convierte una posición de celda a posición en el mundo.
+        /// Usa el cellSize del tier de la grilla.
         /// </summary>
         public Vector3 CellToWorldPosition(int cellX, int cellY)
         {
-            Vector3 localOffset = new Vector3(cellX * 0.1f, cellY * 0.1f, 0);
+            float cellSize = info.CellSize;
+            Vector3 localOffset = new Vector3(cellX * cellSize, cellY * cellSize, 0);
             return worldPosition + worldRotation * localOffset;
         }
     }

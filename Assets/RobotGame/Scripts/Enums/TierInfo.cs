@@ -101,19 +101,19 @@ namespace RobotGame.Enums
         #region Properties
         
         /// <summary>
-        /// Alias de tier para claridad.
+        /// Tier principal efectivo. Retorna 1 si tier es 0 (datos legacy).
         /// </summary>
-        public int MainTier => tier;
+        public int MainTier => tier <= 0 ? 1 : tier;
         
         /// <summary>
-        /// Alias de subTier para claridad.
+        /// SubTier efectivo. Retorna 1 si subTier es 0 (datos legacy).
         /// </summary>
-        public int SubTier => subTier;
+        public int SubTier => subTier <= 0 ? 1 : subTier;
         
         /// <summary>
-        /// Retorna true si el TierInfo tiene valores válidos.
+        /// Retorna true si el TierInfo tiene valores válidos (0 se trata como 1).
         /// </summary>
-        public bool IsValid => tier >= 1 && tier <= 6 && subTier >= 1 && subTier <= 6;
+        public bool IsValid => MainTier >= 1 && MainTier <= 6 && SubTier >= 1 && SubTier <= 6;
         
         #endregion
         
@@ -124,17 +124,17 @@ namespace RobotGame.Enums
         /// Una pieza es compatible si:
         /// - Tiene el MISMO tier principal
         /// - Tiene subtier IGUAL O INFERIOR
+        /// Nota: tier/subTier 0 se tratan como 1 (datos legacy).
         /// </summary>
         /// <param name="partTier">Tier de la pieza a verificar</param>
         /// <returns>True si la pieza es compatible</returns>
         public bool IsCompatibleWith(TierInfo partTier)
         {
-            // Tier principal debe ser igual
-            if (partTier.tier != this.tier)
+            // Usar MainTier/SubTier que manejan 0 como 1
+            if (partTier.MainTier != this.MainTier)
                 return false;
             
-            // Subtier debe ser igual o inferior
-            if (partTier.subTier > this.subTier)
+            if (partTier.SubTier > this.SubTier)
                 return false;
             
             return true;

@@ -18,12 +18,17 @@ MonoBehaviour:
   icon: {fileID: 0}
   prefab: {fileID: 7714268194462194878, guid: 64b2e1247d8fad34bab6ff0b00cb2a47, type: 3}
   category: 1
-  tier: 3
+  tier:
+    tier: 1
+    subTier: 1
+  rarity: 0
+  maxStackSize: 99
   weight: 1
   durability: 100
   tailGrid:
     gridInfo:
       isHead: 0
+      tier: 1
       sizeX: 3
       sizeY: 7
       surrounding:
@@ -35,6 +40,7 @@ MonoBehaviour:
   additionalHeadGrids:
   - gridInfo:
       isHead: 1
+      tier: 0
       sizeX: 3
       sizeY: 1
       surrounding:
@@ -45,6 +51,7 @@ MonoBehaviour:
     transformName: Head_3x1_S1_TB_Placa1
   - gridInfo:
       isHead: 1
+      tier: 0
       sizeX: 3
       sizeY: 1
       surrounding:
@@ -55,6 +62,7 @@ MonoBehaviour:
     transformName: Head_3x1_S1_TB_Placa2
   - gridInfo:
       isHead: 1
+      tier: 0
       sizeX: 3
       sizeY: 1
       surrounding:
@@ -65,6 +73,7 @@ MonoBehaviour:
     transformName: Head_3x1_S1_TB_Placa3
   - gridInfo:
       isHead: 1
+      tier: 0
       sizeX: 3
       sizeY: 1
       surrounding:
@@ -75,6 +84,7 @@ MonoBehaviour:
     transformName: Head_3x1_S1_TB_Placa4
   - gridInfo:
       isHead: 1
+      tier: 0
       sizeX: 3
       sizeY: 1
       surrounding:
@@ -85,6 +95,7 @@ MonoBehaviour:
     transformName: Head_3x1_S1_TB_Placa5
   - gridInfo:
       isHead: 1
+      tier: 0
       sizeX: 3
       sizeY: 1
       surrounding:

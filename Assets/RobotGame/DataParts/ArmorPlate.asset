@@ -18,12 +18,17 @@ MonoBehaviour:
   icon: {fileID: 0}
   prefab: {fileID: 790046067228398202, guid: e6910c640f1eead4d9f122b7801d1ce0, type: 3}
   category: 1
-  tier: 0
+  tier:
+    tier: 2
+    subTier: 1
+  rarity: 0
+  maxStackSize: 99
   weight: 1
   durability: 100
   tailGrid:
     gridInfo:
       isHead: 0
+      tier: 1
       sizeX: 2
       sizeY: 2
       surrounding:

@@ -1,0 +1,33 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b2f05123de8055340854efc34eb9e86c, type: 3}
+  m_Name: GridTierConfig
+  m_EditorClassIdentifier: Assembly-CSharp::RobotGame.Config.GridTierConfig
+  tierSettings:
+  - tier: 1
+    cellSize: 0.1
+    description: "Tier 1 - Robots peque\xF1os (jugador)"
+  - tier: 2
+    cellSize: 0.25
+    description: Tier 2 - Velociraptors
+  - tier: 3
+    cellSize: 0.5
+    description: Tier 3 - Trikes
+  - tier: 4
+    cellSize: 1
+    description: Tier 4 - T-Rex
+  - tier: 5
+    cellSize: 1.5
+    description: Tier 5 - Robots muy grandes
+  - tier: 6
+    cellSize: 2
+    description: Tier 6 - Robots colosales

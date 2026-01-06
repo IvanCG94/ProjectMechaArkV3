@@ -36,6 +36,7 @@ MonoBehaviour:
   armorGrids:
   - gridInfo:
       isHead: 1
+      tier: 1
       sizeX: 3
       sizeY: 3
       surrounding:
@@ -46,6 +47,7 @@ MonoBehaviour:
     transformName: Head_3x3_S1_LR_RaptorFootL
   - gridInfo:
       isHead: 1
+      tier: 1
       sizeX: 3
       sizeY: 6
       surrounding:
@@ -56,6 +58,7 @@ MonoBehaviour:
     transformName: Head_3x6_S3_LR_RaptorFootBoneL
   - gridInfo:
       isHead: 1
+      tier: 2
       sizeX: 1
       sizeY: 4
       surrounding:
@@ -63,9 +66,10 @@ MonoBehaviour:
         edges: 3
         fullType: 0
       gridName: RaptorShinL
-    transformName: Head_1x4_S1_LR_RaptorShinL
+    transformName: Head_T2_1x4_S1_LR_RaptorShinL
   - gridInfo:
       isHead: 1
+      tier: 1
       sizeX: 3
       sizeY: 7
       surrounding:
@@ -76,6 +80,7 @@ MonoBehaviour:
     transformName: Head_3x7_S3_LR_RaptorShinBackL
   - gridInfo:
       isHead: 1
+      tier: 2
       sizeX: 4
       sizeY: 7
       surrounding:
@@ -83,9 +88,10 @@ MonoBehaviour:
         edges: 0
         fullType: 1
       gridName: RaptorThinhL
-    transformName: Head_4x7_S5FH_RaptorThinhL
+    transformName: Head_T2_4x7_S5FH_RaptorThinhL
   - gridInfo:
       isHead: 1
+      tier: 1
       sizeX: 3
       sizeY: 3
       surrounding:
@@ -96,6 +102,7 @@ MonoBehaviour:
     transformName: Head_3x3_S1_LR_RaptorFootR
   - gridInfo:
       isHead: 1
+      tier: 1
       sizeX: 3
       sizeY: 6
       surrounding:
@@ -106,6 +113,7 @@ MonoBehaviour:
     transformName: Head_3x6_S3_LR_RaptorFootBoneR
   - gridInfo:
       isHead: 1
+      tier: 2
       sizeX: 1
       sizeY: 4
       surrounding:
@@ -113,9 +121,10 @@ MonoBehaviour:
         edges: 3
         fullType: 0
       gridName: RaptorShinR
-    transformName: Head_1x4_S1_LR_RaptorShinR
+    transformName: Head_T2_1x4_S1_LR_RaptorShinR
   - gridInfo:
       isHead: 1
+      tier: 1
       sizeX: 3
       sizeY: 7
       surrounding:
@@ -126,6 +135,7 @@ MonoBehaviour:
     transformName: Head_3x7_S3_LR_RaptorShinBackR
   - gridInfo:
       isHead: 1
+      tier: 2
       sizeX: 4
       sizeY: 7
       surrounding:
@@ -133,9 +143,10 @@ MonoBehaviour:
         edges: 0
         fullType: 1
       gridName: RaptorThinhR
-    transformName: Head_4x7_S5FH_RaptorThinhR
+    transformName: Head_T2_4x7_S5FH_RaptorThinhR
   - gridInfo:
       isHead: 1
+      tier: 1
       sizeX: 5
       sizeY: 3
       surrounding:
@@ -146,6 +157,7 @@ MonoBehaviour:
     transformName: Head_5x3_S1_T_RaptorHipL
   - gridInfo:
       isHead: 1
+      tier: 1
       sizeX: 5
       sizeY: 3
       surrounding:

@@ -48,9 +48,25 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: -6595316656556587267, guid: af245e6e624bf7a43abdbd04e15351c0, type: 3}
+      propertyPath: m_Name
+      value: Head_T2_1x4_S1_LR_RaptorShinR
+      objectReference: {fileID: 0}
     - target: {fileID: 919132149155446097, guid: af245e6e624bf7a43abdbd04e15351c0, type: 3}
       propertyPath: m_Name
       value: RaptorV2
+      objectReference: {fileID: 0}
+    - target: {fileID: 5725512263467270358, guid: af245e6e624bf7a43abdbd04e15351c0, type: 3}
+      propertyPath: m_Name
+      value: Head_T2_4x7_S5FH_RaptorThinhR
+      objectReference: {fileID: 0}
+    - target: {fileID: 9086733083217834938, guid: af245e6e624bf7a43abdbd04e15351c0, type: 3}
+      propertyPath: m_Name
+      value: Head_T2_1x4_S1_LR_RaptorShinL
+      objectReference: {fileID: 0}
+    - target: {fileID: 9219840982621491250, guid: af245e6e624bf7a43abdbd04e15351c0, type: 3}
+      propertyPath: m_Name
+      value: Head_T2_4x7_S5FH_RaptorThinhL
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

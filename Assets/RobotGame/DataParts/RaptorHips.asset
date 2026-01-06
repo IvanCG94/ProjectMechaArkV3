@@ -18,7 +18,11 @@ MonoBehaviour:
   icon: {fileID: 0}
   prefab: {fileID: 8876599723097066246, guid: 4f346264f3be7454c9a4439f2b6b6c4e, type: 3}
   category: 0
-  tier: 3
+  tier:
+    tier: 2
+    subTier: 1
+  rarity: 0
+  maxStackSize: 99
   weight: 1
   durability: 100
   partType: 0
@@ -32,6 +36,7 @@ MonoBehaviour:
   armorGrids:
   - gridInfo:
       isHead: 1
+      tier: 0
       sizeX: 3
       sizeY: 7
       surrounding:
@@ -42,6 +47,7 @@ MonoBehaviour:
     transformName: Head_3x7_S3FH_RaptorThinh_L
   - gridInfo:
       isHead: 1
+      tier: 0
       sizeX: 3
       sizeY: 7
       surrounding:
@@ -52,6 +58,7 @@ MonoBehaviour:
     transformName: Head_3x7_S5FH_RaptorThinh_L
   - gridInfo:
       isHead: 1
+      tier: 0
       sizeX: 3
       sizeY: 7
       surrounding:
@@ -62,6 +69,7 @@ MonoBehaviour:
     transformName: Head_3x7_S3FH_RaptorThinh_R
   - gridInfo:
       isHead: 1
+      tier: 0
       sizeX: 3
       sizeY: 7
       surrounding:
