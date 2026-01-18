@@ -8,7 +8,7 @@ namespace RobotGame.Control
     /// Envía parámetros de animación a todas las partes estructurales del robot.
     /// 
     /// Este script funciona como un "broadcaster" de parámetros. Lee el estado
-    /// del PlayerMovement y envía los mismos valores a todos los Animators
+    /// del PlayerController y envía los mismos valores a todos los Animators
     /// de las partes estructurales. Cada parte decide si tiene animación
     /// para ese estado o no.
     /// 
@@ -29,7 +29,7 @@ namespace RobotGame.Control
         #region Serialized Fields
         
         [Header("Referencias")]
-        [SerializeField] private PlayerMovement playerMovement;
+        [SerializeField] private PlayerController playerController;
         
         [Header("Configuración")]
         [Tooltip("Velocidad máxima para normalizar el parámetro Speed (0-1)")]
@@ -107,17 +107,17 @@ namespace RobotGame.Control
         
         private void Start()
         {
-            if (playerMovement == null)
+            if (playerController == null)
             {
-                playerMovement = FindObjectOfType<PlayerMovement>();
+                playerController = FindObjectOfType<PlayerController>();
             }
             
             SubscribeToMovementEvents();
             
             // Si ya hay un robot, recolectar sus animators
-            if (playerMovement != null && playerMovement.Target != null)
+            if (playerController != null && playerController.Target != null)
             {
-                Robot robot = playerMovement.Target.GetComponent<Robot>();
+                Robot robot = playerController.Target.GetComponent<Robot>();
                 if (robot != null)
                 {
                     CollectAnimators(robot);
@@ -127,7 +127,7 @@ namespace RobotGame.Control
         
         private void Update()
         {
-            if (playerMovement == null || partAnimators.Count == 0) return;
+            if (playerController == null || partAnimators.Count == 0) return;
             
             UpdateAnimatorParameters();
         }
@@ -148,19 +148,19 @@ namespace RobotGame.Control
         
         private void SubscribeToMovementEvents()
         {
-            if (playerMovement != null)
+            if (playerController != null)
             {
-                playerMovement.OnJump += HandleJump;
-                playerMovement.OnLand += HandleLand;
+                playerController.OnJump += HandleJump;
+                playerController.OnLand += HandleLand;
             }
         }
         
         private void UnsubscribeFromMovementEvents()
         {
-            if (playerMovement != null)
+            if (playerController != null)
             {
-                playerMovement.OnJump -= HandleJump;
-                playerMovement.OnLand -= HandleLand;
+                playerController.OnJump -= HandleJump;
+                playerController.OnLand -= HandleLand;
             }
         }
         
@@ -228,7 +228,7 @@ namespace RobotGame.Control
         private void UpdateAnimatorParameters()
         {
             // Calcular Speed normalizado (0-1)
-            float targetSpeed = playerMovement.CurrentSpeed / maxSpeedReference;
+            float targetSpeed = playerController.CurrentSpeed / maxSpeedReference;
             targetSpeed = Mathf.Clamp01(targetSpeed);
             
             // Suavizar el cambio de velocidad
@@ -236,9 +236,9 @@ namespace RobotGame.Control
                 ref speedVelocity, speedSmoothTime);
             
             // Obtener otros valores
-            bool isGrounded = playerMovement.IsGrounded;
-            bool isSprinting = playerMovement.IsSprinting;
-            float verticalVelocity = playerMovement.Velocity.y;
+            bool isGrounded = playerController.IsGrounded;
+            bool isSprinting = playerController.IsSprinting;
+            float verticalVelocity = playerController.VerticalVelocity;
             
             // Enviar a todos los Animators
             foreach (var animator in partAnimators)
@@ -386,9 +386,9 @@ namespace RobotGame.Control
             {
                 CollectAnimators(currentRobot);
             }
-            else if (playerMovement != null && playerMovement.Target != null)
+            else if (playerController != null && playerController.Target != null)
             {
-                Robot robot = playerMovement.Target.GetComponent<Robot>();
+                Robot robot = playerController.Target.GetComponent<Robot>();
                 if (robot != null)
                 {
                     CollectAnimators(robot);
@@ -410,9 +410,9 @@ namespace RobotGame.Control
             GUILayout.Label("=== PlayerAnimator Debug ===");
             GUILayout.Label($"Animators: {partAnimators.Count}");
             GUILayout.Label($"Speed: {currentAnimSpeed:F2}");
-            GUILayout.Label($"Grounded: {playerMovement?.IsGrounded}");
-            GUILayout.Label($"Sprinting: {playerMovement?.IsSprinting}");
-            GUILayout.Label($"Vertical Vel: {playerMovement?.Velocity.y:F2}");
+            GUILayout.Label($"Grounded: {playerController?.IsGrounded}");
+            GUILayout.Label($"Sprinting: {playerController?.IsSprinting}");
+            GUILayout.Label($"Vertical Vel: {playerController?.VerticalVelocity:F2}");
             
             GUILayout.Space(5);
             GUILayout.Label("Partes con Animator:");

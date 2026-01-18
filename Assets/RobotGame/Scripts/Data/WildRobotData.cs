@@ -40,6 +40,10 @@ namespace RobotGame.Data
         [Tooltip("Tier del robot salvaje (define qué piezas puede usar)")]
         public TierInfo tier = TierInfo.Tier2_1;
         
+        [Header("Core")]
+        [Tooltip("El Core del robot (su 'corazón' que define energía y stats)")]
+        public CoreData coreData;
+        
         [Header("Estructura Base")]
         [Tooltip("Las Hips (piernas) - raíz del robot")]
         public StructuralPartData hips;
@@ -110,6 +114,16 @@ namespace RobotGame.Data
             {
                 errors.Add("No hay Hips asignadas");
                 return false;
+            }
+            
+            // Validar Core
+            if (coreData == null)
+            {
+                errors.Add("No hay Core asignado");
+            }
+            else if (!coreData.IsCompatibleWith(tier))
+            {
+                errors.Add($"Core '{coreData.displayName}' (Tier {coreData.tier}) no es compatible con el robot (Tier {tier})");
             }
             
             // Validar Hips
@@ -237,6 +251,12 @@ namespace RobotGame.Data
         public float CalculateTotalWeight()
         {
             float weight = 0f;
+            
+            // Peso del Core
+            if (coreData != null)
+            {
+                weight += coreData.weight;
+            }
             
             foreach (var part in GetAllStructuralParts())
             {

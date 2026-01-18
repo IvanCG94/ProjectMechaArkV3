@@ -11,13 +11,18 @@ namespace RobotGame.AI
     /// </summary>
     public enum WildRobotState
     {
+        // Estados salvajes
         Idle,           // Quieto
         Patrol,         // Patrullando
         Alert,          // Alerta (detectó algo)
         Chase,          // Persiguiendo al jugador
         Attack,         // Atacando
         Flee,           // Huyendo
-        Dead            // Muerto/Derrotado
+        Dead,           // Muerto/Derrotado
+        
+        // Estados domesticados
+        TamedFollow,    // Siguiendo al dueño
+        TamedStay       // Quieto esperando órdenes
     }
     
     /// <summary>
@@ -41,6 +46,14 @@ namespace RobotGame.AI
         [Header("Domesticación")]
         [SerializeField] private bool isTamed = false;
         [SerializeField] private RobotCore owner;
+        
+        [Header("Configuración Domesticado")]
+        [Tooltip("Distancia a la que el mecha considera que está 'cerca' del dueño")]
+        [SerializeField] private float followStopDistance = 3f;
+        [Tooltip("Distancia a la que el mecha empieza a seguir si está muy lejos")]
+        [SerializeField] private float followStartDistance = 5f;
+        [Tooltip("Distancia mínima que mantiene del dueño")]
+        [SerializeField] private float followMinDistance = 2f;
         
         [Header("Estado (Solo lectura)")]
         [SerializeField] private WildRobotState currentState = WildRobotState.Idle;
@@ -186,6 +199,14 @@ namespace RobotGame.AI
                     break;
                 case WildRobotState.Flee:
                     UpdateFlee();
+                    break;
+                    
+                // Estados domesticados
+                case WildRobotState.TamedFollow:
+                    UpdateTamedFollow();
+                    break;
+                case WildRobotState.TamedStay:
+                    UpdateTamedStay();
                     break;
             }
         }
@@ -494,6 +515,129 @@ namespace RobotGame.AI
         
         #endregion
         
+        #region Tamed States
+        
+        /// <summary>
+        /// Obtiene la posición del dueño.
+        /// </summary>
+        private Vector3? GetOwnerPosition()
+        {
+            if (owner == null) return null;
+            
+            // Si el dueño está montado en este mecha, no seguirlo
+            if (isBeingControlled) return null;
+            
+            // El dueño puede estar en su propio robot o montado en otro
+            if (owner.CurrentRobot != null)
+            {
+                return owner.CurrentRobot.transform.position;
+            }
+            
+            return null;
+        }
+        
+        /// <summary>
+        /// Estado: Siguiendo al dueño.
+        /// </summary>
+        private void UpdateTamedFollow()
+        {
+            Vector3? ownerPos = GetOwnerPosition();
+            
+            if (ownerPos == null)
+            {
+                // No hay dueño o está montado en nosotros, quedarse quieto
+                StopMoving();
+                return;
+            }
+            
+            float distance = Vector3.Distance(transform.position, ownerPos.Value);
+            
+            if (distance > followMinDistance)
+            {
+                // Moverse hacia el dueño
+                MoveTowards(ownerPos.Value);
+                LookAtTarget(ownerPos.Value);
+            }
+            else
+            {
+                // Ya está cerca, detenerse
+                StopMoving();
+                LookAtTarget(ownerPos.Value);
+            }
+        }
+        
+        /// <summary>
+        /// Estado: Quedarse quieto esperando órdenes.
+        /// </summary>
+        private void UpdateTamedStay()
+        {
+            // Simplemente quedarse quieto
+            StopMoving();
+            
+            // Opcionalmente mirar al dueño si está cerca
+            Vector3? ownerPos = GetOwnerPosition();
+            if (ownerPos != null)
+            {
+                float distance = Vector3.Distance(transform.position, ownerPos.Value);
+                if (distance < followStartDistance * 2f)
+                {
+                    LookAtTarget(ownerPos.Value);
+                }
+            }
+        }
+        
+        /// <summary>
+        /// Recibe una señal/silbido del dueño.
+        /// Comportamiento contextual:
+        /// - Si está lejos → viene hacia el dueño (TamedFollow)
+        /// - Si está cerca y siguiendo → se queda (TamedStay)
+        /// - Si está quieto → empieza a seguir (TamedFollow)
+        /// </summary>
+        public void ReceiveSignal()
+        {
+            if (!isTamed)
+            {
+                Debug.Log($"WildRobot '{wildData?.speciesName}': Señal ignorada (no domesticado)");
+                return;
+            }
+            
+            if (isBeingControlled)
+            {
+                Debug.Log($"WildRobot '{wildData?.speciesName}': Señal ignorada (siendo controlado)");
+                return;
+            }
+            
+            Vector3? ownerPos = GetOwnerPosition();
+            if (ownerPos == null)
+            {
+                Debug.Log($"WildRobot '{wildData?.speciesName}': Señal ignorada (no hay dueño)");
+                return;
+            }
+            
+            float distance = Vector3.Distance(transform.position, ownerPos.Value);
+            
+            if (currentState == WildRobotState.TamedStay)
+            {
+                // Estaba quieto → empezar a seguir
+                ChangeState(WildRobotState.TamedFollow);
+                Debug.Log($"WildRobot '{wildData?.speciesName}': Señal recibida → Siguiendo");
+            }
+            else if (currentState == WildRobotState.TamedFollow && distance <= followStopDistance)
+            {
+                // Está cerca y siguiendo → quedarse
+                ChangeState(WildRobotState.TamedStay);
+                Debug.Log($"WildRobot '{wildData?.speciesName}': Señal recibida → Quieto");
+            }
+            else
+            {
+                // Está lejos o en otro estado → venir
+                ChangeState(WildRobotState.TamedFollow);
+                Debug.Log($"WildRobot '{wildData?.speciesName}': Señal recibida → Viniendo (dist: {distance:F1}m)");
+            }
+        }
+        
+        #endregion
+        
         #region External Control (Mount System)
         
         /// <summary>
@@ -511,17 +655,17 @@ namespace RobotGame.AI
         
         /// <summary>
         /// Libera el control del robot.
-        /// Reactiva la IA (solo si no está domesticado, los domesticados quedan en Idle).
+        /// Reactiva la IA. Si está domesticado, entra en modo seguir.
         /// </summary>
         public void ReleaseControl()
         {
             isBeingControlled = false;
             StopMoving();
             
-            // Si está domesticado, quedarse en Idle (no atacar)
+            // Si está domesticado, empezar a seguir al dueño
             if (isTamed)
             {
-                ChangeState(WildRobotState.Idle);
+                ChangeState(WildRobotState.TamedFollow);
             }
             
             Debug.Log($"WildRobot '{wildData?.speciesName}': Control liberado");

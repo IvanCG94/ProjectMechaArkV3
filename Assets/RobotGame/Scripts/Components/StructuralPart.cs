@@ -53,6 +53,25 @@ namespace RobotGame.Components
         public Animator Animator => animator;
         
         /// <summary>
+        /// Si esta parte tiene un socket para el Core.
+        /// Las partes con CoreSocket son críticas - si se destruyen, el robot muere.
+        /// </summary>
+        public bool HasCoreSocket
+        {
+            get
+            {
+                foreach (var socket in childSockets)
+                {
+                    if (socket.SocketType == StructuralSocketType.Core)
+                    {
+                        return true;
+                    }
+                }
+                return false;
+            }
+        }
+        
+        /// <summary>
         /// Inicializa la pieza estructural con sus datos y genera sockets/grillas.
         /// </summary>
         public void Initialize(StructuralPartData data, string id = null)

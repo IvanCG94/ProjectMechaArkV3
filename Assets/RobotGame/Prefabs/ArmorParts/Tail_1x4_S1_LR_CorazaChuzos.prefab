@@ -55,5 +55,53 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: f6c1691347d643a449afedee20c1d65d, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 6068581740966732675}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: f6c1691347d643a449afedee20c1d65d, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 518061039356263490}
   m_SourcePrefab: {fileID: 100100000, guid: f6c1691347d643a449afedee20c1d65d, type: 3}
+--- !u!1 &6229166989259161003 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 919132149155446097, guid: f6c1691347d643a449afedee20c1d65d, type: 3}
+  m_PrefabInstance: {fileID: 6535597782779855098}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &6068581740966732675
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6229166989259161003}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3c1a66f9e8e8c804196bb13247c8ed63, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RobotGame.Combat.PartHealth
+  maxHealth: 50
+  currentHealth: 0
+  isDestroyed: 0
+  logDamage: 1
+--- !u!65 &518061039356263490
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6229166989259161003}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 0.17, y: 0.40000004, z: 0.15030652}
+  m_Center: {x: 0.049999993, y: 0.20000002, z: -0.12484676}

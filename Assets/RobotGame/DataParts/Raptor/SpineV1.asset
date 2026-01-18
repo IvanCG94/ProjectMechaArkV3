@@ -1,0 +1,46 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0b980c5627308d5458fee39217d364a3, type: 3}
+  m_Name: SpineV1
+  m_EditorClassIdentifier: Assembly-CSharp::RobotGame.Data.ArmorPartData
+  partId: SpineV1
+  displayName: Spine V1
+  description: 
+  icon: {fileID: 0}
+  prefab: {fileID: 1444809813543708436, guid: c4f1f31b5de586f4da6cff27cfc26cdf, type: 3}
+  category: 1
+  tier:
+    tier: 1
+    subTier: 1
+  rarity: 0
+  maxStackSize: 99
+  weight: 1
+  durability: 100
+  tailGrid:
+    gridInfo:
+      isHead: 0
+      tier: 2
+      sizeX: 2
+      sizeY: 2
+      surrounding:
+        level: 1
+        edges: 3
+        fullType: 0
+      gridName: RaptorSpineV1
+    transformName: Tail_T2_2x2_S1_LR_RaptorSpineV1
+  additionalHeadGrids: []
+  armor: 0
+  physicalResistance: 0
+  energyResistance: 0
+  explosiveResistance: 0
+  damagedMaterial: {fileID: 0}
+  hitEffectPrefab: {fileID: 0}

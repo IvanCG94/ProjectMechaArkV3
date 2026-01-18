@@ -28,48 +28,44 @@ namespace RobotGame.Control
         [SerializeField] private float defaultDistance = 6f;
         [SerializeField] private float minDistance = 2f;
         [SerializeField] private float maxDistance = 15f;
-        [SerializeField] private float zoomSpeed = 5f;
-        [SerializeField] private float zoomSmoothTime = 0.1f;
+        [SerializeField] private float zoomSpeed = 3f;
+        [SerializeField] private float zoomSmoothTime = 0.15f;
         
         [Header("Órbita")]
-        [SerializeField] private float orbitSensitivity = 3f;
-        [Tooltip("Ángulo mínimo vertical (negativo = mirar arriba). Valores muy negativos causan que la cámara colisione con el suelo.")]
-        [SerializeField] private float minVerticalAngle = -10f;
+        [SerializeField] private float orbitSensitivity = 2f;
+        [SerializeField] private float minVerticalAngle = -20f;
         [SerializeField] private float maxVerticalAngle = 70f;
         
         [Header("Control de Mouse")]
-        [Tooltip("Tecla para liberar el mouse en modo normal")]
         [SerializeField] private KeyCode freeCursorKey = KeyCode.LeftAlt;
         
         [Header("Auto-Recentrado")]
         [SerializeField] private bool enableAutoRecenter = true;
-        [SerializeField] private float autoRecenterDelay = 2f;
-        [SerializeField] private float autoRecenterSpeed = 1f;
+        [SerializeField] private float autoRecenterDelay = 3f;
+        [SerializeField] private float autoRecenterSpeed = 0.5f;
         [SerializeField] private float autoRecenterMinSpeed = 0.5f;
         
         [Header("Suavizado")]
-        [SerializeField] private float positionSmoothTime = 0.1f;
-        [SerializeField] private float rotationSmoothTime = 0.05f;
+        [SerializeField] private float followSmoothTime = 0.1f;
         
         [Header("Colisión")]
         [SerializeField] private bool enableCollision = true;
         [SerializeField] private float collisionRadius = 0.2f;
-        [Tooltip("Layers con los que la cámara colisiona. IMPORTANTE: Excluir el layer 'Player' para evitar colisión con el propio robot.")]
         [SerializeField] private LayerMask collisionLayers = ~0;
-        [SerializeField] private float collisionSmoothTime = 0.1f;
+        [SerializeField] private float collisionPullInSpeed = 10f;
+        [SerializeField] private float collisionPushOutSpeed = 2f;
         
-        [Header("Estado (Debug)")]
+        [Header("Estado")]
         [SerializeField] private bool isInEditMode = false;
         
         [Header("Debug")]
-        [SerializeField] private bool showDebugGizmos = false;
         [SerializeField] private bool showDebugUI = false;
         
         #endregion
         
         #region Private Fields
         
-        // Ángulos actuales
+        // Ángulos
         private float horizontalAngle;
         private float verticalAngle = 30f;
         
@@ -78,20 +74,18 @@ namespace RobotGame.Control
         private float targetDistance;
         private float distanceVelocity;
         
-        // Posición suave
+        // Posición del punto de enfoque
         private Vector3 currentFocusPoint;
         private Vector3 focusVelocity;
         
         // Colisión
-        private float collisionDistance;
-        private float collisionVelocity;
+        private float currentCollisionDistance;
         
         // Auto-recentrado
         private float timeSinceLastInput;
-        private bool isOrbiting;
         
-        // Referencia al PlayerMovement para detectar movimiento
-        private PlayerMovement playerMovement;
+        // Referencias
+        private PlayerController playerController;
         
         #endregion
         
@@ -99,8 +93,6 @@ namespace RobotGame.Control
         
         public Transform Target => target;
         public bool IsInEditMode => isInEditMode;
-        public float HorizontalAngle => horizontalAngle;
-        public float VerticalAngle => verticalAngle;
         
         #endregion
         
@@ -112,11 +104,11 @@ namespace RobotGame.Control
             
             if (target != null)
             {
-                playerMovement = FindObjectOfType<PlayerMovement>();
+                playerController = FindObjectOfType<PlayerController>();
                 
                 if (instant)
                 {
-                    InitializeCameraPosition();
+                    InitializeCamera();
                 }
             }
         }
@@ -124,26 +116,20 @@ namespace RobotGame.Control
         public void EnterEditMode()
         {
             isInEditMode = true;
-            UnlockCursor();
-            Debug.Log("PlayerCamera: Entrando a modo edición");
+            Cursor.lockState = CursorLockMode.None;
+            Cursor.visible = true;
         }
         
         public void ExitEditMode()
         {
             isInEditMode = false;
-            LockCursor();
-            Debug.Log("PlayerCamera: Saliendo de modo edición");
+            Cursor.lockState = CursorLockMode.Locked;
+            Cursor.visible = false;
         }
         
         public void SetZoom(float distance)
         {
             targetDistance = Mathf.Clamp(distance, minDistance, maxDistance);
-        }
-        
-        public void SetAngles(float horizontal, float vertical)
-        {
-            horizontalAngle = horizontal;
-            verticalAngle = Mathf.Clamp(vertical, minVerticalAngle, maxVerticalAngle);
         }
         
         #endregion
@@ -154,18 +140,18 @@ namespace RobotGame.Control
         {
             currentDistance = defaultDistance;
             targetDistance = defaultDistance;
-            collisionDistance = defaultDistance;
+            currentCollisionDistance = defaultDistance;
             
             if (target != null)
             {
-                InitializeCameraPosition();
-                playerMovement = FindObjectOfType<PlayerMovement>();
+                InitializeCamera();
+                playerController = FindObjectOfType<PlayerController>();
             }
             
-            // Por defecto empezamos en modo normal (cursor bloqueado)
             if (!isInEditMode)
             {
-                LockCursor();
+                Cursor.lockState = CursorLockMode.Locked;
+                Cursor.visible = false;
             }
         }
         
@@ -176,37 +162,19 @@ namespace RobotGame.Control
             HandleInput();
             UpdateFocusPoint();
             UpdateDistance();
-            HandleCollision();
-            UpdateCameraTransform();
+            UpdateCollision();
+            ApplyCameraTransform();
         }
         
         #endregion
         
         #region Initialization
         
-        private void InitializeCameraPosition()
+        private void InitializeCamera()
         {
-            if (target == null) return;
-            
             currentFocusPoint = target.position + targetOffset;
             horizontalAngle = target.eulerAngles.y;
-            UpdateCameraTransform();
-        }
-        
-        #endregion
-        
-        #region Cursor Management
-        
-        private void LockCursor()
-        {
-            Cursor.lockState = CursorLockMode.Locked;
-            Cursor.visible = false;
-        }
-        
-        private void UnlockCursor()
-        {
-            Cursor.lockState = CursorLockMode.None;
-            Cursor.visible = true;
+            currentCollisionDistance = defaultDistance;
         }
         
         #endregion
@@ -215,30 +183,26 @@ namespace RobotGame.Control
         
         private void HandleInput()
         {
-            // Zoom con rueda (siempre disponible)
-            float scrollInput = Input.GetAxis("Mouse ScrollWheel");
-            if (Mathf.Abs(scrollInput) > 0.01f)
+            // Zoom
+            float scroll = Input.GetAxis("Mouse ScrollWheel");
+            if (Mathf.Abs(scroll) > 0.01f)
             {
-                targetDistance -= scrollInput * zoomSpeed;
+                targetDistance -= scroll * zoomSpeed;
                 targetDistance = Mathf.Clamp(targetDistance, minDistance, maxDistance);
             }
             
-            // Lógica de órbita según el modo
+            // Órbita según modo
             if (isInEditMode)
             {
-                // MODO EDICIÓN: Click derecho para rotar
                 HandleEditModeInput();
             }
             else
             {
-                // MODO NORMAL: Mouse directo, Alt para liberar
                 HandleNormalModeInput();
             }
             
             // Auto-recentrado
-            timeSinceLastInput += Time.deltaTime;
-            
-            if (enableAutoRecenter && !isOrbiting && !isInEditMode)
+            if (enableAutoRecenter && !isInEditMode)
             {
                 HandleAutoRecenter();
             }
@@ -246,74 +210,78 @@ namespace RobotGame.Control
         
         private void HandleNormalModeInput()
         {
-            // Alt libera el cursor temporalmente
+            // Alt libera cursor temporalmente
             if (Input.GetKeyDown(freeCursorKey))
             {
-                UnlockCursor();
+                Cursor.lockState = CursorLockMode.None;
+                Cursor.visible = true;
             }
             if (Input.GetKeyUp(freeCursorKey))
             {
-                LockCursor();
+                Cursor.lockState = CursorLockMode.Locked;
+                Cursor.visible = false;
             }
             
-            // Si Alt está presionado, no mover la cámara
+            // Si Alt está presionado, no mover cámara
             if (Input.GetKey(freeCursorKey))
-            {
-                isOrbiting = false;
                 return;
-            }
             
-            // Mouse mueve la cámara directamente
+            // Mouse mueve cámara
             float mouseX = Input.GetAxis("Mouse X");
             float mouseY = Input.GetAxis("Mouse Y");
             
-            if (Mathf.Abs(mouseX) > 0.01f || Mathf.Abs(mouseY) > 0.01f)
+            if (Mathf.Abs(mouseX) > 0.001f || Mathf.Abs(mouseY) > 0.001f)
             {
-                horizontalAngle -= mouseX * orbitSensitivity; // Invertido: mouse izquierda = cámara izquierda
+                horizontalAngle -= mouseX * orbitSensitivity;
                 verticalAngle -= mouseY * orbitSensitivity;
                 verticalAngle = Mathf.Clamp(verticalAngle, minVerticalAngle, maxVerticalAngle);
                 
                 timeSinceLastInput = 0f;
-                isOrbiting = true;
             }
             else
             {
-                isOrbiting = false;
+                timeSinceLastInput += Time.deltaTime;
             }
         }
         
         private void HandleEditModeInput()
         {
-            // En modo edición: click derecho sostenido para rotar
+            // Click derecho para rotar
             if (Input.GetMouseButton(1))
             {
                 float mouseX = Input.GetAxis("Mouse X");
                 float mouseY = Input.GetAxis("Mouse Y");
                 
-                if (Mathf.Abs(mouseX) > 0.01f || Mathf.Abs(mouseY) > 0.01f)
-                {
-                    horizontalAngle -= mouseX * orbitSensitivity; // Invertido: mouse izquierda = cámara izquierda
-                    verticalAngle -= mouseY * orbitSensitivity;
-                    verticalAngle = Mathf.Clamp(verticalAngle, minVerticalAngle, maxVerticalAngle);
-                    
-                    timeSinceLastInput = 0f;
-                    isOrbiting = true;
-                }
+                horizontalAngle -= mouseX * orbitSensitivity;
+                verticalAngle -= mouseY * orbitSensitivity;
+                verticalAngle = Mathf.Clamp(verticalAngle, minVerticalAngle, maxVerticalAngle);
+                
+                timeSinceLastInput = 0f;
             }
             else
             {
-                isOrbiting = false;
+                timeSinceLastInput += Time.deltaTime;
             }
         }
         
         private void HandleAutoRecenter()
         {
-            if (timeSinceLastInput < autoRecenterDelay) return;
-            if (playerMovement == null || playerMovement.CurrentSpeed < autoRecenterMinSpeed) return;
+            // No recentrar si el jugador no se mueve o si el usuario movió la cámara recientemente
+            if (timeSinceLastInput < autoRecenterDelay)
+                return;
             
-            float targetHorizontalAngle = target.eulerAngles.y;
-            horizontalAngle = Mathf.LerpAngle(horizontalAngle, targetHorizontalAngle, 
-                autoRecenterSpeed * Time.deltaTime);
+            if (playerController == null || playerController.CurrentSpeed < autoRecenterMinSpeed)
+                return;
+            
+            // Recentrar suavemente hacia donde mira el personaje
+            float targetAngle = target.eulerAngles.y;
+            float delta = Mathf.DeltaAngle(horizontalAngle, targetAngle);
+            
+            // Solo recentrar si la diferencia es significativa
+            if (Mathf.Abs(delta) > 5f)
+            {
+                horizontalAngle += delta * autoRecenterSpeed * Time.deltaTime;
+            }
         }
         
         #endregion
@@ -322,9 +290,8 @@ namespace RobotGame.Control
         
         private void UpdateFocusPoint()
         {
-            Vector3 targetFocusPoint = target.position + targetOffset;
-            currentFocusPoint = Vector3.SmoothDamp(currentFocusPoint, targetFocusPoint, 
-                ref focusVelocity, positionSmoothTime);
+            Vector3 targetPoint = target.position + targetOffset;
+            currentFocusPoint = Vector3.SmoothDamp(currentFocusPoint, targetPoint, ref focusVelocity, followSmoothTime);
         }
         
         #endregion
@@ -333,64 +300,75 @@ namespace RobotGame.Control
         
         private void UpdateDistance()
         {
-            currentDistance = Mathf.SmoothDamp(currentDistance, targetDistance, 
-                ref distanceVelocity, zoomSmoothTime);
+            currentDistance = Mathf.SmoothDamp(currentDistance, targetDistance, ref distanceVelocity, zoomSmoothTime);
         }
         
         #endregion
         
         #region Collision
         
-        private void HandleCollision()
+        private void UpdateCollision()
         {
             if (!enableCollision)
             {
-                collisionDistance = currentDistance;
+                currentCollisionDistance = currentDistance;
                 return;
             }
             
-            Vector3 cameraDirection = CalculateCameraDirection();
+            Vector3 direction = GetCameraDirection();
             float desiredDistance = currentDistance;
             
-            if (Physics.SphereCast(currentFocusPoint, collisionRadius, -cameraDirection, 
-                out RaycastHit hit, currentDistance, collisionLayers, QueryTriggerInteraction.Ignore))
+            // Raycast desde el punto de enfoque hacia atrás
+            if (Physics.SphereCast(currentFocusPoint, collisionRadius, direction, out RaycastHit hit, 
+                currentDistance, collisionLayers, QueryTriggerInteraction.Ignore))
             {
-                desiredDistance = hit.distance - collisionRadius * 0.5f;
-                desiredDistance = Mathf.Max(desiredDistance, minDistance * 0.5f);
+                // Hay obstáculo - acercarse
+                desiredDistance = Mathf.Max(hit.distance - collisionRadius, minDistance * 0.5f);
             }
             
-            float smoothTime = desiredDistance < collisionDistance ? 0.01f : collisionSmoothTime;
-            collisionDistance = Mathf.SmoothDamp(collisionDistance, desiredDistance, 
-                ref collisionVelocity, smoothTime);
+            // Suavizado diferente para acercarse vs alejarse
+            if (desiredDistance < currentCollisionDistance)
+            {
+                // Acercarse rápido (evitar atravesar paredes)
+                currentCollisionDistance = Mathf.MoveTowards(currentCollisionDistance, desiredDistance, 
+                    collisionPullInSpeed * Time.deltaTime);
+            }
+            else
+            {
+                // Alejarse lento (evitar rebotes)
+                currentCollisionDistance = Mathf.MoveTowards(currentCollisionDistance, desiredDistance, 
+                    collisionPushOutSpeed * Time.deltaTime);
+            }
         }
         
         #endregion
         
         #region Camera Transform
         
-        private Vector3 CalculateCameraDirection()
+        private Vector3 GetCameraDirection()
         {
-            float horizontalRad = horizontalAngle * Mathf.Deg2Rad;
-            float verticalRad = verticalAngle * Mathf.Deg2Rad;
+            float hRad = horizontalAngle * Mathf.Deg2Rad;
+            float vRad = verticalAngle * Mathf.Deg2Rad;
             
+            // Dirección desde el personaje hacia la cámara
             return new Vector3(
-                Mathf.Sin(horizontalRad) * Mathf.Cos(verticalRad),
-                Mathf.Sin(verticalRad),
-                -Mathf.Cos(horizontalRad) * Mathf.Cos(verticalRad)
-            ).normalized;
+                -Mathf.Sin(hRad) * Mathf.Cos(vRad),
+                Mathf.Sin(vRad),
+                Mathf.Cos(hRad) * Mathf.Cos(vRad)
+            );
         }
         
-        private void UpdateCameraTransform()
+        private void ApplyCameraTransform()
         {
-            Vector3 cameraDirection = CalculateCameraDirection();
-            float effectiveDistance = Mathf.Min(currentDistance, collisionDistance);
-            Vector3 desiredPosition = currentFocusPoint + cameraDirection * effectiveDistance;
+            Vector3 direction = GetCameraDirection();
+            float effectiveDistance = Mathf.Min(currentDistance, currentCollisionDistance);
             
-            transform.position = desiredPosition;
+            // Posición
+            Vector3 newPosition = currentFocusPoint + direction * effectiveDistance;
+            transform.position = newPosition;
             
-            Quaternion desiredRotation = Quaternion.LookRotation(currentFocusPoint - transform.position);
-            transform.rotation = Quaternion.Slerp(transform.rotation, desiredRotation, 
-                (1f / rotationSmoothTime) * Time.deltaTime);
+            // Rotación - mirar al punto de enfoque
+            transform.LookAt(currentFocusPoint);
         }
         
         #endregion
@@ -401,39 +379,18 @@ namespace RobotGame.Control
         {
             if (!showDebugUI) return;
             
-            GUILayout.BeginArea(new Rect(Screen.width - 260, 10, 250, 120));
+            GUILayout.BeginArea(new Rect(Screen.width - 220, 10, 210, 140));
             GUILayout.BeginVertical("box");
             
-            GUILayout.Label("=== PlayerCamera Debug ===");
-            GUILayout.Label($"Modo: {(isInEditMode ? "EDICIÓN" : "NORMAL")}");
-            GUILayout.Label($"Cursor: {(Cursor.lockState == CursorLockMode.Locked ? "Bloqueado" : "Libre")}");
-            GUILayout.Label($"Orbiting: {isOrbiting}");
-            GUILayout.Label($"H Angle: {horizontalAngle:F1}°");
-            GUILayout.Label($"V Angle: {verticalAngle:F1}°");
+            GUILayout.Label("=== Camera ===");
+            GUILayout.Label($"Mode: {(isInEditMode ? "EDIT" : "NORMAL")}");
+            GUILayout.Label($"H: {horizontalAngle:F1}° V: {verticalAngle:F1}°");
+            GUILayout.Label($"Distance: {currentDistance:F1}");
+            GUILayout.Label($"Collision: {currentCollisionDistance:F1}");
+            GUILayout.Label($"Idle: {timeSinceLastInput:F1}s");
             
             GUILayout.EndVertical();
             GUILayout.EndArea();
-        }
-        
-        private void OnDrawGizmos()
-        {
-            if (!showDebugGizmos || target == null) return;
-            
-            Vector3 focusPoint = Application.isPlaying ? currentFocusPoint : target.position + targetOffset;
-            
-            Gizmos.color = Color.yellow;
-            Gizmos.DrawWireSphere(focusPoint, 0.2f);
-            
-            Gizmos.color = Color.green;
-            Gizmos.DrawLine(focusPoint, target.position);
-            
-            if (enableCollision)
-            {
-                Vector3 cameraDir = CalculateCameraDirection();
-                Gizmos.color = Color.red;
-                Gizmos.DrawWireSphere(focusPoint + cameraDir * (Application.isPlaying ? collisionDistance : defaultDistance), 
-                    collisionRadius);
-            }
         }
         
         #endregion

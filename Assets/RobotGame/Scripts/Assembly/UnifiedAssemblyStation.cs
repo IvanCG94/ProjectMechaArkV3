@@ -93,7 +93,7 @@ namespace RobotGame.Assembly
         private bool showingMenu;
         
         // Referencias
-        private PlayerMovement playerMovement;
+        private PlayerController playerController;
         
         #endregion
         
@@ -195,7 +195,7 @@ namespace RobotGame.Assembly
         
         private void Start()
         {
-            playerMovement = FindObjectOfType<PlayerMovement>();
+            playerController = FindObjectOfType<PlayerController>();
         }
         
         private void Update()
@@ -277,9 +277,9 @@ namespace RobotGame.Assembly
             showingMenu = true;
             
             // Deshabilitar movimiento
-            if (playerMovement != null)
+            if (playerController != null)
             {
-                playerMovement.Disable();
+                playerController.Disable();
             }
             
             Debug.Log("=== MENÚ DE ENSAMBLAJE ===");
@@ -292,9 +292,9 @@ namespace RobotGame.Assembly
         {
             showingMenu = false;
             
-            if (currentEditMode == AssemblyEditMode.None && playerMovement != null)
+            if (currentEditMode == AssemblyEditMode.None && playerController != null)
             {
-                playerMovement.Enable();
+                playerController.Enable();
             }
         }
         
@@ -344,9 +344,9 @@ namespace RobotGame.Assembly
             currentEditMode = AssemblyEditMode.EditOwnRobot;
             
             // Deshabilitar movimiento
-            if (playerMovement != null)
+            if (playerController != null)
             {
-                playerMovement.EnterEditMode();
+                playerController.EnterEditModeState();
             }
             
             Debug.Log($"UnifiedAssemblyStation: Editando robot propio '{targetRobot.name}' (CON snapshot)");
@@ -389,9 +389,9 @@ namespace RobotGame.Assembly
             currentEditMode = AssemblyEditMode.EditShell;
             
             // Deshabilitar movimiento
-            if (playerMovement != null)
+            if (playerController != null)
             {
-                playerMovement.EnterEditMode();
+                playerController.EnterEditModeState();
             }
             
             Debug.Log($"UnifiedAssemblyStation: Editando cascarón '{targetRobot.name}' (SIN snapshot)");
@@ -443,9 +443,9 @@ namespace RobotGame.Assembly
             currentEditMode = AssemblyEditMode.EditMecha;
             
             // Deshabilitar movimiento
-            if (playerMovement != null)
+            if (playerController != null)
             {
-                playerMovement.EnterEditMode();
+                playerController.EnterEditModeState();
             }
             
             Debug.Log($"UnifiedAssemblyStation: Editando mecha '{mecha.WildData?.speciesName}' (CON snapshot)");
@@ -620,9 +620,9 @@ namespace RobotGame.Assembly
             targetMecha = null;
             
             // Rehabilitar movimiento
-            if (playerMovement != null)
+            if (playerController != null)
             {
-                playerMovement.ExitEditMode();
+                playerController.ExitEditModeState();
             }
         }
         
@@ -635,9 +635,9 @@ namespace RobotGame.Assembly
             targetRobot = null;
             targetMecha = null;
             
-            if (playerMovement != null)
+            if (playerController != null)
             {
-                playerMovement.ExitEditMode();
+                playerController.ExitEditModeState();
             }
         }
         

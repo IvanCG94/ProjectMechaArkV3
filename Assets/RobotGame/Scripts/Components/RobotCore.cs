@@ -9,7 +9,7 @@ namespace RobotGame.Components
     /// Componente runtime que representa el Core del robot.
     /// El Core es el "alma" que se puede transferir entre cuerpos de robot.
     /// 
-    /// NOTA: El movimiento está delegado a PlayerMovement (script independiente).
+    /// NOTA: El movimiento está delegado a PlayerController (script independiente).
     /// Este script solo notifica cuando el Core se inserta/extrae.
     /// </summary>
     public class RobotCore : MonoBehaviour
@@ -28,7 +28,7 @@ namespace RobotGame.Components
         [Header("Conexión")]
         [SerializeField] private Robot currentRobot;
         
-        // Evento para notificar cambios de robot (usado por PlayerMovement y PlayerCamera)
+        // Evento para notificar cambios de robot (usado por PlayerController y PlayerCamera)
         public static event System.Action<RobotCore, Robot> OnPlayerRobotChanged;
         
         #region Properties
@@ -154,7 +154,7 @@ namespace RobotGame.Components
             
             robot.OnCoreInserted(this);
             
-            // Notificar cambio de robot (PlayerMovement y PlayerCamera escuchan esto)
+            // Notificar cambio de robot (PlayerController y PlayerCamera escuchan esto)
             if (isPlayerCore)
             {
                 OnPlayerRobotChanged?.Invoke(this, robot);
@@ -252,17 +252,17 @@ namespace RobotGame.Components
         #region Movement Control (Legacy - para compatibilidad con AssemblyTester)
         
         // Estos métodos son llamados por AssemblyTester para deshabilitar movimiento en modo edición.
-        // Ahora delegan a PlayerMovement si existe.
+        // Ahora delegan a PlayerController si existe.
         
         /// <summary>
         /// Deshabilita el movimiento (llamado al entrar en modo edición).
         /// </summary>
         public void DisableMovement()
         {
-            var movement = FindObjectOfType<PlayerMovement>();
+            var movement = FindObjectOfType<PlayerController>();
             if (movement != null)
             {
-                movement.EnterEditMode();
+                movement.EnterEditModeState();
             }
         }
         
@@ -271,10 +271,10 @@ namespace RobotGame.Components
         /// </summary>
         public void EnableMovement()
         {
-            var movement = FindObjectOfType<PlayerMovement>();
+            var movement = FindObjectOfType<PlayerController>();
             if (movement != null)
             {
-                movement.ExitEditMode();
+                movement.ExitEditModeState();
             }
         }
         

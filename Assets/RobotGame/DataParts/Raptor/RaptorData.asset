@@ -15,13 +15,20 @@ MonoBehaviour:
   speciesName: Mecha raptor
   description: 
   icon: {fileID: 0}
-  tier: 3
-  hips: {fileID: 11400000, guid: 1b2564a08ef89a840a8942dfde089298, type: 2}
+  tier:
+    tier: 2
+    subTier: 1
+  coreData: {fileID: 11400000, guid: 31f7db643399ea444a443a673b572384, type: 2}
+  hips: {fileID: 11400000, guid: 8c29da02c9b70084da2f0a4ed7b41662, type: 2}
   hipsArmorPieces: []
   attachedParts:
-  - partData: {fileID: 11400000, guid: b0269f0487d35de4cbc264c5b9835025, type: 2}
+  - partData: {fileID: 11400000, guid: 04409ba2a232f804f9f7e7b78e164891, type: 2}
     attachedToSocket: 1
-    childParts: []
+    childParts:
+    - partData: {fileID: 11400000, guid: ec879c7f91831d24aa8335d67aa366ea, type: 2}
+      attachedToSocket: 2
+      childParts: []
+      armorPieces: []
     armorPieces: []
   behavior: 0
   detectionRadius: 10

@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using RobotGame.Data;
 using RobotGame.Enums;
+using RobotGame.Combat;
 
 namespace RobotGame.Components
 {
@@ -26,6 +27,17 @@ namespace RobotGame.Components
         
         [Header("Estado")]
         [SerializeField] private bool isOperational = false;
+        [SerializeField] private bool isDead = false;
+        
+        [Header("Partes con Salud")]
+        [SerializeField] private List<PartHealth> registeredParts = new List<PartHealth>();
+        
+        [Header("Combat Tracking")]
+        [Tooltip("ID del último ataque que golpeó a este robot (para evitar daño múltiple por ataque)")]
+        [SerializeField] private int lastReceivedAttackId = -1;
+        
+        [Tooltip("Si es true, solo la primera parte golpeada por ataque recibe daño")]
+        [SerializeField] private bool useAttackIdFiltering = true;
         
         /// <summary>
         /// ID único del robot.
@@ -61,6 +73,40 @@ namespace RobotGame.Components
         /// Si el robot está operacional (tiene core y está activo).
         /// </summary>
         public bool IsOperational => isOperational;
+        
+        /// <summary>
+        /// Si el robot está muerto (parte crítica destruida).
+        /// </summary>
+        public bool IsDead => isDead;
+        
+        /// <summary>
+        /// Si el robot está vivo (no muerto).
+        /// </summary>
+        public bool IsAlive => !isDead;
+        
+        /// <summary>
+        /// Lista de partes con salud registradas.
+        /// </summary>
+        public IReadOnlyList<PartHealth> RegisteredParts => registeredParts;
+        
+        #region Events
+        
+        /// <summary>
+        /// Se dispara cuando el robot muere. Params: robot, parte crítica que causó la muerte
+        /// </summary>
+        public event System.Action<Robot, PartHealth> OnRobotDeath;
+        
+        /// <summary>
+        /// Se dispara cuando una parte del robot es destruida. Params: robot, parte destruida
+        /// </summary>
+        public event System.Action<Robot, PartHealth> OnPartDestroyed;
+        
+        /// <summary>
+        /// Evento estático para cuando cualquier robot muere.
+        /// </summary>
+        public static event System.Action<Robot, List<StructuralPart>, List<ArmorPart>> OnRobotDeathWithLoot;
+        
+        #endregion
         
         /// <summary>
         /// Inicializa el robot con su estructura base (crea el HipsAnchor y HipsSocket).
@@ -340,5 +386,200 @@ namespace RobotGame.Components
             
             return armor;
         }
+        
+        #region Part Health Management
+        
+        /// <summary>
+        /// Verifica si este robot puede recibir daño del ataque especificado.
+        /// Si el attackId es el mismo que el último recibido, retorna false (ya fue golpeado).
+        /// Si es diferente o es ataque de área (attackId = -1), retorna true.
+        /// </summary>
+        /// <param name="attackId">ID único del ataque. -1 para ataques de área que siempre pasan.</param>
+        /// <returns>True si puede recibir daño, false si ya fue golpeado por este ataque</returns>
+        public bool CanReceiveDamageFromAttack(int attackId)
+        {
+            Debug.Log($"[Robot DEBUG] {robotName}.CanReceiveDamageFromAttack({attackId}) - lastReceived: {lastReceivedAttackId}, useFiltering: {useAttackIdFiltering}");
+            
+            // Ataques de área (attackId = -1) siempre pasan
+            if (attackId < 0)
+            {
+                Debug.Log($"[Robot DEBUG] AttackId < 0, permitiendo (área)");
+                return true;
+            }
+            
+            // Si no usamos filtrado, siempre permitir
+            if (!useAttackIdFiltering)
+            {
+                Debug.Log($"[Robot DEBUG] Filtrado desactivado, permitiendo");
+                return true;
+            }
+            
+            // Si es el mismo ataque, rechazar
+            if (attackId == lastReceivedAttackId)
+            {
+                Debug.Log($"[Robot DEBUG] AttackId {attackId} == lastReceived {lastReceivedAttackId}, RECHAZANDO");
+                return false;
+            }
+            
+            Debug.Log($"[Robot DEBUG] AttackId {attackId} != lastReceived {lastReceivedAttackId}, permitiendo");
+            return true;
+        }
+        
+        /// <summary>
+        /// Registra que este robot fue golpeado por un ataque.
+        /// Llamar después de aplicar daño exitosamente.
+        /// </summary>
+        public void RegisterAttackHit(int attackId)
+        {
+            if (attackId >= 0)
+            {
+                lastReceivedAttackId = attackId;
+                Debug.Log($"[Robot] {robotName} registró golpe del ataque #{attackId}");
+            }
+        }
+        
+        /// <summary>
+        /// Resetea el tracking de ataques. 
+        /// Útil si quieres que el mismo ataque pueda golpear de nuevo.
+        /// </summary>
+        public void ResetAttackTracking()
+        {
+            lastReceivedAttackId = -1;
+        }
+        
+        /// <summary>
+        /// Registra una parte con salud en este robot.
+        /// Llamado automáticamente por PartHealth en Start.
+        /// </summary>
+        public void RegisterPartHealth(PartHealth part)
+        {
+            if (part != null && !registeredParts.Contains(part))
+            {
+                registeredParts.Add(part);
+                part.OnPartDestroyed += HandlePartDestroyed;
+            }
+        }
+        
+        /// <summary>
+        /// Desregistra una parte con salud de este robot.
+        /// </summary>
+        public void UnregisterPartHealth(PartHealth part)
+        {
+            if (part != null && registeredParts.Contains(part))
+            {
+                part.OnPartDestroyed -= HandlePartDestroyed;
+                registeredParts.Remove(part);
+            }
+        }
+        
+        /// <summary>
+        /// Maneja cuando una parte es destruida.
+        /// </summary>
+        private void HandlePartDestroyed(PartHealth part)
+        {
+            OnPartDestroyed?.Invoke(this, part);
+            
+            // Remover de la lista
+            registeredParts.Remove(part);
+        }
+        
+        /// <summary>
+        /// Llamado cuando una parte crítica es destruida.
+        /// </summary>
+        public void OnCriticalPartDestroyed(PartHealth criticalPart)
+        {
+            if (isDead) return; // Ya está muerto
+            
+            isDead = true;
+            isOperational = false;
+            
+            Debug.Log($"[Robot] {robotName} ha MUERTO! Parte crítica destruida: {criticalPart.gameObject.name}");
+            
+            // Recolectar partes sobrevivientes para loot
+            List<StructuralPart> survivingStructural = new List<StructuralPart>();
+            List<ArmorPart> survivingArmor = new List<ArmorPart>();
+            
+            CollectSurvivingParts(survivingStructural, survivingArmor);
+            
+            Debug.Log($"[Robot] Loot disponible: {survivingStructural.Count} partes estructurales, {survivingArmor.Count} piezas de armadura");
+            
+            // Disparar eventos
+            OnRobotDeath?.Invoke(this, criticalPart);
+            OnRobotDeathWithLoot?.Invoke(this, survivingStructural, survivingArmor);
+            
+            // Destruir el robot después de un pequeño delay
+            Invoke(nameof(DestroyRobot), 0.5f);
+        }
+        
+        /// <summary>
+        /// Recolecta las partes que sobrevivieron para el loot.
+        /// </summary>
+        private void CollectSurvivingParts(List<StructuralPart> structuralParts, List<ArmorPart> armorParts)
+        {
+            // Buscar partes estructurales que aún existen y no están destruidas
+            foreach (var partHealth in registeredParts)
+            {
+                if (partHealth != null && partHealth.IsAlive && partHealth.StructuralPart != null)
+                {
+                    structuralParts.Add(partHealth.StructuralPart);
+                }
+            }
+            
+            // Buscar piezas de armadura
+            foreach (var structPart in structuralParts)
+            {
+                foreach (var grid in structPart.ArmorGrids)
+                {
+                    foreach (var armorPart in grid.PlacedParts)
+                    {
+                        if (armorPart != null)
+                        {
+                            // Verificar si la armadura tiene salud y está viva
+                            PartHealth armorHealth = armorPart.GetComponent<PartHealth>();
+                            if (armorHealth == null || armorHealth.IsAlive)
+                            {
+                                armorParts.Add(armorPart);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
+        /// <summary>
+        /// Destruye el robot y todos sus hijos.
+        /// </summary>
+        private void DestroyRobot()
+        {
+            // TODO: Podrías spawnear items de loot aquí antes de destruir
+            // Por ahora solo destruimos
+            Destroy(gameObject);
+        }
+        
+        /// <summary>
+        /// Mata al robot instantáneamente (para testing o efectos especiales).
+        /// </summary>
+        public void Kill()
+        {
+            if (isDead) return;
+            
+            // Buscar cualquier parte crítica para simular su destrucción
+            foreach (var part in registeredParts)
+            {
+                if (part.IsCriticalPart)
+                {
+                    OnCriticalPartDestroyed(part);
+                    return;
+                }
+            }
+            
+            // Si no hay partes críticas registradas, matar directamente
+            isDead = true;
+            isOperational = false;
+            OnRobotDeath?.Invoke(this, null);
+            Invoke(nameof(DestroyRobot), 0.5f);
+        }
+        
+        #endregion
     }
 }

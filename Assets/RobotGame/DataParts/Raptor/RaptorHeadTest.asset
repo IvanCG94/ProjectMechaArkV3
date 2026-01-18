@@ -1,0 +1,33 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 844f020186c0c954bb872a9bedbc9590, type: 3}
+  m_Name: RaptorHeadTest
+  m_EditorClassIdentifier: Assembly-CSharp::RobotGame.Data.StructuralPartData
+  partId: raptorheadtest
+  displayName: head test
+  description: 
+  icon: {fileID: 0}
+  prefab: {fileID: 2406391369128376363, guid: 79cb36e0b22c2e740b92acfaf3f4f0f3, type: 3}
+  category: 0
+  tier:
+    tier: 2
+    subTier: 1
+  rarity: 0
+  maxStackSize: 99
+  weight: 1
+  durability: 100
+  partType: 2
+  canBeRoot: 0
+  structuralSockets: []
+  armorGrids: []
+  animatorController: {fileID: 0}
+  animatorAvatar: {fileID: 0}

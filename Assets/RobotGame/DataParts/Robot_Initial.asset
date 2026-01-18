@@ -19,11 +19,19 @@ MonoBehaviour:
   hips: {fileID: 11400000, guid: 9355feb6de61b2b4ca34607c2e0df38e, type: 2}
   hipsArmorPieces: []
   attachedParts:
-  - partData: {fileID: 11400000, guid: cdd0e5b2fbabb9e4e91dbb9ae759614a, type: 2}
+  - partData: {fileID: 11400000, guid: 541ccf4624a5ba244adeac4ef2872493, type: 2}
     attachedToSocket: 1
     childParts:
     - partData: {fileID: 11400000, guid: 441a199948f58464e86b04f41192090f, type: 2}
       attachedToSocket: 2
       childParts: []
+      armorPieces: []
+    - partData: {fileID: 11400000, guid: 4a0a42060c12d094f92506fb96cb1ded, type: 2}
+      attachedToSocket: 4
+      childParts:
+      - partData: {fileID: 11400000, guid: 8bc474fa9b694d445aaf1ea913704dbf, type: 2}
+        attachedToSocket: 11
+        childParts: []
+        armorPieces: []
       armorPieces: []
     armorPieces: []

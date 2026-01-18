@@ -24,8 +24,8 @@ namespace RobotGame.Systems
         [Tooltip("El Core del jugador (se auto-detecta si no se asigna)")]
         [SerializeField] private RobotCore playerCore;
         
-        [Tooltip("El componente de movimiento del jugador")]
-        [SerializeField] private PlayerMovement playerMovement;
+        [Tooltip("El componente controlador del jugador")]
+        [SerializeField] private PlayerController playerController;
         
         [Tooltip("La cámara del jugador")]
         [SerializeField] private PlayerCamera playerCamera;
@@ -33,6 +33,9 @@ namespace RobotGame.Systems
         [Header("Configuración")]
         [Tooltip("Tecla para montar/desmontar")]
         [SerializeField] private KeyCode mountKey = KeyCode.F;
+        
+        [Tooltip("Tecla para enviar señal a mechas domesticados")]
+        [SerializeField] private KeyCode signalKey = KeyCode.T;
         
         [Tooltip("Distancia máxima para montar un mecha")]
         [SerializeField] private float mountRange = 3f;
@@ -97,18 +100,16 @@ namespace RobotGame.Systems
                 playerRobot = playerCore.CurrentRobot;
                 
                 // Actualizar referencia en PlayerMovement también
-                if (playerMovement != null && playerRobot != null && !isMounted)
+                if (playerController != null && playerRobot != null && !isMounted)
                 {
-                    playerMovement.SetTarget(playerRobot.transform);
+                    playerController.SetTarget(playerRobot.transform);
                 }
             }
             
             if (isMounted)
             {
-                // Mientras está montado, procesar input para el mecha
-                HandleMountedInput();
-                
-                // Verificar si quiere desmontar
+                // PlayerController se encarga del movimiento del mecha
+                // Solo verificamos si quiere desmontar
                 if (Input.GetKeyDown(mountKey))
                 {
                     Dismount();
@@ -123,6 +124,12 @@ namespace RobotGame.Systems
                 if (Input.GetKeyDown(mountKey) && nearbyMount != null)
                 {
                     Mount(nearbyMount);
+                }
+                
+                // Verificar si quiere enviar señal a mechas domesticados
+                if (Input.GetKeyDown(signalKey))
+                {
+                    SendSignalToTamedMechas();
                 }
             }
         }
@@ -146,13 +153,13 @@ namespace RobotGame.Systems
             }
             
             // Buscar PlayerMovement
-            if (playerMovement == null)
+            if (playerController == null)
             {
-                playerMovement = FindObjectOfType<PlayerMovement>();
+                playerController = FindObjectOfType<PlayerController>();
                 
-                if (playerMovement != null)
+                if (playerController != null)
                 {
-                    Debug.Log("MountSystem: PlayerMovement encontrado");
+                    Debug.Log("MountSystem: PlayerController encontrado");
                 }
             }
             
@@ -240,17 +247,28 @@ namespace RobotGame.Systems
                 playerRobot.gameObject.SetActive(false);
             }
             
-            // Desactivar el movimiento del jugador
-            if (playerMovement != null)
+            // Tomar control del mecha (detiene la IA)
+            currentMount.TakeControl();
+            
+            // Desactivar RobotMovement del mecha para que no interfiera con PlayerController
+            if (currentMount.Movement != null)
             {
-                playerMovement.Disable();
+                currentMount.Movement.enabled = false;
             }
             
-            // Tomar control del mecha
-            currentMount.TakeControl();
+            // Cambiar el target de PlayerController al mecha
+            // Esto configura automáticamente Rigidbody y CapsuleCollider
+            if (playerController != null)
+            {
+                playerController.SetTarget(currentMount.transform);
+                playerController.Enable();
+                playerController.RecalculateCollider();
+            }
             
             // Cambiar el objetivo de la cámara al mecha
             SetCameraTarget(currentMount.transform);
+            
+            Debug.Log($"MountSystem: Montado exitosamente. PlayerController ahora controla el mecha.");
         }
         
         /// <summary>
@@ -269,6 +287,12 @@ namespace RobotGame.Systems
             // Liberar control del mecha ANTES de reactivar al jugador
             currentMount.ReleaseControl();
             
+            // Reactivar RobotMovement del mecha
+            if (currentMount.Movement != null)
+            {
+                currentMount.Movement.enabled = true;
+            }
+            
             // Reactivar el robot del jugador en posición segura
             if (playerRobot != null)
             {
@@ -277,27 +301,26 @@ namespace RobotGame.Systems
                 playerRobot.gameObject.SetActive(true);
             }
             
-            // Cambiar el objetivo de la cámara al jugador ANTES de habilitar movimiento
+            // Cambiar el objetivo de la cámara al jugador ANTES de cambiar el target
             if (playerRobot != null)
             {
                 SetCameraTarget(playerRobot.transform);
             }
             
-            // Reactivar el movimiento del jugador
-            if (playerMovement != null && playerRobot != null)
+            // Cambiar el target de PlayerController de vuelta al robot del jugador
+            if (playerController != null && playerRobot != null)
             {
-                playerMovement.SetTarget(playerRobot.transform);
-                playerMovement.Enable();
-                
-                // Forzar un ground check inmediato
-                playerMovement.ForceGroundCheck();
+                playerController.SetTarget(playerRobot.transform);
+                playerController.Enable();
+                playerController.RecalculateCollider();
+                playerController.ForceGroundCheck();
             }
             
             // Limpiar estado
             currentMount = null;
             isMounted = false;
             
-            Debug.Log($"MountSystem: Desmontado. Jugador en {dismountPos}");
+            Debug.Log($"MountSystem: Desmontado. Jugador en {playerRobot?.transform.position}");
         }
         
         /// <summary>
@@ -421,6 +444,63 @@ namespace RobotGame.Systems
         
         #endregion
         
+        #region Tamed Mecha Commands
+        
+        /// <summary>
+        /// Envía una señal a todos los mechas domesticados del jugador.
+        /// Los mechas interpretarán la señal según su contexto.
+        /// </summary>
+        private void SendSignalToTamedMechas()
+        {
+            if (playerCore == null) return;
+            
+            // Buscar todos los WildRobots en la escena
+            var allWildRobots = FindObjectsOfType<WildRobot>();
+            int signalCount = 0;
+            
+            foreach (var wildRobot in allWildRobots)
+            {
+                // Solo enviar señal a mechas domesticados que pertenecen a este jugador
+                if (wildRobot.IsTamed && wildRobot.Owner == playerCore)
+                {
+                    wildRobot.ReceiveSignal();
+                    signalCount++;
+                }
+            }
+            
+            if (signalCount > 0)
+            {
+                Debug.Log($"MountSystem: Señal enviada a {signalCount} mecha(s)");
+            }
+            else
+            {
+                Debug.Log("MountSystem: No hay mechas domesticados para recibir señal");
+            }
+        }
+        
+        /// <summary>
+        /// Cuenta los mechas domesticados del jugador.
+        /// </summary>
+        private int CountTamedMechas()
+        {
+            if (playerCore == null) return 0;
+            
+            var allWildRobots = FindObjectsOfType<WildRobot>();
+            int count = 0;
+            
+            foreach (var wildRobot in allWildRobots)
+            {
+                if (wildRobot.IsTamed && wildRobot.Owner == playerCore && !wildRobot.IsBeingControlled)
+                {
+                    count++;
+                }
+            }
+            
+            return count;
+        }
+        
+        #endregion
+        
         #region Debug
         
         private void OnGUI()
@@ -435,7 +515,7 @@ namespace RobotGame.Systems
             // Mostrar estado de referencias
             string coreStatus = playerCore != null ? "OK" : "NO";
             string robotStatus = playerRobot != null ? playerRobot.name : "NO";
-            string movementStatus = playerMovement != null ? "OK" : "NO";
+            string movementStatus = playerController != null ? "OK" : "NO";
             string cameraStatus = playerCamera != null ? "OK" : "NO";
             
             GUILayout.Label($"Core: {coreStatus} | Robot: {robotStatus}");
@@ -463,6 +543,14 @@ namespace RobotGame.Systems
                 {
                     GUILayout.Label("No hay mecha cercano");
                     GUILayout.Label($"(Rango: {mountRange}m)");
+                }
+                
+                // Mostrar info de mechas domesticados
+                GUILayout.Space(5);
+                int tamedCount = CountTamedMechas();
+                if (tamedCount > 0)
+                {
+                    GUILayout.Label($"[{signalKey}] Señal ({tamedCount} mecha(s))");
                 }
             }
             else

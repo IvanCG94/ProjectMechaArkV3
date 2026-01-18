@@ -18,7 +18,11 @@ MonoBehaviour:
   icon: {fileID: 0}
   prefab: {fileID: 792680213329768598, guid: 7df097ce752664e478b82a82c7105a01, type: 3}
   category: 0
-  tier: 0
+  tier:
+    tier: 1
+    subTier: 1
+  rarity: 0
+  maxStackSize: 99
   weight: 1
   durability: 100
   partType: 1
@@ -31,6 +35,11 @@ MonoBehaviour:
     localRotation: {x: 0, y: 0, z: 0}
   - socketType: 10
     transformName: CoreSocket
+    isRequired: 0
+    localPosition: {x: 0, y: 0, z: 0}
+    localRotation: {x: 0, y: 0, z: 0}
+  - socketType: 4
+    transformName: Socket_arm
     isRequired: 0
     localPosition: {x: 0, y: 0, z: 0}
     localRotation: {x: 0, y: 0, z: 0}

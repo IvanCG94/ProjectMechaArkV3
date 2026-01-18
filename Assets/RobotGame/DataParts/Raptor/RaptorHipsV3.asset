@@ -1,0 +1,104 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 844f020186c0c954bb872a9bedbc9590, type: 3}
+  m_Name: RaptorHipsV3
+  m_EditorClassIdentifier: Assembly-CSharp::RobotGame.Data.StructuralPartData
+  partId: RaptorHipsV3
+  displayName: Raptor hips V3
+  description: 
+  icon: {fileID: 0}
+  prefab: {fileID: 8903793449733398100, guid: 7f92332c2ec10374687302cb73543872, type: 3}
+  category: 0
+  tier:
+    tier: 2
+    subTier: 1
+  rarity: 0
+  maxStackSize: 99
+  weight: 1
+  durability: 100
+  partType: 0
+  canBeRoot: 0
+  structuralSockets:
+  - socketType: 1
+    transformName: Socket_torsoV2
+    isRequired: 0
+    localPosition: {x: 2.7576621e-14, y: 2.7894297, z: 0.57818}
+    localRotation: {x: -0.000014570996, y: 4.1983273e-13, z: 3.651277e-12}
+  armorGrids:
+  - gridInfo:
+      isHead: 1
+      tier: 2
+      sizeX: 1
+      sizeY: 1
+      surrounding:
+        level: 1
+        edges: 15
+        fullType: 0
+      gridName: PlacaV3L
+    transformName: Head_T2_1x1_S1_TBLR_PlacaV3L
+  - gridInfo:
+      isHead: 1
+      tier: 2
+      sizeX: 1
+      sizeY: 2
+      surrounding:
+        level: 1
+        edges: 12
+        fullType: 0
+      gridName: RaptorHipsAccesoryL
+    transformName: Head_T2_1x2_S1_TB_RaptorHipsAccesoryL
+  - gridInfo:
+      isHead: 1
+      tier: 2
+      sizeX: 1
+      sizeY: 4
+      surrounding:
+        level: 2
+        edges: 0
+        fullType: 1
+      gridName: PlacaRaptorV3L
+    transformName: Head_T2_1x4_S2FH_PlacaRaptorV3L
+  - gridInfo:
+      isHead: 1
+      tier: 2
+      sizeX: 1
+      sizeY: 1
+      surrounding:
+        level: 1
+        edges: 15
+        fullType: 0
+      gridName: PlacaV3R
+    transformName: Head_T2_1x1_S1_TBLR_PlacaV3R
+  - gridInfo:
+      isHead: 1
+      tier: 2
+      sizeX: 1
+      sizeY: 2
+      surrounding:
+        level: 1
+        edges: 12
+        fullType: 0
+      gridName: RaptorHipsAccesoryR
+    transformName: Head_T2_1x2_S1_TB_RaptorHipsAccesoryR
+  - gridInfo:
+      isHead: 1
+      tier: 2
+      sizeX: 1
+      sizeY: 4
+      surrounding:
+        level: 2
+        edges: 0
+        fullType: 1
+      gridName: PlacaRaptorV3R
+    transformName: Head_T2_1x4_S2FH_PlacaRaptorV3R
+  animatorController: {fileID: 0}
+  animatorAvatar: {fileID: 0}

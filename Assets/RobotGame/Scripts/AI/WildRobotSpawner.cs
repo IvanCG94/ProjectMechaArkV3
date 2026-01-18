@@ -151,7 +151,7 @@ namespace RobotGame.AI
         }
         
         /// <summary>
-        /// Crea un robot desde WildRobotData (sin Core).
+        /// Crea un robot desde WildRobotData (con Core).
         /// </summary>
         private Robot CreateRobotFromData(WildRobotData data, Vector3 position)
         {
@@ -187,7 +187,58 @@ namespace RobotGame.AI
             // Crear piezas estructurales conectadas
             CreateAttachedParts(hips, data.attachedParts);
             
+            // Crear e insertar el Core
+            if (data.coreData != null)
+            {
+                RobotCore core = CreateCore(data.coreData, robot);
+                if (core != null)
+                {
+                    core.InsertInto(robot);
+                    Debug.Log($"WildRobotSpawner: Core '{data.coreData.displayName}' insertado en '{data.speciesName}'");
+                }
+            }
+            else
+            {
+                Debug.LogWarning($"WildRobotSpawner: '{data.speciesName}' no tiene Core asignado");
+            }
+            
             return robot;
+        }
+        
+        /// <summary>
+        /// Crea un Core para el robot salvaje.
+        /// </summary>
+        private RobotCore CreateCore(CoreData data, Robot robot)
+        {
+            if (data == null)
+            {
+                return null;
+            }
+            
+            // Crear GameObject para el Core
+            GameObject coreGO;
+            if (data.prefab != null)
+            {
+                coreGO = Instantiate(data.prefab);
+            }
+            else
+            {
+                coreGO = new GameObject($"Core_{data.displayName}");
+            }
+            
+            coreGO.name = $"Core_{data.displayName}";
+            
+            // Añadir componente RobotCore
+            RobotCore core = coreGO.GetComponent<RobotCore>();
+            if (core == null)
+            {
+                core = coreGO.AddComponent<RobotCore>();
+            }
+            
+            // Inicializar (NO es el core del jugador)
+            core.Initialize(data, null, false);
+            
+            return core;
         }
         
         private StructuralPart CreateStructuralPart(StructuralPartData data, Transform parent)

@@ -17,7 +17,7 @@ MonoBehaviour:
     cellSize: 0.1
     description: "Tier 1 - Robots peque\xF1os (jugador)"
   - tier: 2
-    cellSize: 0.25
+    cellSize: 0.3
     description: Tier 2 - Velociraptors
   - tier: 3
     cellSize: 0.5

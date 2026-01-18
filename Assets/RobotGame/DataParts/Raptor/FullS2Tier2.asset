@@ -1,0 +1,46 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0b980c5627308d5458fee39217d364a3, type: 3}
+  m_Name: FullS2Tier2
+  m_EditorClassIdentifier: Assembly-CSharp::RobotGame.Data.ArmorPartData
+  partId: PlateS2FH
+  displayName: plate grande
+  description: 
+  icon: {fileID: 0}
+  prefab: {fileID: 6190522986898061270, guid: e3902d56ae01b294db8b8c52e9237994, type: 3}
+  category: 1
+  tier:
+    tier: 2
+    subTier: 1
+  rarity: 0
+  maxStackSize: 99
+  weight: 1
+  durability: 100
+  tailGrid:
+    gridInfo:
+      isHead: 0
+      tier: 2
+      sizeX: 1
+      sizeY: 4
+      surrounding:
+        level: 2
+        edges: 0
+        fullType: 1
+      gridName: TestArmor
+    transformName: Tail_T2_1x4_S2FH_TestArmor
+  additionalHeadGrids: []
+  armor: 0
+  physicalResistance: 0
+  energyResistance: 0
+  explosiveResistance: 0
+  damagedMaterial: {fileID: 0}
+  hitEffectPrefab: {fileID: 0}

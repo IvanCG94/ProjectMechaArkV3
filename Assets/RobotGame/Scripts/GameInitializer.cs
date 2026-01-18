@@ -3,6 +3,9 @@ using RobotGame.Data;
 using RobotGame.Components;
 using RobotGame.Systems;
 using RobotGame.Control;
+using RobotGame.Combat;
+
+using RobotGame.UI;
 
 namespace RobotGame
 {
@@ -31,8 +34,10 @@ namespace RobotGame
         [Header("Referencias (Auto-asignadas)")]
         [SerializeField] private Robot playerRobot;
         [SerializeField] private RobotCore playerCore;
-        [SerializeField] private PlayerMovement playerMovement;
+        [SerializeField] private PlayerController playerController;
         [SerializeField] private PlayerCamera playerCamera;
+        [SerializeField] private CombatController combatController;
+        [SerializeField] private CombatInputHandler combatInputHandler;
         
         /// <summary>
         /// Robot actual del jugador.
@@ -43,6 +48,16 @@ namespace RobotGame
         /// Core del jugador.
         /// </summary>
         public RobotCore PlayerCore => playerCore;
+        
+        /// <summary>
+        /// Controlador del jugador.
+        /// </summary>
+        public PlayerController PlayerController => playerController;
+        
+        /// <summary>
+        /// Controlador de combate del jugador.
+        /// </summary>
+        public CombatController CombatController => combatController;
         
         private void OnEnable()
         {
@@ -58,6 +73,15 @@ namespace RobotGame
         {
             InitializeGame();
         }
+
+        private void OnGUI()
+{
+    GUILayout.BeginArea(new Rect(10, 200, 400, 300));
+    GUILayout.Label($"InventoryPanel: {FindObjectOfType<InventoryPanelUI>()}");
+    GUILayout.Label($"Canvas: {FindObjectOfType<Canvas>()}");
+    GUILayout.Label($"EventSystem: {FindObjectOfType<UnityEngine.EventSystems.EventSystem>()}");
+    GUILayout.EndArea();
+}
         
         /// <summary>
         /// Inicializa el juego creando el robot del jugador.
@@ -95,41 +119,42 @@ namespace RobotGame
             }
             
             // Configurar sistemas de control
-            SetupMovement();
+            SetupPlayerController();
             SetupCamera();
+            SetupCombat();
             
             if (debugMode)
             {
                 Debug.Log($"Robot creado: {playerRobot.RobotName}");
                 Debug.Log($"Core del jugador: {(playerCore != null ? "OK" : "NO ENCONTRADO")}");
-                Debug.Log($"Controles: WASD=mover, P=modo edición");
+                Debug.Log($"Controles: WASD=mover, Space=saltar, Shift=correr, Click/J=atacar");
             }
         }
         
-        private void SetupMovement()
+        private void SetupPlayerController()
         {
-            // Buscar o crear PlayerMovement
-            playerMovement = FindObjectOfType<PlayerMovement>();
-            if (playerMovement == null)
+            // Buscar o crear PlayerController
+            playerController = FindObjectOfType<PlayerController>();
+            if (playerController == null)
             {
-                // Crear un GameObject para el sistema de movimiento
-                GameObject movementGO = new GameObject("PlayerController");
-                playerMovement = movementGO.AddComponent<PlayerMovement>();
+                // Crear un GameObject para el controlador
+                GameObject controllerGO = new GameObject("PlayerController");
+                playerController = controllerGO.AddComponent<PlayerController>();
                 
                 // Agregar PlayerAnimator al mismo objeto
-                movementGO.AddComponent<PlayerAnimator>();
+                controllerGO.AddComponent<PlayerAnimator>();
             }
             else
             {
-                // Si ya existe PlayerMovement, asegurar que tenga PlayerAnimator
-                if (playerMovement.GetComponent<PlayerAnimator>() == null)
+                // Si ya existe PlayerController, asegurar que tenga PlayerAnimator
+                if (playerController.GetComponent<PlayerAnimator>() == null)
                 {
-                    playerMovement.gameObject.AddComponent<PlayerAnimator>();
+                    playerController.gameObject.AddComponent<PlayerAnimator>();
                 }
             }
             
-            playerMovement.SetTarget(playerRobot.transform);
-            playerMovement.Enable();
+            playerController.SetTarget(playerRobot.transform);
+            playerController.Enable();
         }
         
         private void SetupCamera()
@@ -153,24 +178,66 @@ namespace RobotGame
             }
         }
         
+        private void SetupCombat()
+        {
+            if (playerRobot == null) return;
+            
+            // Agregar CombatController al robot del jugador
+            combatController = playerRobot.GetComponent<CombatController>();
+            if (combatController == null)
+            {
+                combatController = playerRobot.gameObject.AddComponent<CombatController>();
+            }
+            
+            // Agregar CombatInputHandler junto al PlayerController
+            if (playerController != null)
+            {
+                combatInputHandler = playerController.GetComponent<CombatInputHandler>();
+                if (combatInputHandler == null)
+                {
+                    combatInputHandler = playerController.gameObject.AddComponent<CombatInputHandler>();
+                }
+                
+                // Asignar la referencia al CombatController
+                combatInputHandler.SetCombatController(combatController);
+            }
+            
+            // Refrescar las partes de combate después de un pequeño delay
+            // (para asegurar que todas las partes estén inicializadas)
+            Invoke(nameof(RefreshCombatParts), 0.1f);
+            
+            if (debugMode)
+            {
+                Debug.Log("[GameInitializer] Sistema de combate configurado");
+            }
+        }
+        
+        private void RefreshCombatParts()
+        {
+            if (combatController != null)
+            {
+                combatController.RefreshCombatParts();
+            }
+        }
+        
         private void OnPlayerRobotChanged(RobotCore core, Robot newRobot)
         {
             if (core != playerCore) return;
             
             playerRobot = newRobot;
             
-            // Actualizar movimiento
-            if (playerMovement != null)
+            // Actualizar controlador
+            if (playerController != null)
             {
                 if (newRobot != null)
                 {
-                    playerMovement.SetTarget(newRobot.transform);
-                    playerMovement.Enable();
+                    playerController.SetTarget(newRobot.transform);
+                    playerController.Enable();
                 }
                 else
                 {
-                    playerMovement.SetTarget(null);
-                    playerMovement.Disable();
+                    playerController.SetTarget(null);
+                    playerController.Disable();
                 }
             }
             
@@ -178,6 +245,26 @@ namespace RobotGame
             if (playerCamera != null && newRobot != null)
             {
                 playerCamera.SetTarget(newRobot.transform, false);
+            }
+            
+            // Actualizar combate - mover CombatController al nuevo robot
+            if (newRobot != null)
+            {
+                // Remover del robot anterior si existe
+                if (combatController != null && combatController.gameObject != newRobot.gameObject)
+                {
+                    Destroy(combatController);
+                }
+                
+                // Agregar al nuevo robot
+                combatController = newRobot.GetComponent<CombatController>();
+                if (combatController == null)
+                {
+                    combatController = newRobot.gameObject.AddComponent<CombatController>();
+                }
+                
+                // Refrescar partes de combate
+                Invoke(nameof(RefreshCombatParts), 0.1f);
             }
         }
         

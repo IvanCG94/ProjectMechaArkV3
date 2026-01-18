@@ -381,32 +381,38 @@ namespace RobotGame.Components
                 }
             }
             
-            // Posicionar la pieza usando pivote centrado
-            // Esto compensa la rotación para que la pieza quede en las celdas correctas
+            // Posicionar la pieza - SINCRONIZADO CON EL PREVIEW
             armorPart.transform.SetParent(transform);
+            
+            // Usar el cellSize de la grilla
+            float cellSize = CellSize;
+            float halfCell = cellSize * 0.5f;
             
             // Tamaño original y rotado
             int originalSizeX = data.tailGrid.gridInfo.sizeX;
             int originalSizeY = data.tailGrid.gridInfo.sizeY;
             
-            // Centro de la pieza rotada (donde debe estar el pivote visual)
-            float rotatedCenterX = rotatedTail.sizeX * 0.05f;
-            float rotatedCenterY = rotatedTail.sizeY * 0.05f;
-            
-            // Centro de la pieza original
-            float originalCenterX = originalSizeX * 0.05f;
-            float originalCenterY = originalSizeY * 0.05f;
-            
             // Posición base de la celda
             Vector3 cellPos = CellToLocalPosition(startX, startY);
             
-            // Calcular offset para compensar la rotación
-            // El modelo rota sobre su centro original, pero queremos que ocupe las celdas rotadas
-            Vector3 pivotOffset = new Vector3(rotatedCenterX, rotatedCenterY, 0f);
-            Vector3 modelOffset = GridRotation.ToQuaternion(rotation) * new Vector3(-originalCenterX, -originalCenterY, 0f);
+            // Calcular posición del pivote (centro del área rotada)
+            float pivotX = rotatedTail.sizeX * halfCell;
+            float pivotY = rotatedTail.sizeY * halfCell;
             
-            armorPart.transform.localPosition = cellPos + pivotOffset + modelOffset;
-            armorPart.transform.localRotation = GridRotation.ToQuaternion(rotation);
+            // Calcular offset del modelo (centro del tamaño original, negativo)
+            float modelOffsetX = -originalSizeX * halfCell;
+            float modelOffsetY = -originalSizeY * halfCell;
+            
+            // El modelo se rota alrededor del pivote
+            // Primero trasladamos al pivote, luego aplicamos la rotación al offset del modelo
+            Quaternion rot = GridRotation.ToQuaternion(rotation);
+            Vector3 rotatedModelOffset = rot * new Vector3(modelOffsetX, modelOffsetY, 0f);
+            
+            Vector3 finalPos = cellPos + new Vector3(pivotX, pivotY, 0f) + rotatedModelOffset;
+            
+            // Posición final = celda + pivote + offset rotado
+            armorPart.transform.localPosition = finalPos;
+            armorPart.transform.localRotation = rot;
             
             armorPart.OnPlaced(this, startX, startY, rotation);
             placedParts.Add(armorPart);
