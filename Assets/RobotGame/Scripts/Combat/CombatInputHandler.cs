@@ -191,9 +191,9 @@ namespace RobotGame.Combat
             // Estado actual
             GUILayout.Label($"Estado: {combatController.CurrentState}");
             
-            if (combatController.IsAttacking)
+            if (combatController.IsAttacking && combatController.CurrentAttack != null)
             {
-                GUILayout.Label($"Atacando: {combatController.CurrentAttack?.attackName}");
+                GUILayout.Label($"Atacando: {combatController.CurrentAttack.attackName}");
                 GUILayout.Label($"Progreso: {combatController.AttackProgress * 100:F0}%");
             }
             
@@ -202,18 +202,39 @@ namespace RobotGame.Combat
             // Ataques disponibles
             var allAttacks = combatController.GetAllAvailableAttacks();
             
-            GUILayout.Label($"Ataques disponibles: {allAttacks.Count}");
-            GUILayout.Space(5);
-            
-            for (int i = 0; i < allAttacks.Count; i++)
+            // Validar selectedPartIndex
+            if (allAttacks.Count == 0)
             {
-                var (part, attack) = allAttacks[i];
-                float damage = part.CalculateDamage(attack);
+                selectedPartIndex = 0;
+                GUILayout.Label("No hay ataques disponibles");
+            }
+            else
+            {
+                if (selectedPartIndex >= allAttacks.Count)
+                {
+                    selectedPartIndex = 0;
+                }
                 
-                string prefix = (i == selectedPartIndex) ? "►" : "  ";
-                string keyHint = (i < 9) ? $"[{i + 1}]" : "";
+                GUILayout.Label($"Ataques disponibles: {allAttacks.Count}");
+                GUILayout.Space(5);
                 
-                GUILayout.Label($"{prefix} {keyHint} {attack.attackName} ({part.name}) - {damage:F0} dmg");
+                for (int i = 0; i < allAttacks.Count; i++)
+                {
+                    var (part, attack) = allAttacks[i];
+                    
+                    // Verificar que la parte no haya sido destruida
+                    if (part == null || attack == null)
+                    {
+                        continue;
+                    }
+                    
+                    float damage = part.CalculateDamage(attack);
+                    
+                    string prefix = (i == selectedPartIndex) ? "►" : "  ";
+                    string keyHint = (i < 9) ? $"[{i + 1}]" : "";
+                    
+                    GUILayout.Label($"{prefix} {keyHint} {attack.attackName} ({part.name}) - {damage:F0} dmg");
+                }
             }
             
             GUILayout.Space(10);

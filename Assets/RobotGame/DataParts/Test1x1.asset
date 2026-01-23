@@ -15,7 +15,7 @@ MonoBehaviour:
   partId: testBlock
   displayName: Test block 1x1
   description: 
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: d9e765281ae4c9a49b3f6e80e9876ffe, type: 3}
   prefab: {fileID: 8860867833755820284, guid: 7264534500ef6e74c9597c0789483cae, type: 3}
   category: 1
   tier:

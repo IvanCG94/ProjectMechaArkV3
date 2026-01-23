@@ -15,7 +15,7 @@ MonoBehaviour:
   partId: ArmorPlate_test
   displayName: Armor plate
   description: 
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: 3b251aca22675f14e94d1d14d5626c7f, type: 3}
   prefab: {fileID: 790046067228398202, guid: e6910c640f1eead4d9f122b7801d1ce0, type: 3}
   category: 1
   tier:

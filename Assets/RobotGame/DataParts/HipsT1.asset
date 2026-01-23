@@ -15,10 +15,14 @@ MonoBehaviour:
   partId: HipsT1
   displayName: Basic hips
   description: 
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: 77cf66d515f285b47a0f2b86dd6cd02b, type: 3}
   prefab: {fileID: 919132149155446097, guid: a241ce47760183e459f205c96d1c2fc2, type: 3}
   category: 0
-  tier: 0
+  tier:
+    tier: 1
+    subTier: 1
+  rarity: 0
+  maxStackSize: 99
   weight: 1
   durability: 100
   partType: 0
@@ -32,6 +36,7 @@ MonoBehaviour:
   armorGrids:
   - gridInfo:
       isHead: 1
+      tier: 0
       sizeX: 2
       sizeY: 2
       surrounding:
@@ -42,6 +47,7 @@ MonoBehaviour:
     transformName: Head_2x2_S1_LRTB_HipsArmorL
   - gridInfo:
       isHead: 1
+      tier: 0
       sizeX: 2
       sizeY: 4
       surrounding:
@@ -52,6 +58,7 @@ MonoBehaviour:
     transformName: Head_2x4_S3FH_ThighL
   - gridInfo:
       isHead: 1
+      tier: 0
       sizeX: 1
       sizeY: 1
       surrounding:
@@ -62,6 +69,7 @@ MonoBehaviour:
     transformName: Head_1x1_SN_FootArmorL
   - gridInfo:
       isHead: 1
+      tier: 0
       sizeX: 1
       sizeY: 1
       surrounding:
@@ -72,6 +80,7 @@ MonoBehaviour:
     transformName: Head_1x1_S1_LR_KneeL
   - gridInfo:
       isHead: 1
+      tier: 0
       sizeX: 2
       sizeY: 4
       surrounding:
@@ -82,6 +91,7 @@ MonoBehaviour:
     transformName: Head_2x4_S3FH_ShinL
   - gridInfo:
       isHead: 1
+      tier: 0
       sizeX: 2
       sizeY: 2
       surrounding:
@@ -92,6 +102,7 @@ MonoBehaviour:
     transformName: Head_2x2_S1_LRTB_HipsArmorR
   - gridInfo:
       isHead: 1
+      tier: 0
       sizeX: 2
       sizeY: 4
       surrounding:
@@ -102,6 +113,7 @@ MonoBehaviour:
     transformName: Head_2x4_S3FH_ThighR
   - gridInfo:
       isHead: 1
+      tier: 0
       sizeX: 1
       sizeY: 1
       surrounding:
@@ -112,6 +124,7 @@ MonoBehaviour:
     transformName: Head_1x1_SN_FootArmorR
   - gridInfo:
       isHead: 1
+      tier: 0
       sizeX: 1
       sizeY: 1
       surrounding:
@@ -122,6 +135,7 @@ MonoBehaviour:
     transformName: Head_1x1_S1_LR_KneeR
   - gridInfo:
       isHead: 1
+      tier: 0
       sizeX: 2
       sizeY: 4
       surrounding:

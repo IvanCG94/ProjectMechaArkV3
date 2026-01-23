@@ -15,7 +15,7 @@ MonoBehaviour:
   partId: CorazaBasica
   displayName: Coraza basica
   description: 
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: 9aa817a9a3d6cda40898b5af77b9374c, type: 3}
   prefab: {fileID: 1362119480293071962, guid: 386cc804e9fc9d74b9ebbc8b655c0a35, type: 3}
   category: 1
   tier:

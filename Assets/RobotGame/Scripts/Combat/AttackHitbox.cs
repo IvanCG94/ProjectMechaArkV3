@@ -7,11 +7,14 @@ namespace RobotGame.Combat
     /// <summary>
     /// Maneja la detección de colisiones durante un ataque.
     /// Usa el sistema de attackId para evitar daño múltiple por robot.
+    /// 
+    /// Detecta objetos en los layers configurados (por defecto RobotHitbox y Default).
     /// </summary>
     public class AttackHitbox : MonoBehaviour
     {
         [Header("Configuración")]
-        [SerializeField] private LayerMask targetLayers = ~0;
+        [Tooltip("Layers que puede golpear este ataque. Por defecto incluye RobotHitbox (11) y Default (0).")]
+        [SerializeField] private LayerMask targetLayers = (1 << 0) | (1 << 11); // Default + RobotHitbox
         
         [Header("Estado (Solo lectura)")]
         [SerializeField] private bool isActive = false;

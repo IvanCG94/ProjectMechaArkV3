@@ -15,7 +15,7 @@ MonoBehaviour:
   partId: WeaponTest
   displayName: Test Weapon
   description: 
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: 11aa2125f091bdd4dad837686dde7458, type: 3}
   prefab: {fileID: 7391584061969546536, guid: de84933372a19c94bad5a4a88480777c, type: 3}
   category: 0
   tier:

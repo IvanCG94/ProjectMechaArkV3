@@ -15,10 +15,12 @@ MonoBehaviour:
   partId: newHips
   displayName: New Hips
   description: 
-  icon: {fileID: 21300000, guid: a67dd7604bf98ea479f00387ea1dfe28, type: 3}
+  icon: {fileID: 21300000, guid: b2539fda7296dda45bc3a5d586e53262, type: 3}
   prefab: {fileID: 7410692846874625324, guid: 3219d01a3950afd41b90a52d094ae88e, type: 3}
   category: 0
-  tier: 0
+  tier:
+    tier: 1
+    subTier: 1
   rarity: 0
   maxStackSize: 99
   weight: 1
@@ -34,6 +36,7 @@ MonoBehaviour:
   armorGrids:
   - gridInfo:
       isHead: 1
+      tier: 0
       sizeX: 1
       sizeY: 1
       surrounding:
@@ -44,6 +47,7 @@ MonoBehaviour:
     transformName: Head_1x1_SN_FootArmorL
   - gridInfo:
       isHead: 1
+      tier: 0
       sizeX: 1
       sizeY: 1
       surrounding:
@@ -54,6 +58,7 @@ MonoBehaviour:
     transformName: Head_1x1_S1_LR_FootBoneL
   - gridInfo:
       isHead: 1
+      tier: 0
       sizeX: 1
       sizeY: 2
       surrounding:
@@ -64,6 +69,7 @@ MonoBehaviour:
     transformName: Head_1x2_S2_LR_ShinBoneL
   - gridInfo:
       isHead: 1
+      tier: 0
       sizeX: 1
       sizeY: 2
       surrounding:
@@ -74,6 +80,7 @@ MonoBehaviour:
     transformName: Head_1x2_SN_ThighLBoneR
   - gridInfo:
       isHead: 1
+      tier: 0
       sizeX: 1
       sizeY: 3
       surrounding:
@@ -84,6 +91,7 @@ MonoBehaviour:
     transformName: Head_1x3_SN_ThighLBoneL
   - gridInfo:
       isHead: 1
+      tier: 0
       sizeX: 1
       sizeY: 3
       surrounding:
@@ -94,6 +102,7 @@ MonoBehaviour:
     transformName: Head_1x3_SN_ThighRBoneL
   - gridInfo:
       isHead: 1
+      tier: 0
       sizeX: 1
       sizeY: 4
       surrounding:
@@ -104,6 +113,7 @@ MonoBehaviour:
     transformName: Head_1x4_S1_LR_ThighBoneL
   - gridInfo:
       isHead: 1
+      tier: 0
       sizeX: 1
       sizeY: 1
       surrounding:
@@ -114,6 +124,7 @@ MonoBehaviour:
     transformName: Head_1x1_SN_FootArmorR
   - gridInfo:
       isHead: 1
+      tier: 0
       sizeX: 1
       sizeY: 1
       surrounding:
@@ -124,6 +135,7 @@ MonoBehaviour:
     transformName: Head_1x1_S1_LR_FootBoneR
   - gridInfo:
       isHead: 1
+      tier: 0
       sizeX: 1
       sizeY: 2
       surrounding:
@@ -134,6 +146,7 @@ MonoBehaviour:
     transformName: Head_1x2_S2_LR_ShinBoneR
   - gridInfo:
       isHead: 1
+      tier: 0
       sizeX: 1
       sizeY: 2
       surrounding:
@@ -144,6 +157,7 @@ MonoBehaviour:
     transformName: Head_1x2_SN_ThighBBoneR
   - gridInfo:
       isHead: 1
+      tier: 0
       sizeX: 1
       sizeY: 3
       surrounding:
@@ -154,6 +168,7 @@ MonoBehaviour:
     transformName: Head_1x3_SN_ThighLBoneR
   - gridInfo:
       isHead: 1
+      tier: 0
       sizeX: 1
       sizeY: 3
       surrounding:
@@ -164,6 +179,7 @@ MonoBehaviour:
     transformName: Head_1x3_SN_ThighRBoneR
   - gridInfo:
       isHead: 1
+      tier: 0
       sizeX: 1
       sizeY: 4
       surrounding:

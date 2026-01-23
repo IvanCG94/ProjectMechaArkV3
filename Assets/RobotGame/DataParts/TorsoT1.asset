@@ -15,7 +15,7 @@ MonoBehaviour:
   partId: TorsoT1
   displayName: Basic torso
   description: 
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: 43ce2b60747003746b1b154fb8e28e4b, type: 3}
   prefab: {fileID: 792680213329768598, guid: 7df097ce752664e478b82a82c7105a01, type: 3}
   category: 0
   tier:

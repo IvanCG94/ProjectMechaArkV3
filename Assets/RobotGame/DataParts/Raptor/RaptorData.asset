@@ -29,6 +29,14 @@ MonoBehaviour:
       attachedToSocket: 2
       childParts: []
       armorPieces: []
+    - partData: {fileID: 11400000, guid: 172ca6a3cc1d8fc41aba13e7b2fff2b9, type: 2}
+      attachedToSocket: 4
+      childParts:
+      - partData: {fileID: 11400000, guid: c4e840dab13915f419f94dceac7ff443, type: 2}
+        attachedToSocket: 11
+        childParts: []
+        armorPieces: []
+      armorPieces: []
     armorPieces: []
   behavior: 0
   detectionRadius: 10

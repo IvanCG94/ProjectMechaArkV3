@@ -15,7 +15,7 @@ MonoBehaviour:
   partId: Antonio
   displayName: Antonio
   description: 
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: 6e27d21799e1bcc44a480d5d18909181, type: 3}
   prefab: {fileID: 2065031998630075441, guid: 26f456a09752335409d217e8f1f5adc2, type: 3}
   category: 1
   tier:

@@ -15,7 +15,7 @@ MonoBehaviour:
   partId: RaptorTorso
   displayName: Raptor torso
   description: 
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: baef0ed6faaaf7548ab35bfced6feff8, type: 3}
   prefab: {fileID: 2092156312006141254, guid: 68c0f436b961f2947bbf0af612aedaf3, type: 3}
   category: 0
   tier:

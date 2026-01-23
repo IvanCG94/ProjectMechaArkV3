@@ -15,7 +15,7 @@ MonoBehaviour:
   partId: torsov2
   displayName: New Torso
   description: 
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: 94004b9ee4b3b274ca3fe861df9ed0db, type: 3}
   prefab: {fileID: 2239108228608483038, guid: 2add8ee2bcfe1534e80db64b917eca90, type: 3}
   category: 0
   tier:

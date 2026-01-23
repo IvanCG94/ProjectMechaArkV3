@@ -39,6 +39,11 @@ namespace RobotGame.Components
         [Tooltip("Si es true, solo la primera parte golpeada por ataque recibe daño")]
         [SerializeField] private bool useAttackIdFiltering = true;
         
+        [Header("Colliders")]
+        [Tooltip("Si es true, configura automáticamente los colliders al hacer operacional")]
+        [SerializeField] private bool autoSetupColliders = true;
+        private RobotColliderSetup colliderSetup;
+        
         /// <summary>
         /// ID único del robot.
         /// </summary>
@@ -88,6 +93,11 @@ namespace RobotGame.Components
         /// Lista de partes con salud registradas.
         /// </summary>
         public IReadOnlyList<PartHealth> RegisteredParts => registeredParts;
+        
+        /// <summary>
+        /// Sistema de colliders del robot.
+        /// </summary>
+        public RobotColliderSetup ColliderSetup => colliderSetup;
         
         #region Events
         
@@ -253,6 +263,12 @@ namespace RobotGame.Components
         {
             core = insertedCore;
             isOperational = true;
+            
+            // Configurar colliders automáticamente si está habilitado
+            if (autoSetupColliders)
+            {
+                SetupColliders();
+            }
         }
         
         /// <summary>
@@ -264,6 +280,36 @@ namespace RobotGame.Components
             {
                 core = null;
                 isOperational = false;
+            }
+        }
+        
+        /// <summary>
+        /// Configura los layers del robot para física y combate.
+        /// Llamar después de ensamblar el robot completamente.
+        /// Los colliders deben estar en los prefabs de las partes.
+        /// </summary>
+        public void SetupColliders()
+        {
+            if (colliderSetup == null)
+            {
+                colliderSetup = GetComponent<RobotColliderSetup>();
+                if (colliderSetup == null)
+                {
+                    colliderSetup = gameObject.AddComponent<RobotColliderSetup>();
+                }
+            }
+            
+            colliderSetup.Initialize(this);
+        }
+        
+        /// <summary>
+        /// Reasigna los layers después de agregar/quitar partes.
+        /// </summary>
+        public void RefreshColliders()
+        {
+            if (colliderSetup != null)
+            {
+                colliderSetup.AssignLayers();
             }
         }
         

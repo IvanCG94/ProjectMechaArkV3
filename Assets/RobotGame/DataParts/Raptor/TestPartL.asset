@@ -15,7 +15,7 @@ MonoBehaviour:
   partId: PartL
   displayName: Part L
   description: 
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: c4cce3928670bca41acc4ff461e48820, type: 3}
   prefab: {fileID: 7260996576293309862, guid: f9aef4980fbcdff46a2f1b914eac89e0, type: 3}
   category: 1
   tier:

@@ -15,7 +15,7 @@ MonoBehaviour:
   partId: armor_1x2_s1
   displayName: 
   description: 
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: ab4ba90a6c8024e4ba51ff544e1ba5b0, type: 3}
   prefab: {fileID: 8428853684609311786, guid: d0a45981ef039e74dbd709111b3998a6, type: 3}
   category: 1
   tier:

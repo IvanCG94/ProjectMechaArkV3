@@ -15,10 +15,14 @@ MonoBehaviour:
   partId: HeadT1
   displayName: Basic head
   description: 
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: d8175a4e888213b41bbcbad6ed601ff8, type: 3}
   prefab: {fileID: 1992062725313083764, guid: 67de67b5632bd274f9bf260c693df84f, type: 3}
   category: 0
-  tier: 0
+  tier:
+    tier: 1
+    subTier: 1
+  rarity: 0
+  maxStackSize: 99
   weight: 1
   durability: 100
   partType: 2

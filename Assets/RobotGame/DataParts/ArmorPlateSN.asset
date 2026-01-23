@@ -15,7 +15,7 @@ MonoBehaviour:
   partId: armorplateSN
   displayName: basic palte 2x2
   description: 
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: 09ad72b7de002e049ae336e54efd0065, type: 3}
   prefab: {fileID: 3200049707775353809, guid: 24b69ca3323a42942b71da0adc73f628, type: 3}
   category: 1
   tier:

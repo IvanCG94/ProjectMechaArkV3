@@ -15,7 +15,7 @@ MonoBehaviour:
   partId: RaptorHipsV2
   displayName: Raptor hips V2
   description: 
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: 9931486760d21554f89f2c14da643611, type: 3}
   prefab: {fileID: 6382230133338644052, guid: 49870eacb51c3c44b81e384df287931a, type: 3}
   category: 0
   tier:

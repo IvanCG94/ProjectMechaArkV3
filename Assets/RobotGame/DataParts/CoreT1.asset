@@ -15,10 +15,14 @@ MonoBehaviour:
   partId: CoreT1
   displayName: Basic Core
   description: 
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: 2d60a92492e0cfd49a5d492a12eb1dbb, type: 3}
   prefab: {fileID: 7357684192257382702, guid: d3860e5e4a6552a4fbf3ee9a13311a74, type: 3}
   category: 0
-  tier: 0
+  tier:
+    tier: 1
+    subTier: 1
+  rarity: 0
+  maxStackSize: 99
   weight: 1
   durability: 100
   maxEnergy: 100

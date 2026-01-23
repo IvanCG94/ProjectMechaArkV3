@@ -15,7 +15,7 @@ MonoBehaviour:
   partId: PlateS2FH
   displayName: plate grande
   description: 
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: b4a5170867f07764f8c587a31b4cfc3a, type: 3}
   prefab: {fileID: 6190522986898061270, guid: e3902d56ae01b294db8b8c52e9237994, type: 3}
   category: 1
   tier:

@@ -1,0 +1,38 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 844f020186c0c954bb872a9bedbc9590, type: 3}
+  m_Name: RaptorArmRV3
+  m_EditorClassIdentifier: Assembly-CSharp::RobotGame.Data.StructuralPartData
+  partId: RaptorArmV3
+  displayName: Raptor Arm V3
+  description: 
+  icon: {fileID: 21300000, guid: 85adc868c9d574f4c8aeaf300095ed52, type: 3}
+  prefab: {fileID: 6108919608982643663, guid: a2582a41d6b53704490b6fae91d4d3ad, type: 3}
+  category: 0
+  tier:
+    tier: 2
+    subTier: 1
+  rarity: 0
+  maxStackSize: 99
+  weight: 1
+  durability: 100
+  partType: 4
+  canBeRoot: 0
+  structuralSockets:
+  - socketType: 11
+    transformName: Socket_weapon
+    isRequired: 0
+    localPosition: {x: 0, y: 0, z: 0}
+    localRotation: {x: 0, y: 0, z: 0}
+  armorGrids: []
+  animatorController: {fileID: 9100000, guid: fb1591df04f574547b17815fc1d61483, type: 2}
+  animatorAvatar: {fileID: 0}

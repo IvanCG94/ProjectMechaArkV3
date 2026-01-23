@@ -15,8 +15,8 @@ MonoBehaviour:
   partId: RaptorTorsoV3
   displayName: Raptor Torso V3
   description: 
-  icon: {fileID: 0}
-  prefab: {fileID: 8054223480730147967, guid: a0ba5ed22838d7f42b1d154e1d4ea29f, type: 3}
+  icon: {fileID: 21300000, guid: 7459d212029bd6c459b11fc344c27c98, type: 3}
+  prefab: {fileID: 5185691998041060708, guid: a0ba5ed22838d7f42b1d154e1d4ea29f, type: 3}
   category: 0
   tier:
     tier: 2
@@ -36,6 +36,11 @@ MonoBehaviour:
   - socketType: 2
     transformName: Socket_neck
     isRequired: 1
+    localPosition: {x: 0, y: 0, z: 0}
+    localRotation: {x: 0, y: 0, z: 0}
+  - socketType: 4
+    transformName: Socket_Arm_R
+    isRequired: 0
     localPosition: {x: 0, y: 0, z: 0}
     localRotation: {x: 0, y: 0, z: 0}
   armorGrids:

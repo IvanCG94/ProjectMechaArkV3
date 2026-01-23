@@ -15,7 +15,7 @@ MonoBehaviour:
   partId: RaptorCorazaEsqueleto
   displayName: Coraza esqueleto
   description: 
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: 2289923db0821cc4b97ca6b1a006b1ab, type: 3}
   prefab: {fileID: 7714268194462194878, guid: 64b2e1247d8fad34bab6ff0b00cb2a47, type: 3}
   category: 1
   tier:

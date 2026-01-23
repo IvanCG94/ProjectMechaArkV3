@@ -15,7 +15,7 @@ MonoBehaviour:
   partId: tubes
   displayName: tubes
   description: 
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: 1e41ad64ae7ac0b478d3b4ee88571c6d, type: 3}
   prefab: {fileID: 3697886321491192751, guid: 9ec308a11629c674fbc5c3ae1a3b647e, type: 3}
   category: 1
   tier:

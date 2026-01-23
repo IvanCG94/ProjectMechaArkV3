@@ -15,7 +15,7 @@ MonoBehaviour:
   partId: CorazaTubularSencilla
   displayName: Coraza tubular censilla
   description: 
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: cd2cfbb8d3d026848b7bf2db01df0cd1, type: 3}
   prefab: {fileID: 8966017332190871778, guid: c2bba6aa0bd3a8946a42d9416ebec228, type: 3}
   category: 1
   tier:

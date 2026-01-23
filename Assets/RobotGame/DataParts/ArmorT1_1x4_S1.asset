@@ -15,7 +15,7 @@ MonoBehaviour:
   partId: armor_1x4_s1_canillera
   displayName: 
   description: 
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: 09b56e04b8c47c449b28fa9b3bedfdd6, type: 3}
   prefab: {fileID: 4242437494354104867, guid: 280eefb8b59a4d542b6f063c3aff73f3, type: 3}
   category: 1
   tier:

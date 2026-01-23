@@ -23,12 +23,10 @@ namespace RobotGame.Combat
     /// - Escanea el robot para encontrar CombatParts
     /// - Gestiona la ejecución de ataques (uno a la vez)
     /// - Controla timings (windup, active, recovery)
-    /// - Activa/desactiva hitboxes
-    /// - Notifica a otras partes para animaciones de acompañamiento
+    /// - Activa/desactiva hitboxes de las armas
     /// 
-    /// Uso:
-    /// - Para jugador: Input llama a TryExecuteAttack()
-    /// - Para IA: WildRobot decide y llama a TryExecuteAttack()
+    /// Los hitboxes están definidos en los prefabs de las armas como
+    /// GameObjects con Collider (isTrigger=true) y componente WeaponHitbox.
     /// </summary>
     [RequireComponent(typeof(Robot))]
     public class CombatController : MonoBehaviour
@@ -36,15 +34,19 @@ namespace RobotGame.Combat
         [Header("Referencias")]
         [SerializeField] private Robot robot;
         
-        [Header("Configuración")]
-        [Tooltip("Layer de objetivos que pueden recibir daño")]
-        [SerializeField] private LayerMask targetLayers = ~0;
+        [Header("Modo de Hitbox")]
+        [Tooltip("Si es true, usa Animation Events. Si es false, usa el sistema de porcentajes.")]
+        [SerializeField] private bool useAnimationEvents = true;
+        
+        [Tooltip("Tiempo máximo de espera para Animation Events antes de usar fallback (segundos)")]
+        [SerializeField] private float animationEventTimeout = 3f;
         
         [Header("Estado (Solo lectura)")]
         [SerializeField] private CombatState currentState = CombatState.Idle;
         [SerializeField] private float stateTimer = 0f;
         [SerializeField] private CombatPart currentAttackingPart;
         [SerializeField] private AttackData currentAttack;
+        [SerializeField] private bool hitboxActivatedByEvent = false;
         
         [Header("Partes de Combate Detectadas")]
         [SerializeField] private List<CombatPart> combatParts = new List<CombatPart>();
@@ -52,16 +54,22 @@ namespace RobotGame.Combat
         [Header("Debug")]
         [SerializeField] private bool logStateChanges = true;
         [SerializeField] private bool showAttackGizmos = true;
-        [SerializeField] private bool showHitboxInGame = true;
-        
-        // Hitbox temporal para ataques
-        private AttackHitbox activeHitbox;
-        private GameObject hitboxObject;
-        private GameObject hitboxVisual;
+        [SerializeField] private bool trackReachDistance = true;
         
         // Sistema de ID de ataques para evitar daño múltiple
         private static int globalAttackIdCounter = 0;
         private int currentAttackId = -1;
+        
+        // Tracking de distancia máxima
+        private float maxReachThisAttack = 0f;
+        
+        // Duración de la animación actual (detectada o fallback)
+        private float currentAnimationDuration = 1f;
+        
+        // Control de Animation Events
+        private bool waitingForHitboxStart = false;
+        private bool waitingForHitboxEnd = false;
+        private bool attackEndedByEvent = false;
         
         #region Properties
         
@@ -82,8 +90,7 @@ namespace RobotGame.Combat
                 if (currentAttack == null || currentState == CombatState.Idle)
                     return 0f;
                 
-                float elapsed = GetElapsedTimeInCurrentAttack();
-                return Mathf.Clamp01(elapsed / currentAttack.TotalDuration);
+                return Mathf.Clamp01(stateTimer / currentAnimationDuration);
             }
         }
         
@@ -126,8 +133,6 @@ namespace RobotGame.Combat
             {
                 robot = GetComponent<Robot>();
             }
-            
-            CreateHitboxObject();
         }
         
         private void Start()
@@ -163,18 +168,14 @@ namespace RobotGame.Combat
         
         private void OnDestroy()
         {
-            if (hitboxObject != null)
-            {
-                Destroy(hitboxObject);
-            }
-            
-            if (hitboxVisual != null)
-            {
-                Destroy(hitboxVisual);
-            }
-            
             // Desuscribirse de eventos de estaciones
             UnsubscribeFromAssemblyStations();
+            
+            // Desuscribirse de eventos de hitbox
+            if (currentAttackingPart != null)
+            {
+                currentAttackingPart.UnsubscribeFromHitEvents(HandleHitPart, HandleHitDamageable);
+            }
         }
         
         #endregion
@@ -202,7 +203,6 @@ namespace RobotGame.Combat
         private void OnAssemblyEditEnded(UnifiedAssemblyStation station)
         {
             // Refrescar partes de combate cuando termina la edición
-            // Usar un pequeño delay para asegurar que las partes estén actualizadas
             Invoke(nameof(RefreshCombatParts), 0.1f);
             
             Debug.Log("[CombatController] Modo edición terminado - Refrescando partes de combate...");
@@ -231,6 +231,15 @@ namespace RobotGame.Combat
                 if (combatPart != null && combatPart.CanAttack)
                 {
                     combatParts.Add(combatPart);
+                    
+                    // Asegurar que los hitboxes estén detectados
+                    if (!combatPart.HasHitboxes)
+                    {
+                        combatPart.DetectHitboxes();
+                    }
+                    
+                    // Asegurar que AttackAnimationEvents esté configurado
+                    combatPart.SetupAnimationEvents();
                 }
             }
             
@@ -240,7 +249,6 @@ namespace RobotGame.Combat
         /// <summary>
         /// Intenta ejecutar un ataque con una parte y ataque específicos.
         /// </summary>
-        /// <returns>True si el ataque comenzó</returns>
         public bool TryExecuteAttack(CombatPart part, AttackData attack)
         {
             if (!CanAttack)
@@ -261,6 +269,12 @@ namespace RobotGame.Combat
                 return false;
             }
             
+            if (!part.HasHitboxes)
+            {
+                Debug.LogWarning($"[CombatController] La parte {part.name} no tiene hitboxes configurados");
+                return false;
+            }
+            
             StartAttack(part, attack);
             return true;
         }
@@ -278,26 +292,34 @@ namespace RobotGame.Combat
         
         /// <summary>
         /// Ejecuta el primer ataque disponible de la primera parte disponible.
-        /// Útil para testing o input simple.
         /// </summary>
         public bool TryExecuteAnyAttack()
         {
-            if (!CanAttack || combatParts.Count == 0)
-            {
-                return false;
-            }
-            
-            // Buscar la primera parte con ataques
             foreach (var part in combatParts)
             {
-                AttackData attack = part.GetDefaultAttack();
-                if (attack != null)
+                if (part != null && part.CanAttack && part.HasHitboxes)
                 {
-                    return TryExecuteAttack(part, attack);
+                    return TryExecuteDefaultAttack(part);
                 }
             }
             
+            Debug.LogWarning("[CombatController] No hay partes de combate con hitboxes disponibles");
             return false;
+        }
+        
+        /// <summary>
+        /// Cancela el ataque actual inmediatamente.
+        /// </summary>
+        public void CancelAttack()
+        {
+            if (currentState == CombatState.Idle) return;
+            
+            if (logStateChanges)
+            {
+                Debug.Log("[CombatController] Ataque cancelado");
+            }
+            
+            EndAttack();
         }
         
         /// <summary>
@@ -305,41 +327,27 @@ namespace RobotGame.Combat
         /// </summary>
         public List<(CombatPart part, AttackData attack)> GetAllAvailableAttacks()
         {
-            var result = new List<(CombatPart, AttackData)>();
+            var allAttacks = new List<(CombatPart, AttackData)>();
             
             foreach (var part in combatParts)
             {
+                if (part == null || !part.HasHitboxes) continue;
+                
                 foreach (var attack in part.AvailableAttacks)
                 {
                     if (attack != null)
                     {
-                        result.Add((part, attack));
+                        allAttacks.Add((part, attack));
                     }
                 }
             }
             
-            return result;
-        }
-        
-        /// <summary>
-        /// Cancela el ataque actual (si es posible).
-        /// Por ahora solo funciona durante WindUp.
-        /// </summary>
-        public bool TryCancelAttack()
-        {
-            if (currentState == CombatState.WindUp)
-            {
-                EndAttack();
-                Debug.Log("[CombatController] Ataque cancelado durante WindUp");
-                return true;
-            }
-            
-            return false;
+            return allAttacks;
         }
         
         #endregion
         
-        #region Private Methods - State Machine
+        #region Private Methods - Attack Flow
         
         private void StartAttack(CombatPart part, AttackData attack)
         {
@@ -347,25 +355,110 @@ namespace RobotGame.Combat
             currentAttack = attack;
             stateTimer = 0f;
             
-            // Generar ID único para este ataque (para evitar daño múltiple por robot)
-            // Si es ataque de área, usar -1 (permitir múltiples golpes)
-            if (attack.isAreaDamage)
-            {
-                currentAttackId = -1;
-            }
-            else
-            {
-                globalAttackIdCounter++;
-                currentAttackId = globalAttackIdCounter;
-            }
+            // Generar nuevo ID de ataque
+            currentAttackId = ++globalAttackIdCounter;
+            
+            // Resetear tracking de distancia
+            maxReachThisAttack = 0f;
+            
+            // Inicializar flags de Animation Events
+            waitingForHitboxStart = useAnimationEvents;
+            waitingForHitboxEnd = false;
+            attackEndedByEvent = false;
+            hitboxActivatedByEvent = false;
+            
+            // Detectar duración de la animación
+            currentAnimationDuration = DetectAnimationDuration(part, attack);
+            
+            // Suscribirse a eventos de hit
+            part.SubscribeToHitEvents(HandleHitPart, HandleHitDamageable);
             
             ChangeState(CombatState.WindUp);
             
             OnAttackStarted?.Invoke(part, attack);
             
-            // Disparar animación de ataque
+            // Disparar animación
+            TriggerAttackAnimation(part, attack);
+            
+            if (logStateChanges)
+            {
+                float damage = part.CalculateDamage(attack);
+                string modeStr = useAnimationEvents ? "Animation Events" : "Porcentual";
+                
+                Debug.Log($"[CombatController] Ataque iniciado: {attack.attackName} con {part.name} " +
+                         $"(Daño: {damage:F1}, Duración: {currentAnimationDuration:F2}s, Modo: {modeStr}, AttackId: {currentAttackId})");
+                
+                if (!useAnimationEvents)
+                {
+                    float windupTime = currentAnimationDuration * attack.windupPercent;
+                    float activeTime = currentAnimationDuration * attack.activePercent;
+                    float recoveryTime = currentAnimationDuration * attack.RecoveryPercent;
+                    
+                    Debug.Log($"[CombatController] Timings: WindUp={windupTime:F2}s ({attack.windupPercent*100:F0}%), " +
+                             $"Active={activeTime:F2}s ({attack.activePercent*100:F0}%), " +
+                             $"Recovery={recoveryTime:F2}s ({attack.RecoveryPercent*100:F0}%)");
+                }
+            }
+        }
+        
+        /// <summary>
+        /// Detecta la duración de la animación de ataque desde el Animator.
+        /// </summary>
+        private float DetectAnimationDuration(CombatPart part, AttackData attack)
+        {
+            Animator animator = null;
+            
+            // Buscar Animator en StructuralPart
+            if (part.StructuralPart != null && part.StructuralPart.Animator != null)
+            {
+                animator = part.StructuralPart.Animator;
+            }
+            else
+            {
+                // Buscar en padres
+                animator = part.GetComponentInParent<Animator>();
+            }
+            
+            if (animator == null || animator.runtimeAnimatorController == null)
+            {
+                Debug.LogWarning($"[CombatController] No se encontró Animator, usando duración fallback: {attack.animationDuration}s");
+                return attack.animationDuration;
+            }
+            
+            // Buscar el clip de animación por nombre del trigger
+            AnimationClip[] clips = animator.runtimeAnimatorController.animationClips;
+            
+            foreach (var clip in clips)
+            {
+                // Buscar clip que contenga el nombre del trigger (flexible)
+                if (clip.name.Contains(attack.mainAnimationTrigger) || 
+                    attack.mainAnimationTrigger.Contains(clip.name) ||
+                    clip.name.ToLower().Contains("attack"))
+                {
+                    Debug.Log($"[CombatController] Duración detectada del clip '{clip.name}': {clip.length}s");
+                    return clip.length;
+                }
+            }
+            
+            // Si no encontramos el clip específico, buscar cualquier clip con "attack" en el nombre
+            foreach (var clip in clips)
+            {
+                if (clip.name.ToLower().Contains("attack"))
+                {
+                    Debug.Log($"[CombatController] Duración detectada (fallback) del clip '{clip.name}': {clip.length}s");
+                    return clip.length;
+                }
+            }
+            
+            Debug.LogWarning($"[CombatController] No se encontró clip de ataque, usando duración fallback: {attack.animationDuration}s");
+            return attack.animationDuration;
+        }
+        
+        private void TriggerAttackAnimation(CombatPart part, AttackData attack)
+        {
             bool animationTriggered = false;
             
+            // Intentar disparar animación en la StructuralPart
             if (part.StructuralPart != null && part.StructuralPart.Animator != null)
             {
                 part.StructuralPart.Animator.SetTrigger(attack.mainAnimationTrigger);
@@ -374,7 +467,7 @@ namespace RobotGame.Combat
             }
             else
             {
-                // Buscar Animator en los padres (por si está en el brazo y la garra es hija)
+                // Buscar Animator en los padres
                 Animator parentAnimator = part.GetComponentInParent<Animator>();
                 if (parentAnimator != null)
                 {
@@ -387,56 +480,114 @@ namespace RobotGame.Combat
             if (!animationTriggered)
             {
                 Debug.LogWarning($"[CombatController] NO SE ENCONTRÓ ANIMATOR para {part.name}");
-                Debug.LogWarning($"  - StructuralPart: {(part.StructuralPart != null ? part.StructuralPart.name : "NULL")}");
-                Debug.LogWarning($"  - StructuralPart.Animator: {(part.StructuralPart?.Animator != null ? "EXISTS" : "NULL")}");
-                Debug.LogWarning($"  - Trigger buscado: '{attack.mainAnimationTrigger}'");
-            }
-            
-            if (logStateChanges)
-            {
-                float damage = part.CalculateDamage(attack);
-                Debug.Log($"[CombatController] Ataque iniciado: {attack.attackName} con {part.name} " +
-                         $"(Daño: {damage:F1}, Duración: {attack.TotalDuration:F2}s)");
             }
         }
         
         private void UpdateWindUp()
         {
-            if (stateTimer >= currentAttack.windupTime)
+            // Trackear distancia durante toda la animación
+            if (trackReachDistance && currentAttackingPart != null)
             {
-                ActivateHitbox();
-                ChangeState(CombatState.Active);
+                TrackMaxReach();
+            }
+            
+            if (useAnimationEvents)
+            {
+                // Modo Animation Events: esperar OnAnimationHitboxStart()
+                // Timeout de seguridad por si el evento no llega
+                if (stateTimer >= animationEventTimeout)
+                {
+                    Debug.LogWarning($"[CombatController] Timeout esperando HitboxStart event. Usando fallback.");
+                    waitingForHitboxStart = false;
+                    ActivateHitboxes();
+                    ChangeState(CombatState.Active);
+                }
+                // El cambio de estado ocurre en OnAnimationHitboxStart()
+            }
+            else
+            {
+                // Modo porcentual (fallback)
+                float windupTime = currentAnimationDuration * currentAttack.windupPercent;
+                if (stateTimer >= windupTime)
+                {
+                    ActivateHitboxes();
+                    ChangeState(CombatState.Active);
+                }
             }
         }
         
         private void UpdateActive()
         {
-            // Actualizar posición de hitbox para que siga al arma
-            if (hitboxObject != null && currentAttackingPart != null)
+            // Trackear distancia máxima durante el ataque
+            if (trackReachDistance && currentAttackingPart != null)
             {
-                hitboxObject.transform.position = currentAttackingPart.GetHitboxWorldPosition();
+                TrackMaxReach();
             }
             
-            // Verificar hits cada frame
-            if (activeHitbox != null)
-            {
-                activeHitbox.CheckHits();
-            }
+            // Los hitboxes detectan colisiones automáticamente via OnTriggerEnter
             
-            // Verificar si terminó la fase activa
-            float activeEndTime = currentAttack.windupTime + currentAttack.activeTime;
-            if (stateTimer >= activeEndTime)
+            if (useAnimationEvents)
             {
-                DeactivateHitbox();
-                ChangeState(CombatState.Recovery);
+                // Modo Animation Events: esperar OnAnimationHitboxEnd()
+                // Timeout de seguridad
+                if (stateTimer >= animationEventTimeout)
+                {
+                    Debug.LogWarning($"[CombatController] Timeout esperando HitboxEnd event. Usando fallback.");
+                    waitingForHitboxEnd = false;
+                    DeactivateHitboxes();
+                    ChangeState(CombatState.Recovery);
+                }
+                // El cambio de estado ocurre en OnAnimationHitboxEnd()
+            }
+            else
+            {
+                // Modo porcentual (fallback)
+                float windupTime = currentAnimationDuration * currentAttack.windupPercent;
+                float activeTime = currentAnimationDuration * currentAttack.activePercent;
+                float activeEndTime = windupTime + activeTime;
+                
+                if (stateTimer >= activeEndTime)
+                {
+                    DeactivateHitboxes();
+                    ChangeState(CombatState.Recovery);
+                }
             }
         }
         
         private void UpdateRecovery()
         {
-            if (stateTimer >= currentAttack.TotalDuration)
+            // Seguir trackeando por si la animación continúa
+            if (trackReachDistance && currentAttackingPart != null)
             {
-                EndAttack();
+                TrackMaxReach();
+            }
+            
+            if (useAnimationEvents)
+            {
+                // Modo Animation Events: esperar OnAnimationAttackEnd() o timeout
+                // Si el evento ya lo terminó, no hacemos nada (EndAttack ya fue llamado)
+                if (attackEndedByEvent)
+                {
+                    return;
+                }
+                
+                // Timeout de seguridad - usar duración detectada de la animación
+                if (stateTimer >= currentAnimationDuration + 0.1f)
+                {
+                    if (logStateChanges)
+                    {
+                        Debug.Log($"[CombatController] Animación completada (duración: {currentAnimationDuration}s). Finalizando ataque.");
+                    }
+                    EndAttack();
+                }
+            }
+            else
+            {
+                // Modo porcentual (fallback)
+                if (stateTimer >= currentAnimationDuration)
+                {
+                    EndAttack();
+                }
             }
         }
         
@@ -445,11 +596,31 @@ namespace RobotGame.Combat
             var endedPart = currentAttackingPart;
             var endedAttack = currentAttack;
             
-            DeactivateHitbox();
+            // Log de distancia máxima alcanzada
+            if (trackReachDistance && endedAttack != null)
+            {
+                Debug.Log($"<color=cyan>[REACH TRACKING] Ataque '{endedAttack.attackName}' → Distancia máxima: {maxReachThisAttack:F2}m</color>");
+            }
+            
+            // Desactivar hitboxes por si acaso
+            DeactivateHitboxes();
+            
+            // Desuscribirse de eventos de hit
+            if (endedPart != null)
+            {
+                endedPart.UnsubscribeFromHitEvents(HandleHitPart, HandleHitDamageable);
+            }
             
             currentAttackingPart = null;
             currentAttack = null;
             stateTimer = 0f;
+            currentAttackId = -1;
+            
+            // Resetear flags de Animation Events
+            waitingForHitboxStart = false;
+            waitingForHitboxEnd = false;
+            attackEndedByEvent = false;
+            hitboxActivatedByEvent = false;
             
             ChangeState(CombatState.Idle);
             
@@ -458,6 +629,94 @@ namespace RobotGame.Combat
                 OnAttackEnded?.Invoke(endedPart, endedAttack);
             }
         }
+        
+        #endregion
+        
+        #region Animation Event Receivers
+        
+        /// <summary>
+        /// Llamado por AttackAnimationEvents cuando la animación indica que la hitbox debe activarse.
+        /// </summary>
+        public void OnAnimationHitboxStart()
+        {
+            if (currentState != CombatState.WindUp && currentState != CombatState.Idle)
+            {
+                if (logStateChanges)
+                {
+                    Debug.LogWarning($"[CombatController] OnAnimationHitboxStart ignorado - Estado actual: {currentState}");
+                }
+                return;
+            }
+            
+            if (!waitingForHitboxStart && currentState == CombatState.Idle)
+            {
+                if (logStateChanges)
+                {
+                    Debug.LogWarning("[CombatController] OnAnimationHitboxStart ignorado - No hay ataque en curso");
+                }
+                return;
+            }
+            
+            if (logStateChanges)
+            {
+                Debug.Log("<color=green>[CombatController] Animation Event: HitboxStart recibido</color>");
+            }
+            
+            waitingForHitboxStart = false;
+            waitingForHitboxEnd = true;
+            hitboxActivatedByEvent = true;
+            
+            ActivateHitboxes();
+            ChangeState(CombatState.Active);
+        }
+        
+        /// <summary>
+        /// Llamado por AttackAnimationEvents cuando la animación indica que la hitbox debe desactivarse.
+        /// </summary>
+        public void OnAnimationHitboxEnd()
+        {
+            if (currentState != CombatState.Active)
+            {
+                if (logStateChanges)
+                {
+                    Debug.LogWarning($"[CombatController] OnAnimationHitboxEnd ignorado - Estado actual: {currentState}");
+                }
+                return;
+            }
+            
+            if (logStateChanges)
+            {
+                Debug.Log("<color=yellow>[CombatController] Animation Event: HitboxEnd recibido</color>");
+            }
+            
+            waitingForHitboxEnd = false;
+            
+            DeactivateHitboxes();
+            ChangeState(CombatState.Recovery);
+        }
+        
+        /// <summary>
+        /// Llamado por AttackAnimationEvents cuando la animación indica que el ataque terminó.
+        /// </summary>
+        public void OnAnimationAttackEnd()
+        {
+            if (currentState == CombatState.Idle)
+            {
+                return;
+            }
+            
+            if (logStateChanges)
+            {
+                Debug.Log("<color=red>[CombatController] Animation Event: AttackEnd recibido</color>");
+            }
+            
+            attackEndedByEvent = true;
+            EndAttack();
+        }
+        
+        #endregion
+        
+        #region Private Methods - State Machine
         
         private void ChangeState(CombatState newState)
         {
@@ -469,99 +728,99 @@ namespace RobotGame.Combat
             currentState = newState;
         }
         
-        #endregion
-        
-        #region Private Methods - Hitbox
-        
-        private void CreateHitboxObject()
+        /// <summary>
+        /// Trackea la distancia máxima desde el centro del robot hasta los hitboxes.
+        /// Funciona incluso si los hitboxes están desactivados.
+        /// </summary>
+        private void TrackMaxReach()
         {
-            hitboxObject = new GameObject("AttackHitbox");
-            hitboxObject.transform.SetParent(transform);
-            hitboxObject.SetActive(false);
+            if (robot == null || currentAttackingPart == null) return;
             
-            activeHitbox = hitboxObject.AddComponent<AttackHitbox>();
+            Vector3 robotCenter = robot.transform.position;
             
-            // Crear visualización del hitbox (esfera semi-transparente)
-            if (showHitboxInGame)
+            // Trackear posición de cada hitbox (incluso si está desactivado)
+            foreach (var hitbox in currentAttackingPart.WeaponHitboxes)
             {
-                hitboxVisual = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-                hitboxVisual.name = "HitboxVisual";
-                hitboxVisual.transform.SetParent(hitboxObject.transform);
-                hitboxVisual.transform.localPosition = Vector3.zero;
+                if (hitbox == null) continue;
                 
-                // Remover el collider de la esfera visual
-                Collider visualCollider = hitboxVisual.GetComponent<Collider>();
-                if (visualCollider != null)
+                float distance = Vector3.Distance(robotCenter, hitbox.transform.position);
+                
+                if (distance > maxReachThisAttack)
                 {
-                    Destroy(visualCollider);
+                    maxReachThisAttack = distance;
                 }
-                
-                // Material semi-transparente rojo
-                Renderer renderer = hitboxVisual.GetComponent<Renderer>();
-                if (renderer != null)
+            }
+            
+            // Si no hay hitboxes, usar la posición del CombatPart
+            if (currentAttackingPart.WeaponHitboxes.Count == 0)
+            {
+                float distance = Vector3.Distance(robotCenter, currentAttackingPart.transform.position);
+                if (distance > maxReachThisAttack)
                 {
-                    Material mat = new Material(Shader.Find("Standard"));
-                    mat.color = new Color(1f, 0f, 0f, 0.3f);
-                    mat.SetFloat("_Mode", 3); // Transparent
-                    mat.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
-                    mat.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
-                    mat.SetInt("_ZWrite", 0);
-                    mat.DisableKeyword("_ALPHATEST_ON");
-                    mat.EnableKeyword("_ALPHABLEND_ON");
-                    mat.DisableKeyword("_ALPHAPREMULTIPLY_ON");
-                    mat.renderQueue = 3000;
-                    renderer.material = mat;
+                    maxReachThisAttack = distance;
                 }
             }
         }
         
-        private void ActivateHitbox()
+        #endregion
+        
+        #region Private Methods - Hitbox Control
+        
+        private void ActivateHitboxes()
         {
             if (currentAttackingPart == null || currentAttack == null)
             {
-                Debug.LogError("[CombatController] ActivateHitbox: currentAttackingPart o currentAttack es null!");
+                Debug.LogError("[CombatController] ActivateHitboxes: currentAttackingPart o currentAttack es null!");
                 return;
             }
             
-            hitboxObject.SetActive(true);
-            
-            Vector3 hitboxPos = currentAttackingPart.GetHitboxWorldPosition();
             float damage = currentAttackingPart.CalculateDamage(currentAttack);
-            float radius = currentAttackingPart.HitboxRadius;
             
-            hitboxObject.transform.position = hitboxPos;
-            
-            // Escalar visualización
-            if (hitboxVisual != null)
-            {
-                hitboxVisual.transform.localScale = Vector3.one * radius * 2f;
-            }
-            
-            activeHitbox.Activate(radius, damage, robot.gameObject, currentAttack.isAreaDamage, currentAttackId);
+            currentAttackingPart.ActivateHitboxes(damage, robot.gameObject, currentAttackId);
             
             OnAttackActive?.Invoke(currentAttackingPart, currentAttack);
+            
+            if (logStateChanges)
+            {
+                Debug.Log($"[CombatController] Hitboxes ACTIVADOS - Daño: {damage}, AttackId: {currentAttackId}");
+            }
         }
         
-        private void DeactivateHitbox()
+        private void DeactivateHitboxes()
         {
-            if (activeHitbox != null)
+            if (currentAttackingPart != null)
             {
-                activeHitbox.Deactivate();
-            }
-            
-            if (hitboxObject != null)
-            {
-                hitboxObject.SetActive(false);
+                currentAttackingPart.DeactivateHitboxes();
+                
+                if (logStateChanges)
+                {
+                    Debug.Log("[CombatController] Hitboxes DESACTIVADOS");
+                }
             }
         }
         
         #endregion
         
-        #region Helper Methods
+        #region Event Handlers
         
-        private float GetElapsedTimeInCurrentAttack()
+        private void HandleHitPart(PartHealth part, float damage)
         {
-            return stateTimer;
+            OnHitPart?.Invoke(part, damage);
+            
+            if (logStateChanges)
+            {
+                Debug.Log($"[CombatController] HIT: {part.gameObject.name} por {damage:F1} daño");
+            }
+        }
+        
+        private void HandleHitDamageable(Damageable target, float damage)
+        {
+            OnHitDamageable?.Invoke(target, damage);
+            
+            if (logStateChanges)
+            {
+                Debug.Log($"[CombatController] HIT: {target.gameObject.name} por {damage:F1} daño");
+            }
         }
         
         #endregion
@@ -572,11 +831,9 @@ namespace RobotGame.Combat
         {
             if (!showAttackGizmos) return;
             
-            // Mostrar estado
+            // Mostrar estado durante ataque
             if (currentState != CombatState.Idle && currentAttackingPart != null)
             {
-                Vector3 origin = currentAttackingPart.GetHitboxWorldPosition();
-                
                 switch (currentState)
                 {
                     case CombatState.WindUp:
@@ -590,7 +847,9 @@ namespace RobotGame.Combat
                         break;
                 }
                 
-                Gizmos.DrawWireSphere(origin, 0.2f);
+                // Dibujar indicador sobre la parte atacante
+                Vector3 pos = currentAttackingPart.transform.position + Vector3.up * 0.5f;
+                Gizmos.DrawWireSphere(pos, 0.1f);
             }
         }
         

@@ -15,7 +15,7 @@ MonoBehaviour:
   partId: raptorheadtest
   displayName: head test
   description: 
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: 34b03998d88f1ca41bfc2dd3ff4fa863, type: 3}
   prefab: {fileID: 2406391369128376363, guid: 79cb36e0b22c2e740b92acfaf3f4f0f3, type: 3}
   category: 0
   tier:

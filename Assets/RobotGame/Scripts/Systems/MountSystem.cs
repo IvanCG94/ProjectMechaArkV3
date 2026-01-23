@@ -2,6 +2,7 @@ using UnityEngine;
 using RobotGame.Components;
 using RobotGame.Control;
 using RobotGame.AI;
+using RobotGame.Combat;
 
 namespace RobotGame.Systems
 {
@@ -30,6 +31,9 @@ namespace RobotGame.Systems
         [Tooltip("La cámara del jugador")]
         [SerializeField] private PlayerCamera playerCamera;
         
+        [Tooltip("El input handler de combate (se auto-detecta si no se asigna)")]
+        [SerializeField] private CombatInputHandler combatInputHandler;
+        
         [Header("Configuración")]
         [Tooltip("Tecla para montar/desmontar")]
         [SerializeField] private KeyCode mountKey = KeyCode.F;
@@ -57,6 +61,7 @@ namespace RobotGame.Systems
         
         // Estado interno
         private Robot playerRobot;
+        private CombatController playerCombatController; // Guardamos referencia al del jugador
         private Vector3 dismountOffset = new Vector3(0f, 0f, -2f); // Ya no se usa, pero lo dejamos por si acaso
         
         #region Properties
@@ -173,6 +178,28 @@ namespace RobotGame.Systems
                     Debug.Log("MountSystem: PlayerCamera encontrado");
                 }
             }
+            
+            // Buscar CombatInputHandler
+            if (combatInputHandler == null)
+            {
+                combatInputHandler = FindObjectOfType<CombatInputHandler>();
+                
+                if (combatInputHandler != null)
+                {
+                    Debug.Log("MountSystem: CombatInputHandler encontrado");
+                }
+            }
+            
+            // Guardar referencia al CombatController del jugador
+            if (playerCombatController == null && playerRobot != null)
+            {
+                playerCombatController = playerRobot.GetComponent<CombatController>();
+                
+                if (playerCombatController != null)
+                {
+                    Debug.Log("MountSystem: CombatController del jugador guardado");
+                }
+            }
         }
         
         private RobotCore FindPlayerCore()
@@ -268,6 +295,9 @@ namespace RobotGame.Systems
             // Cambiar el objetivo de la cámara al mecha
             SetCameraTarget(currentMount.transform);
             
+            // Configurar combate para el mecha montado
+            SetupMountCombat();
+            
             Debug.Log($"MountSystem: Montado exitosamente. PlayerController ahora controla el mecha.");
         }
         
@@ -315,6 +345,9 @@ namespace RobotGame.Systems
                 playerController.RecalculateCollider();
                 playerController.ForceGroundCheck();
             }
+            
+            // Restaurar combate del jugador
+            RestorePlayerCombat();
             
             // Limpiar estado
             currentMount = null;
@@ -371,6 +404,64 @@ namespace RobotGame.Systems
             }
         }
         
+        /// <summary>
+        /// Configura el sistema de combate para el mecha montado.
+        /// </summary>
+        private void SetupMountCombat()
+        {
+            if (currentMount == null || combatInputHandler == null) return;
+            
+            // Obtener el Robot del mecha
+            Robot mountRobot = currentMount.Robot;
+            if (mountRobot == null)
+            {
+                Debug.LogWarning("MountSystem: El mecha no tiene componente Robot");
+                return;
+            }
+            
+            // Obtener o agregar CombatController al mecha
+            CombatController mountCombat = mountRobot.GetComponent<CombatController>();
+            if (mountCombat == null)
+            {
+                mountCombat = mountRobot.gameObject.AddComponent<CombatController>();
+                Debug.Log("MountSystem: CombatController agregado al mecha");
+            }
+            
+            // Refrescar las partes de combate del mecha
+            mountCombat.RefreshCombatParts();
+            
+            // Cambiar la referencia en CombatInputHandler
+            combatInputHandler.SetCombatController(mountCombat);
+            
+            Debug.Log($"MountSystem: CombatController cambiado al mecha. Partes de combate: {mountCombat.CombatParts.Count}");
+        }
+        
+        /// <summary>
+        /// Restaura el sistema de combate del jugador.
+        /// </summary>
+        private void RestorePlayerCombat()
+        {
+            if (combatInputHandler == null) return;
+            
+            // Si tenemos guardado el CombatController del jugador, restaurarlo
+            if (playerCombatController != null)
+            {
+                combatInputHandler.SetCombatController(playerCombatController);
+                Debug.Log("MountSystem: CombatController restaurado al jugador");
+            }
+            else if (playerRobot != null)
+            {
+                // Intentar obtenerlo de nuevo
+                CombatController playerCombat = playerRobot.GetComponent<CombatController>();
+                if (playerCombat != null)
+                {
+                    combatInputHandler.SetCombatController(playerCombat);
+                    playerCombatController = playerCombat;
+                    Debug.Log("MountSystem: CombatController del jugador encontrado y restaurado");
+                }
+            }
+        }
+
         private Vector3 CalculateDismountPosition()
         {
             if (currentMount == null) return Vector3.zero;

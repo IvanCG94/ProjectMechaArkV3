@@ -15,7 +15,7 @@ MonoBehaviour:
   partId: CorazaFea
   displayName: Coraza fea
   description: 
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: f19ea83a255e732469e65348a272cdd2, type: 3}
   prefab: {fileID: 4146691745644616186, guid: fc859e954cb8e054cb9ad95a0f105034, type: 3}
   category: 1
   tier:

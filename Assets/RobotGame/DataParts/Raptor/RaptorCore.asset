@@ -15,7 +15,7 @@ MonoBehaviour:
   partId: raptorcore
   displayName: RaptorCore
   description: 
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: 48bac6cbb9ceb2a46ae7c690b70e5b00, type: 3}
   prefab: {fileID: 4859075554159689130, guid: b4c5ce1cfd582f746888a567dbf5cb8b, type: 3}
   category: 0
   tier:
