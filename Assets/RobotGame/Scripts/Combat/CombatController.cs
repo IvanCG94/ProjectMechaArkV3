@@ -71,6 +71,9 @@ namespace RobotGame.Combat
         private bool waitingForHitboxEnd = false;
         private bool attackEndedByEvent = false;
         
+        // Sistema de cooldowns por ataque
+        private Dictionary<AttackData, float> attackCooldowns = new Dictionary<AttackData, float>();
+        
         #region Properties
         
         public CombatState CurrentState => currentState;
@@ -79,6 +82,32 @@ namespace RobotGame.Combat
         public CombatPart CurrentAttackingPart => currentAttackingPart;
         public AttackData CurrentAttack => currentAttack;
         public IReadOnlyList<CombatPart> CombatParts => combatParts;
+        
+        /// <summary>
+        /// Si el robot puede moverse. False si está atacando con un ataque que bloquea movimiento.
+        /// </summary>
+        public bool CanMove
+        {
+            get
+            {
+                if (!IsAttacking) return true;
+                if (currentAttack == null) return true;
+                return currentAttack.allowMovement;
+            }
+        }
+        
+        /// <summary>
+        /// Si el robot puede rotar. False si está atacando con un ataque que bloquea rotación.
+        /// </summary>
+        public bool CanRotate
+        {
+            get
+            {
+                if (!IsAttacking) return true;
+                if (currentAttack == null) return true;
+                return currentAttack.allowRotation;
+            }
+        }
         
         /// <summary>
         /// Progreso del ataque actual (0-1). 0 si no está atacando.
@@ -92,6 +121,58 @@ namespace RobotGame.Combat
                 
                 return Mathf.Clamp01(stateTimer / currentAnimationDuration);
             }
+        }
+        
+        /// <summary>
+        /// Alcance máximo de combate considerando todas las partes.
+        /// Útil para IA para saber a qué distancia atacar.
+        /// </summary>
+        public float MaxCombatReach
+        {
+            get
+            {
+                float maxReach = 0f;
+                
+                foreach (var part in combatParts)
+                {
+                    if (part != null && part.CombatReach > maxReach)
+                    {
+                        maxReach = part.CombatReach;
+                    }
+                }
+                
+                return maxReach;
+            }
+        }
+        
+        /// <summary>
+        /// Alcance mínimo de combate (la parte con menor alcance).
+        /// </summary>
+        public float MinCombatReach
+        {
+            get
+            {
+                float minReach = float.MaxValue;
+                
+                foreach (var part in combatParts)
+                {
+                    if (part != null && part.CombatReach > 0f && part.CombatReach < minReach)
+                    {
+                        minReach = part.CombatReach;
+                    }
+                }
+                
+                return minReach == float.MaxValue ? 0f : minReach;
+            }
+        }
+        
+        /// <summary>
+        /// Obtiene el alcance de un ataque específico.
+        /// </summary>
+        public float GetAttackReach(CombatPart part, AttackData attack)
+        {
+            if (part == null) return 0f;
+            return part.CombatReach;
         }
         
         #endregion
@@ -146,6 +227,9 @@ namespace RobotGame.Combat
         
         private void Update()
         {
+            // Actualizar cooldowns siempre
+            UpdateCooldowns();
+            
             if (currentState == CombatState.Idle) return;
             
             stateTimer += Time.deltaTime;
@@ -163,6 +247,41 @@ namespace RobotGame.Combat
                 case CombatState.Recovery:
                     UpdateRecovery();
                     break;
+            }
+        }
+        
+        /// <summary>
+        /// Decrementa los cooldowns de todos los ataques.
+        /// </summary>
+        private void UpdateCooldowns()
+        {
+            if (attackCooldowns.Count == 0) return;
+            
+            // Crear lista de ataques a remover (cooldown terminado)
+            List<AttackData> toRemove = new List<AttackData>();
+            
+            // Crear lista de keys para iterar (no podemos modificar mientras iteramos)
+            List<AttackData> keys = new List<AttackData>(attackCooldowns.Keys);
+            
+            foreach (var attack in keys)
+            {
+                attackCooldowns[attack] -= Time.deltaTime;
+                
+                if (attackCooldowns[attack] <= 0f)
+                {
+                    toRemove.Add(attack);
+                }
+            }
+            
+            // Remover cooldowns terminados
+            foreach (var attack in toRemove)
+            {
+                attackCooldowns.Remove(attack);
+                
+                if (logStateChanges)
+                {
+                    Debug.Log($"[CombatController] Cooldown terminado: {attack.attackName}");
+                }
             }
         }
         
@@ -275,6 +394,14 @@ namespace RobotGame.Combat
                 return false;
             }
             
+            // Verificar cooldown
+            if (!IsAttackReady(attack))
+            {
+                float remaining = GetCooldownRemaining(attack);
+                Debug.LogWarning($"[CombatController] Ataque '{attack.attackName}' en cooldown. Faltan {remaining:F1}s");
+                return false;
+            }
+            
             StartAttack(part, attack);
             return true;
         }
@@ -343,6 +470,99 @@ namespace RobotGame.Combat
             }
             
             return allAttacks;
+        }
+        
+        /// <summary>
+        /// Obtiene solo los ataques que están listos (no en cooldown).
+        /// </summary>
+        public List<(CombatPart part, AttackData attack)> GetReadyAttacks()
+        {
+            var readyAttacks = new List<(CombatPart, AttackData)>();
+            
+            foreach (var part in combatParts)
+            {
+                if (part == null || !part.HasHitboxes) continue;
+                
+                foreach (var attack in part.AvailableAttacks)
+                {
+                    if (attack != null && IsAttackReady(attack))
+                    {
+                        readyAttacks.Add((part, attack));
+                    }
+                }
+            }
+            
+            return readyAttacks;
+        }
+        
+        #endregion
+        
+        #region Cooldown System
+        
+        /// <summary>
+        /// Verifica si un ataque está listo para usar (no está en cooldown).
+        /// </summary>
+        public bool IsAttackReady(AttackData attack)
+        {
+            if (attack == null) return false;
+            return !attackCooldowns.ContainsKey(attack);
+        }
+        
+        /// <summary>
+        /// Obtiene el tiempo restante de cooldown para un ataque.
+        /// Retorna 0 si el ataque está listo.
+        /// </summary>
+        public float GetCooldownRemaining(AttackData attack)
+        {
+            if (attack == null) return 0f;
+            
+            if (attackCooldowns.TryGetValue(attack, out float remaining))
+            {
+                return remaining;
+            }
+            
+            return 0f;
+        }
+        
+        /// <summary>
+        /// Obtiene el progreso del cooldown (0 = recién usado, 1 = listo).
+        /// </summary>
+        public float GetCooldownProgress(AttackData attack)
+        {
+            if (attack == null || attack.cooldownTime <= 0f) return 1f;
+            
+            float remaining = GetCooldownRemaining(attack);
+            if (remaining <= 0f) return 1f;
+            
+            return 1f - (remaining / attack.cooldownTime);
+        }
+        
+        /// <summary>
+        /// Inicia el cooldown de un ataque.
+        /// </summary>
+        private void StartCooldown(AttackData attack)
+        {
+            if (attack == null || attack.cooldownTime <= 0f) return;
+            
+            attackCooldowns[attack] = attack.cooldownTime;
+            
+            if (logStateChanges)
+            {
+                Debug.Log($"[CombatController] Cooldown iniciado: {attack.attackName} ({attack.cooldownTime}s)");
+            }
+        }
+        
+        /// <summary>
+        /// Resetea todos los cooldowns (útil para testing o respawn).
+        /// </summary>
+        public void ResetAllCooldowns()
+        {
+            attackCooldowns.Clear();
+            
+            if (logStateChanges)
+            {
+                Debug.Log("[CombatController] Todos los cooldowns reseteados");
+            }
         }
         
         #endregion
@@ -456,30 +676,55 @@ namespace RobotGame.Combat
         
         private void TriggerAttackAnimation(CombatPart part, AttackData attack)
         {
-            bool animationTriggered = false;
+            Animator animator = null;
             
-            // Intentar disparar animación en la StructuralPart
+            // Intentar obtener Animator de la StructuralPart
             if (part.StructuralPart != null && part.StructuralPart.Animator != null)
             {
-                part.StructuralPart.Animator.SetTrigger(attack.mainAnimationTrigger);
-                animationTriggered = true;
-                Debug.Log($"[CombatController] Animación disparada en StructuralPart: {part.StructuralPart.name}");
+                animator = part.StructuralPart.Animator;
             }
             else
             {
                 // Buscar Animator en los padres
-                Animator parentAnimator = part.GetComponentInParent<Animator>();
-                if (parentAnimator != null)
-                {
-                    parentAnimator.SetTrigger(attack.mainAnimationTrigger);
-                    animationTriggered = true;
-                    Debug.Log($"[CombatController] Animación disparada en padre: {parentAnimator.gameObject.name}");
-                }
+                animator = part.GetComponentInParent<Animator>();
             }
             
-            if (!animationTriggered)
+            if (animator == null)
             {
                 Debug.LogWarning($"[CombatController] NO SE ENCONTRÓ ANIMATOR para {part.name}");
+                return;
+            }
+            
+            string animationName = attack.mainAnimationTrigger;
+            
+            // Primero, resetear cualquier trigger pendiente para evitar conflictos
+            animator.ResetTrigger(animationName);
+            
+            // Intentar usar CrossFade (funciona si mainAnimationTrigger es el nombre del ESTADO)
+            // CrossFadeInFixedTime interrumpe transiciones y fuerza la animación inmediatamente
+            // 0.05f = 50ms de transición, suficiente para que no se vea un corte brusco
+            int stateHash = Animator.StringToHash(animationName);
+            
+            if (animator.HasState(0, stateHash))
+            {
+                // El estado existe, usar CrossFade
+                animator.CrossFadeInFixedTime(stateHash, 0.05f);
+                
+                if (logStateChanges)
+                {
+                    Debug.Log($"[CombatController] Animación forzada (CrossFade): {animationName}");
+                }
+            }
+            else
+            {
+                // El estado no existe con ese nombre, usar SetTrigger como fallback
+                // Esto funciona si mainAnimationTrigger es un trigger, no un estado
+                animator.SetTrigger(animationName);
+                
+                if (logStateChanges)
+                {
+                    Debug.Log($"[CombatController] Animación disparada (Trigger): {animationName}");
+                }
             }
         }
         
@@ -600,6 +845,12 @@ namespace RobotGame.Combat
             if (trackReachDistance && endedAttack != null)
             {
                 Debug.Log($"<color=cyan>[REACH TRACKING] Ataque '{endedAttack.attackName}' → Distancia máxima: {maxReachThisAttack:F2}m</color>");
+            }
+            
+            // Iniciar cooldown del ataque
+            if (endedAttack != null && endedAttack.cooldownTime > 0f)
+            {
+                StartCooldown(endedAttack);
             }
             
             // Desactivar hitboxes por si acaso

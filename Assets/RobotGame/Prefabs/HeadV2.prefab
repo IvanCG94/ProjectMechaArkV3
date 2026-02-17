@@ -55,5 +55,53 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 069486d145fad29409ccfecb6384baa2, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 5364747491726028973}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 069486d145fad29409ccfecb6384baa2, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 5384086059251143789}
   m_SourcePrefab: {fileID: 100100000, guid: 069486d145fad29409ccfecb6384baa2, type: 3}
+--- !u!1 &1992062725313083764 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 919132149155446097, guid: 069486d145fad29409ccfecb6384baa2, type: 3}
+  m_PrefabInstance: {fileID: 1685564173449692197}
+  m_PrefabAsset: {fileID: 0}
+--- !u!65 &5364747491726028973
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1992062725313083764}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 0.22, y: 0.30416936, z: 0.20517379}
+  m_Center: {x: -0.000000014901161, y: 0.24044469, z: 0.051011235}
+--- !u!114 &5384086059251143789
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1992062725313083764}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3c1a66f9e8e8c804196bb13247c8ed63, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RobotGame.Combat.PartHealth
+  maxHealth: 500
+  currentHealth: 0
+  isDestroyed: 0
+  logDamage: 1

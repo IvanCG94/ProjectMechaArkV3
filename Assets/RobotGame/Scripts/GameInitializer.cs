@@ -118,6 +118,9 @@ namespace RobotGame
                 playerCore.SetAsPlayerCore(true);
             }
             
+            // Asignar tag "Player" para detección en AttackZones
+            playerRobot.gameObject.tag = "Player";
+            
             // Configurar sistemas de control
             SetupPlayerController();
             SetupCamera();
@@ -225,6 +228,12 @@ namespace RobotGame
             if (core != playerCore) return;
             
             playerRobot = newRobot;
+            
+            // Asignar tag "Player" al nuevo robot
+            if (newRobot != null)
+            {
+                newRobot.gameObject.tag = "Player";
+            }
             
             // Actualizar controlador
             if (playerController != null)

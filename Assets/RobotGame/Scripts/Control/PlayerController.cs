@@ -89,6 +89,7 @@ namespace RobotGame.Control
         private Rigidbody rb;
         private CapsuleCollider capsule;
         private Transform cameraTransform;
+        private Combat.CombatController combatController;
         
         // Input
         private Vector2 inputDirection;
@@ -151,12 +152,16 @@ namespace RobotGame.Control
             {
                 rb = null;
                 capsule = null;
+                combatController = null;
                 return;
             }
             
             SetupRigidbody();
             SetupCollider();
             RecalculateCollider();
+            
+            // Buscar CombatController
+            combatController = targetTransform.GetComponent<Combat.CombatController>();
             
             // Buscar cámara
             if (Camera.main != null)
@@ -459,14 +464,17 @@ namespace RobotGame.Control
         
         private void ApplyMovement()
         {
-            Vector3 moveDir = GetCameraRelativeDirection(inputDirection);
+            // Verificar si el ataque actual permite movimiento
+            bool canMove = combatController == null || combatController.CanMove;
+            
+            Vector3 moveDir = canMove ? GetCameraRelativeDirection(inputDirection) : Vector3.zero;
             
             if (moveDir.sqrMagnitude > 0.01f)
             {
                 lastMoveDirection = moveDir.normalized;
             }
             
-            float targetSpeed = inputDirection.sqrMagnitude > 0.01f 
+            float targetSpeed = (canMove && inputDirection.sqrMagnitude > 0.01f)
                 ? (isSprinting ? sprintSpeed : walkSpeed) 
                 : 0f;
             
@@ -517,6 +525,10 @@ namespace RobotGame.Control
         
         private void ApplyRotation()
         {
+            // Verificar si el ataque actual permite rotación
+            if (combatController != null && !combatController.CanRotate)
+                return;
+            
             if (lastMoveDirection.sqrMagnitude > 0.01f)
             {
                 Quaternion targetRot = Quaternion.LookRotation(lastMoveDirection, Vector3.up);

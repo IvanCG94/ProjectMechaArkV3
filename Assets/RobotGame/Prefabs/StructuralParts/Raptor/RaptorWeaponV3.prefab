@@ -157,6 +157,7 @@ MonoBehaviour:
   baseDamage: 80
   availableAttacks:
   - {fileID: 11400000, guid: 1acbfd6d8b0e3de47a7cd60930bc6b88, type: 2}
+  - {fileID: 11400000, guid: 614de96030e2c7f47bc737e933e9440f, type: 2}
   weaponHitboxes: []
   hitboxContainer: {fileID: 0}
   showGizmos: 1

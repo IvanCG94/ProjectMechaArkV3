@@ -467,6 +467,7 @@ MonoBehaviour:
   playerCore: {fileID: 0}
   playerController: {fileID: 0}
   playerCamera: {fileID: 0}
+  combatInputHandler: {fileID: 0}
   mountKey: 102
   signalKey: 116
   mountRange: 3
@@ -1757,7 +1758,7 @@ Transform:
   m_GameObject: {fileID: 689969090}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 3.44, y: 5, z: 6.24}
+  m_LocalPosition: {x: 3.44, y: 5, z: 17.58}
   m_LocalScale: {x: 10, y: 10, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []

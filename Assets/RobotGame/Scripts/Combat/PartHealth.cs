@@ -1,5 +1,7 @@
 using UnityEngine;
 using RobotGame.Components;
+using System.Collections;
+using System.Collections.Generic;
 
 namespace RobotGame.Combat
 {
@@ -19,12 +21,25 @@ namespace RobotGame.Combat
         [Header("Estado")]
         [SerializeField] private bool isDestroyed = false;
         
+        [Header("Feedback Visual")]
+        [Tooltip("Duración del flash rojo cuando recibe daño")]
+        [SerializeField] private float damageFlashDuration = 0.2f;
+        [Tooltip("Color del flash de daño")]
+        [SerializeField] private Color damageFlashColor = Color.red;
+        [Tooltip("Activar efecto visual de daño")]
+        [SerializeField] private bool enableDamageFlash = true;
+        
         [Header("Debug")]
         [SerializeField] private bool logDamage = true;
         
         // Referencias cacheadas
         private StructuralPart structuralPart;
         private Robot parentRobot;
+        
+        // Para el efecto de flash
+        private List<Renderer> partRenderers = new List<Renderer>();
+        private Dictionary<Renderer, Color[]> originalColors = new Dictionary<Renderer, Color[]>();
+        private Coroutine flashCoroutine;
         
         #region Properties
         
@@ -91,6 +106,44 @@ namespace RobotGame.Combat
             
             // Buscar el robot padre
             parentRobot = GetComponentInParent<Robot>();
+            
+            // Cachear renderers para el efecto de flash
+            CacheRenderers();
+        }
+        
+        /// <summary>
+        /// Cachea todos los renderers de esta parte y sus colores originales.
+        /// </summary>
+        private void CacheRenderers()
+        {
+            partRenderers.Clear();
+            originalColors.Clear();
+            
+            // Obtener todos los renderers de esta parte y sus hijos
+            Renderer[] renderers = GetComponentsInChildren<Renderer>();
+            
+            foreach (var renderer in renderers)
+            {
+                // Ignorar renderers sin materiales
+                if (renderer.materials == null || renderer.materials.Length == 0) continue;
+                
+                partRenderers.Add(renderer);
+                
+                // Guardar colores originales
+                Color[] colors = new Color[renderer.materials.Length];
+                for (int i = 0; i < renderer.materials.Length; i++)
+                {
+                    if (renderer.materials[i].HasProperty("_Color"))
+                    {
+                        colors[i] = renderer.materials[i].color;
+                    }
+                    else
+                    {
+                        colors[i] = Color.white;
+                    }
+                }
+                originalColors[renderer] = colors;
+            }
         }
         
         private void Start()
@@ -117,10 +170,12 @@ namespace RobotGame.Combat
         
         /// <summary>
         /// Aplica daño a esta parte.
+        /// Sistema de daño penetrante: si el daño supera la vida de la parte,
+        /// el exceso puede dañar otras partes del mismo robot.
         /// </summary>
-        /// <param name="damage">Cantidad de daño</param>
+        /// <param name="damage">Cantidad de daño original del ataque</param>
         /// <param name="attacker">GameObject que causó el daño (opcional)</param>
-        /// <param name="attackId">ID único del ataque para evitar daño múltiple. -1 para ataques de área.</param>
+        /// <param name="attackId">ID único del ataque para el sistema penetrante. -1 para ataques de área.</param>
         /// <returns>True si el daño fue aplicado</returns>
         public bool TakeDamage(float damage, GameObject attacker = null, int attackId = -1)
         {
@@ -135,35 +190,36 @@ namespace RobotGame.Combat
                 parentRobot = GetComponentInParent<Robot>();
             }
             
-            // DEBUG: Mostrar estado
-            Debug.Log($"[PartHealth DEBUG] {gameObject.name} - AttackId: {attackId}, ParentRobot: {(parentRobot != null ? parentRobot.RobotName : "NULL")}");
+            // Obtener el daño disponible para esta parte (sistema penetrante)
+            float availableDamage = damage;
             
-            // Verificar con el Robot si puede recibir daño de este ataque
             if (parentRobot != null && attackId >= 0)
             {
-                bool canReceive = parentRobot.CanReceiveDamageFromAttack(attackId);
-                Debug.Log($"[PartHealth DEBUG] Robot.CanReceiveDamageFromAttack({attackId}) = {canReceive}");
+                availableDamage = parentRobot.GetRemainingDamageFromAttack(attackId, damage);
                 
-                if (!canReceive)
+                // Si no queda daño disponible, rechazar
+                if (availableDamage <= 0)
                 {
-                    Debug.Log($"[PartHealth] {gameObject.name} RECHAZADO - Robot '{parentRobot.RobotName}' ya golpeado por ataque #{attackId}");
+                    if (logDamage)
+                    {
+                        Debug.Log($"[PartHealth] {gameObject.name} - Sin daño restante del ataque #{attackId}");
+                    }
                     return false;
                 }
             }
-            else
-            {
-                Debug.Log($"[PartHealth DEBUG] Saltando verificación: parentRobot={parentRobot != null}, attackId={attackId}");
-            }
+            
+            // Calcular cuánto daño absorbe esta parte
+            // (el mínimo entre el daño disponible y la vida actual)
+            float damageAbsorbed = Mathf.Min(availableDamage, currentHealth);
             
             // Aplicar daño
             float previousHealth = currentHealth;
-            currentHealth = Mathf.Max(0f, currentHealth - damage);
+            currentHealth = Mathf.Max(0f, currentHealth - availableDamage);
             
-            // Registrar el hit en el Robot
+            // Registrar el daño absorbido en el Robot (para que las siguientes partes reciban menos)
             if (parentRobot != null && attackId >= 0)
             {
-                parentRobot.RegisterAttackHit(attackId);
-                Debug.Log($"[PartHealth DEBUG] Registrado hit en Robot para attackId #{attackId}");
+                parentRobot.RegisterDamageAbsorbed(attackId, damageAbsorbed);
             }
             
             if (logDamage)
@@ -171,11 +227,17 @@ namespace RobotGame.Combat
                 string attackerName = attacker != null ? attacker.name : "Unknown";
                 string criticalTag = IsCriticalPart ? " [CRÍTICA]" : "";
                 string robotName = parentRobot != null ? parentRobot.RobotName : "SIN ROBOT";
-                Debug.Log($"[PartHealth] {gameObject.name}{criticalTag} de '{robotName}' recibió {damage:F1} daño. " +
+                Debug.Log($"[PartHealth] {gameObject.name}{criticalTag} de '{robotName}' recibió {availableDamage:F1} daño (absorbió {damageAbsorbed:F1}). " +
                          $"Salud: {previousHealth:F1} → {currentHealth:F1}");
             }
             
-            OnDamageReceived?.Invoke(damage, currentHealth, attacker);
+            // Efecto visual de flash rojo
+            if (enableDamageFlash)
+            {
+                TriggerDamageFlash();
+            }
+            
+            OnDamageReceived?.Invoke(availableDamage, currentHealth, attacker);
             
             if (currentHealth <= 0 && !isDestroyed)
             {
@@ -238,6 +300,13 @@ namespace RobotGame.Combat
         {
             isDestroyed = true;
             
+            // Detener flash si está activo
+            if (flashCoroutine != null)
+            {
+                StopCoroutine(flashCoroutine);
+                RestoreOriginalColors();
+            }
+            
             if (logDamage)
             {
                 string criticalTag = IsCriticalPart ? " [PARTE CRÍTICA]" : "";
@@ -257,6 +326,82 @@ namespace RobotGame.Combat
             // Usamos Destroy con delay pequeño para que los eventos se procesen
             gameObject.SetActive(false);
             Destroy(gameObject, 0.1f);
+        }
+        
+        #endregion
+        
+        #region Damage Flash
+        
+        /// <summary>
+        /// Activa el efecto de flash rojo.
+        /// </summary>
+        private void TriggerDamageFlash()
+        {
+            // Si ya hay un flash activo, reiniciarlo
+            if (flashCoroutine != null)
+            {
+                StopCoroutine(flashCoroutine);
+            }
+            
+            flashCoroutine = StartCoroutine(DamageFlashCoroutine());
+        }
+        
+        /// <summary>
+        /// Coroutine que cambia el color a rojo y luego lo restaura.
+        /// </summary>
+        private IEnumerator DamageFlashCoroutine()
+        {
+            // Cambiar a color de daño
+            SetRenderersColor(damageFlashColor);
+            
+            // Esperar
+            yield return new WaitForSeconds(damageFlashDuration);
+            
+            // Restaurar colores originales
+            RestoreOriginalColors();
+            
+            flashCoroutine = null;
+        }
+        
+        /// <summary>
+        /// Cambia el color de todos los renderers.
+        /// </summary>
+        private void SetRenderersColor(Color color)
+        {
+            foreach (var renderer in partRenderers)
+            {
+                if (renderer == null) continue;
+                
+                foreach (var material in renderer.materials)
+                {
+                    if (material != null && material.HasProperty("_Color"))
+                    {
+                        material.color = color;
+                    }
+                }
+            }
+        }
+        
+        /// <summary>
+        /// Restaura los colores originales de todos los renderers.
+        /// </summary>
+        private void RestoreOriginalColors()
+        {
+            foreach (var renderer in partRenderers)
+            {
+                if (renderer == null) continue;
+                
+                if (originalColors.TryGetValue(renderer, out Color[] colors))
+                {
+                    for (int i = 0; i < renderer.materials.Length && i < colors.Length; i++)
+                    {
+                        if (renderer.materials[i] != null && renderer.materials[i].HasProperty("_Color"))
+                        {
+                            renderer.materials[i].color = colors[i];
+                        }
+                    }
+                }
+            }
         }
         
         #endregion

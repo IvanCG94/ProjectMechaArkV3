@@ -33,10 +33,13 @@ namespace RobotGame.Components
         [SerializeField] private List<PartHealth> registeredParts = new List<PartHealth>();
         
         [Header("Combat Tracking")]
-        [Tooltip("ID del último ataque que golpeó a este robot (para evitar daño múltiple por ataque)")]
-        [SerializeField] private int lastReceivedAttackId = -1;
+        [Tooltip("ID del último ataque que golpeó a este robot")]
+        [SerializeField] private int currentAttackId = -1;
         
-        [Tooltip("Si es true, solo la primera parte golpeada por ataque recibe daño")]
+        [Tooltip("Daño restante del ataque actual (sistema de daño penetrante)")]
+        [SerializeField] private float currentAttackRemainingDamage = 0f;
+        
+        [Tooltip("Si es true, activa el sistema de daño penetrante")]
         [SerializeField] private bool useAttackIdFiltering = true;
         
         [Header("Colliders")]
@@ -436,61 +439,80 @@ namespace RobotGame.Components
         #region Part Health Management
         
         /// <summary>
-        /// Verifica si este robot puede recibir daño del ataque especificado.
-        /// Si el attackId es el mismo que el último recibido, retorna false (ya fue golpeado).
-        /// Si es diferente o es ataque de área (attackId = -1), retorna true.
+        /// Obtiene el daño disponible para una parte de este ataque.
+        /// Sistema de daño penetrante: el daño se distribuye entre las partes golpeadas.
         /// </summary>
-        /// <param name="attackId">ID único del ataque. -1 para ataques de área que siempre pasan.</param>
-        /// <returns>True si puede recibir daño, false si ya fue golpeado por este ataque</returns>
-        public bool CanReceiveDamageFromAttack(int attackId)
+        /// <param name="attackId">ID único del ataque. -1 para ataques de área.</param>
+        /// <param name="originalDamage">Daño original del ataque.</param>
+        /// <returns>Daño disponible para esta parte (puede ser menor que originalDamage si otras partes ya absorbieron daño)</returns>
+        public float GetRemainingDamageFromAttack(int attackId, float originalDamage)
         {
-            Debug.Log($"[Robot DEBUG] {robotName}.CanReceiveDamageFromAttack({attackId}) - lastReceived: {lastReceivedAttackId}, useFiltering: {useAttackIdFiltering}");
-            
-            // Ataques de área (attackId = -1) siempre pasan
+            // Ataques de área (attackId = -1) siempre hacen daño completo
             if (attackId < 0)
             {
-                Debug.Log($"[Robot DEBUG] AttackId < 0, permitiendo (área)");
-                return true;
+                return originalDamage;
             }
             
-            // Si no usamos filtrado, siempre permitir
+            // Si no usamos filtrado, siempre permitir daño completo
             if (!useAttackIdFiltering)
             {
-                Debug.Log($"[Robot DEBUG] Filtrado desactivado, permitiendo");
-                return true;
+                return originalDamage;
             }
             
-            // Si es el mismo ataque, rechazar
-            if (attackId == lastReceivedAttackId)
+            // ¿Es un ataque nuevo?
+            if (attackId != currentAttackId)
             {
-                Debug.Log($"[Robot DEBUG] AttackId {attackId} == lastReceived {lastReceivedAttackId}, RECHAZANDO");
-                return false;
+                // Nuevo ataque: inicializar tracking
+                currentAttackId = attackId;
+                currentAttackRemainingDamage = originalDamage;
+                Debug.Log($"[Robot] {robotName} - Nuevo ataque #{attackId} con {originalDamage:F1} de daño");
             }
             
-            Debug.Log($"[Robot DEBUG] AttackId {attackId} != lastReceived {lastReceivedAttackId}, permitiendo");
-            return true;
+            // Retornar el daño restante disponible
+            return currentAttackRemainingDamage;
         }
         
         /// <summary>
-        /// Registra que este robot fue golpeado por un ataque.
-        /// Llamar después de aplicar daño exitosamente.
+        /// [LEGACY] Mantener compatibilidad con código anterior.
+        /// </summary>
+        public bool CanReceiveDamageFromAttack(int attackId)
+        {
+            // Para compatibilidad: retorna true si hay daño restante
+            if (attackId < 0) return true;
+            if (!useAttackIdFiltering) return true;
+            if (attackId != currentAttackId) return true;
+            return currentAttackRemainingDamage > 0;
+        }
+        
+        /// <summary>
+        /// Registra el daño absorbido por una parte y calcula el restante.
+        /// </summary>
+        /// <param name="attackId">ID del ataque.</param>
+        /// <param name="damageAbsorbed">Daño que absorbió la parte (mínimo entre daño recibido y vida de la parte).</param>
+        public void RegisterDamageAbsorbed(int attackId, float damageAbsorbed)
+        {
+            if (attackId >= 0 && attackId == currentAttackId)
+            {
+                currentAttackRemainingDamage = Mathf.Max(0f, currentAttackRemainingDamage - damageAbsorbed);
+                Debug.Log($"[Robot] {robotName} - Parte absorbió {damageAbsorbed:F1} daño. Restante: {currentAttackRemainingDamage:F1}");
+            }
+        }
+        
+        /// <summary>
+        /// [LEGACY] Mantener compatibilidad.
         /// </summary>
         public void RegisterAttackHit(int attackId)
         {
-            if (attackId >= 0)
-            {
-                lastReceivedAttackId = attackId;
-                Debug.Log($"[Robot] {robotName} registró golpe del ataque #{attackId}");
-            }
+            // Legacy: no hacer nada, usar RegisterDamageAbsorbed en su lugar
         }
         
         /// <summary>
         /// Resetea el tracking de ataques. 
-        /// Útil si quieres que el mismo ataque pueda golpear de nuevo.
         /// </summary>
         public void ResetAttackTracking()
         {
-            lastReceivedAttackId = -1;
+            currentAttackId = -1;
+            currentAttackRemainingDamage = 0f;
         }
         
         /// <summary>

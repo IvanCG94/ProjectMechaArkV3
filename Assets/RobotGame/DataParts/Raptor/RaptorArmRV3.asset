@@ -36,3 +36,4 @@ MonoBehaviour:
   armorGrids: []
   animatorController: {fileID: 9100000, guid: fb1591df04f574547b17815fc1d61483, type: 2}
   animatorAvatar: {fileID: 0}
+  combatReach: 4.5

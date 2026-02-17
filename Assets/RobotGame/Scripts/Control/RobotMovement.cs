@@ -64,6 +64,9 @@ namespace RobotGame.Control
         [Header("Estado")]
         [SerializeField] private bool isEnabled = true;
         
+        [Tooltip("Si es false, la rotación no se maneja automáticamente (para IA que controla su propia rotación)")]
+        [SerializeField] private bool autoRotate = true;
+        
         [Header("Debug")]
         [SerializeField] private bool showDebugGizmos = true;
         
@@ -135,6 +138,16 @@ namespace RobotGame.Control
         {
             get => rotationSpeed;
             set => rotationSpeed = value;
+        }
+        
+        /// <summary>
+        /// Si es true, el robot rota automáticamente hacia la dirección de movimiento.
+        /// Si es false, la rotación debe ser controlada externamente (útil para IA de combate).
+        /// </summary>
+        public bool AutoRotate
+        {
+            get => autoRotate;
+            set => autoRotate = value;
         }
         
         #endregion
@@ -433,6 +446,10 @@ namespace RobotGame.Control
         
         private void HandleRotation()
         {
+            // Si autoRotate está desactivado, no hacer nada
+            // La IA o el controlador externo manejará la rotación
+            if (!autoRotate) return;
+            
             if (horizontalVelocity.magnitude > 0.1f)
             {
                 Vector3 flatVelocity = new Vector3(horizontalVelocity.x, 0f, horizontalVelocity.z);

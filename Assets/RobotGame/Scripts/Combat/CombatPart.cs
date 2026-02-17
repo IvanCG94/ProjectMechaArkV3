@@ -32,6 +32,9 @@ namespace RobotGame.Combat
         
         private StructuralPart structuralPart;
         
+        // Zonas de ataque vinculadas (encontradas en el brazo padre)
+        private List<AttackZone> linkedAttackZones = new List<AttackZone>();
+        
         #region Properties
         
         public float BaseDamage => baseDamage;
@@ -40,6 +43,70 @@ namespace RobotGame.Combat
         public StructuralPart StructuralPart => structuralPart;
         public bool CanAttack => availableAttacks != null && availableAttacks.Count > 0;
         public bool HasHitboxes => weaponHitboxes != null && weaponHitboxes.Count > 0;
+        
+        /// <summary>
+        /// Zonas de ataque vinculadas a esta parte.
+        /// </summary>
+        public IReadOnlyList<AttackZone> LinkedAttackZones => linkedAttackZones;
+        
+        /// <summary>
+        /// Obtiene una zona de ataque específica por su ID.
+        /// </summary>
+        public AttackZone GetAttackZone(string zoneId)
+        {
+            if (string.IsNullOrEmpty(zoneId)) return null;
+            
+            foreach (var zone in linkedAttackZones)
+            {
+                if (zone != null && zone.ZoneId == zoneId)
+                {
+                    return zone;
+                }
+            }
+            
+            return null;
+        }
+        
+        /// <summary>
+        /// Alcance de ataque melee desde el centro del robot.
+        /// Obtiene el valor del StructuralPart padre (brazo, cola, cabeza, etc.)
+        /// </summary>
+        public float CombatReach
+        {
+            get
+            {
+                // Buscar en este objeto primero
+                if (structuralPart != null && structuralPart.PartData != null)
+                {
+                    if (structuralPart.PartData.combatReach > 0f)
+                    {
+                        return structuralPart.PartData.combatReach;
+                    }
+                }
+                
+                // Buscar en padres (por si CombatPart está en un hijo del brazo)
+                StructuralPart parentStructural = GetComponentInParent<StructuralPart>();
+                while (parentStructural != null)
+                {
+                    if (parentStructural.PartData != null && parentStructural.PartData.combatReach > 0f)
+                    {
+                        return parentStructural.PartData.combatReach;
+                    }
+                    
+                    // Buscar más arriba
+                    if (parentStructural.transform.parent != null)
+                    {
+                        parentStructural = parentStructural.transform.parent.GetComponentInParent<StructuralPart>();
+                    }
+                    else
+                    {
+                        break;
+                    }
+                }
+                
+                return 0f;
+            }
+        }
         
         #endregion
         
@@ -56,6 +123,15 @@ namespace RobotGame.Combat
             // Intentar configurar Animation Events en Start
             // (el Animator puede haberse agregado en Initialize después de Awake)
             EnsureAnimationEventsComponent();
+            
+            // Buscar y vincular zonas de ataque en el brazo padre
+            LinkAttackZones();
+        }
+        
+        private void OnDestroy()
+        {
+            // Desvincular todas las zonas al destruirse
+            UnlinkAllAttackZones();
         }
         
         private void OnValidate()
@@ -107,6 +183,170 @@ namespace RobotGame.Combat
         public void SetupAnimationEvents()
         {
             EnsureAnimationEventsComponent();
+        }
+        
+        #endregion
+        
+        #region Attack Zones
+        
+        /// <summary>
+        /// Busca AttackZones en el brazo padre y las vincula a los ataques disponibles.
+        /// </summary>
+        public void LinkAttackZones()
+        {
+            UnlinkAllAttackZones();
+            
+            Debug.Log($"[CombatPart] {name}: Buscando AttackZones para vincular...");
+            
+            // Lista para almacenar todas las zonas encontradas
+            List<AttackZone> foundZones = new List<AttackZone>();
+            
+            // Método 1: Buscar en padres directos (subiendo la jerarquía)
+            Transform current = transform.parent;
+            while (current != null)
+            {
+                // Buscar zonas en los hijos de este nivel
+                foreach (Transform child in current)
+                {
+                    AttackZone zone = child.GetComponent<AttackZone>();
+                    if (zone != null && !foundZones.Contains(zone))
+                    {
+                        foundZones.Add(zone);
+                        Debug.Log($"[CombatPart] Encontrada zona '{zone.ZoneId}' en '{child.name}' (hijo de '{current.name}')");
+                    }
+                }
+                
+                // Buscar zonas en el padre mismo
+                AttackZone parentZone = current.GetComponent<AttackZone>();
+                if (parentZone != null && !foundZones.Contains(parentZone))
+                {
+                    foundZones.Add(parentZone);
+                    Debug.Log($"[CombatPart] Encontrada zona '{parentZone.ZoneId}' en padre '{current.name}'");
+                }
+                
+                current = current.parent;
+            }
+            
+            // Método 2: Buscar en todo el robot (por si la estructura es diferente)
+            Transform root = transform.root;
+            AttackZone[] allZonesInRobot = root.GetComponentsInChildren<AttackZone>(true);
+            foreach (var zone in allZonesInRobot)
+            {
+                if (!foundZones.Contains(zone))
+                {
+                    foundZones.Add(zone);
+                    Debug.Log($"[CombatPart] Encontrada zona '{zone.ZoneId}' en '{zone.name}' (búsqueda global)");
+                }
+            }
+            
+            Debug.Log($"[CombatPart] {name}: Total de zonas encontradas: {foundZones.Count}");
+            
+            // Vincular zonas a ataques por zoneId
+            foreach (var attack in availableAttacks)
+            {
+                if (attack == null) continue;
+                
+                Debug.Log($"[CombatPart] Procesando ataque '{attack.attackName}', zoneId: '{attack.zoneId}', RequiresZone: {attack.RequiresZone}");
+                
+                if (!attack.RequiresZone)
+                {
+                    Debug.Log($"[CombatPart] Ataque '{attack.attackName}' no requiere zona (zoneId vacío)");
+                    continue;
+                }
+                
+                // Buscar zona con el mismo zoneId
+                AttackZone matchingZone = foundZones.Find(z => 
+                    z.ZoneId.Equals(attack.zoneId, System.StringComparison.OrdinalIgnoreCase));
+                
+                if (matchingZone != null)
+                {
+                    matchingZone.Link(attack, this);
+                    linkedAttackZones.Add(matchingZone);
+                    Debug.Log($"[CombatPart] ✓ Zona '{matchingZone.ZoneId}' vinculada a ataque '{attack.attackName}'");
+                }
+                else
+                {
+                    Debug.LogWarning($"[CombatPart] ✗ No se encontró AttackZone con id '{attack.zoneId}' para ataque '{attack.attackName}'");
+                    Debug.LogWarning($"[CombatPart] Zonas disponibles: {string.Join(", ", foundZones.ConvertAll(z => z.ZoneId))}");
+                }
+            }
+            
+            Debug.Log($"[CombatPart] {name}: Vinculación completada. Zonas vinculadas: {linkedAttackZones.Count}");
+        }
+        
+        /// <summary>
+        /// Desvincula todas las zonas de ataque.
+        /// </summary>
+        public void UnlinkAllAttackZones()
+        {
+            foreach (var zone in linkedAttackZones)
+            {
+                if (zone != null)
+                {
+                    zone.Unlink();
+                }
+            }
+            linkedAttackZones.Clear();
+        }
+        
+        /// <summary>
+        /// Obtiene los ataques que actualmente tienen al jugador en su zona.
+        /// Incluye también ataques que no requieren zona.
+        /// </summary>
+        public List<AttackData> GetViableAttacks()
+        {
+            List<AttackData> viable = new List<AttackData>();
+            
+            foreach (var attack in availableAttacks)
+            {
+                if (attack == null) continue;
+                
+                // Si el ataque no requiere zona, siempre es viable
+                if (!attack.RequiresZone)
+                {
+                    viable.Add(attack);
+                    continue;
+                }
+                
+                // Buscar la zona vinculada a este ataque
+                AttackZone linkedZone = linkedAttackZones.Find(z => z.LinkedAttack == attack);
+                
+                if (linkedZone != null && linkedZone.IsPlayerInZone)
+                {
+                    viable.Add(attack);
+                }
+            }
+            
+            return viable;
+        }
+        
+        /// <summary>
+        /// Verifica si un ataque específico es viable (jugador en zona o no requiere zona).
+        /// </summary>
+        public bool IsAttackViable(AttackData attack)
+        {
+            if (attack == null) return false;
+            
+            // Si no requiere zona, siempre es viable
+            if (!attack.RequiresZone)
+            {
+                Debug.Log($"[CombatPart] IsAttackViable '{attack.attackName}': TRUE (no requiere zona)");
+                return true;
+            }
+            
+            // Buscar la zona vinculada
+            AttackZone linkedZone = linkedAttackZones.Find(z => z.LinkedAttack == attack);
+            
+            if (linkedZone == null)
+            {
+                Debug.Log($"[CombatPart] IsAttackViable '{attack.attackName}': FALSE (zona no encontrada en linkedAttackZones, count: {linkedAttackZones.Count})");
+                return false;
+            }
+            
+            bool result = linkedZone.IsPlayerInZone;
+            Debug.Log($"[CombatPart] IsAttackViable '{attack.attackName}': {result} (zona '{linkedZone.ZoneId}' PlayerInZone = {linkedZone.IsPlayerInZone})");
+            
+            return result;
         }
         
         #endregion

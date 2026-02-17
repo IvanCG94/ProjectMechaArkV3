@@ -16,8 +16,10 @@ MonoBehaviour:
   description: 
   damageMultiplier: 1
   isAreaDamage: 0
-  animationDuration: 0.7
-  windupPercent: 0.2
-  activePercent: 0.5
+  cooldownTime: 0
+  animationDuration: 0.58
+  windupPercent: 0
+  activePercent: 1
   mainAnimationTrigger: Zarpazo
   accompanimentAnimation: Attack
+  zoneId: vertical

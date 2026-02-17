@@ -38,8 +38,8 @@ MonoBehaviour:
         armorPieces: []
       armorPieces: []
     armorPieces: []
-  behavior: 0
-  detectionRadius: 10
+  behavior: 1
+  detectionRadius: 30
   territoryRadius: 20
   moveSpeed: 2
   rotationSpeed: 120

@@ -1,5 +1,147 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
+--- !u!1 &2333225062057479921
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1171587950814096181}
+  - component: {fileID: 3820432306564967901}
+  - component: {fileID: 1000100383981320318}
+  m_Layer: 0
+  m_Name: AttackZone_Zarpazo
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1171587950814096181
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2333225062057479921}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: -1.1662918e-23, y: -0.17, z: 0.8}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 6885140335872473461}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!65 &3820432306564967901
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2333225062057479921}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 1
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 0.4, y: 2.834858, z: 3.1749356}
+  m_Center: {x: 0, y: -2.1374288, z: 0.6674677}
+--- !u!114 &1000100383981320318
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2333225062057479921}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 24a36676b9ff101439506eea630e0247, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RobotGame.Combat.AttackZone
+  zoneId: vertical
+  showDebugLogs: 1
+  showDebugGizmos: 1
+  gizmoColor: {r: 1, g: 0.5, b: 0, a: 0.3}
+  gizmoColorActive: {r: 1, g: 0, b: 0, a: 0.5}
+--- !u!1 &6425081131729828394
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 4017634023444326214}
+  - component: {fileID: 241836229500314695}
+  - component: {fileID: 5156378185897325248}
+  m_Layer: 0
+  m_Name: AttackZone_Horizontal
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &4017634023444326214
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6425081131729828394}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: -0.15660685, w: 0.98766106}
+  m_LocalPosition: {x: 0, y: -0.16, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 6885140335872473461}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: -18.02}
+--- !u!65 &241836229500314695
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6425081131729828394}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 3.839192, y: 0.9, z: 2.4061573}
+  m_Center: {x: 1.4695874, y: -0.00005020942, z: -0.17488754}
+--- !u!114 &5156378185897325248
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6425081131729828394}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 24a36676b9ff101439506eea630e0247, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RobotGame.Combat.AttackZone
+  zoneId: horizontal
+  showDebugLogs: 1
+  showDebugGizmos: 1
+  gizmoColor: {r: 0.97037196, g: 1, b: 0, a: 0.3}
+  gizmoColorActive: {r: 1, g: 0, b: 0, a: 0.5}
 --- !u!1001 &6342853699464404638
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -54,6 +196,17 @@ PrefabInstance:
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
-    m_AddedGameObjects: []
+    m_AddedGameObjects:
+    - targetCorrespondingSourceObject: {fileID: -8679921383154817045, guid: 84fb4857109ae5641844fe94a3fe2dc2, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1171587950814096181}
+    - targetCorrespondingSourceObject: {fileID: -8679921383154817045, guid: 84fb4857109ae5641844fe94a3fe2dc2, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 4017634023444326214}
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 84fb4857109ae5641844fe94a3fe2dc2, type: 3}
+--- !u!4 &6885140335872473461 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 84fb4857109ae5641844fe94a3fe2dc2, type: 3}
+  m_PrefabInstance: {fileID: 6342853699464404638}
+  m_PrefabAsset: {fileID: 0}

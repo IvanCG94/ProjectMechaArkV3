@@ -55,5 +55,116 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: f60739364e809ec4192edad34e21a738, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1132821232735426724}
+    - targetCorrespondingSourceObject: {fileID: 5528860797864257434, guid: f60739364e809ec4192edad34e21a738, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 4856233732037518477}
+    - targetCorrespondingSourceObject: {fileID: -4001882579406934802, guid: f60739364e809ec4192edad34e21a738, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 6783756659623195213}
+    - targetCorrespondingSourceObject: {fileID: -736178840233402366, guid: f60739364e809ec4192edad34e21a738, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 3936962865274294474}
   m_SourcePrefab: {fileID: 100100000, guid: f60739364e809ec4192edad34e21a738, type: 3}
+--- !u!1 &2292869933153523839 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: -736178840233402366, guid: f60739364e809ec4192edad34e21a738, type: 3}
+  m_PrefabInstance: {fileID: 7645273992431974525}
+  m_PrefabAsset: {fileID: 0}
+--- !u!65 &3936962865274294474
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2292869933153523839}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 0.18122259, y: 0.42109045, z: 0.12839693}
+  m_Center: {x: 0.020243054, y: 0.28945765, z: 0.00011532009}
+--- !u!1 &2481216005667329171 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: -4001882579406934802, guid: f60739364e809ec4192edad34e21a738, type: 3}
+  m_PrefabInstance: {fileID: 7645273992431974525}
+  m_PrefabAsset: {fileID: 0}
+--- !u!65 &6783756659623195213
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2481216005667329171}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 0.18122259, y: 0.42109045, z: 0.12839693}
+  m_Center: {x: 0.020243054, y: 0.28945765, z: 0.00011532009}
+--- !u!1 &2784084021330092007 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 5528860797864257434, guid: f60739364e809ec4192edad34e21a738, type: 3}
+  m_PrefabInstance: {fileID: 7645273992431974525}
+  m_PrefabAsset: {fileID: 0}
+--- !u!65 &4856233732037518477
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2784084021330092007}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 0.38239652, y: 0.13597143, z: 0.088579744}
+  m_Center: {x: -0.0033992827, y: 0.00219208, z: 0.00041030347}
+--- !u!1 &7410692846874625324 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 919132149155446097, guid: f60739364e809ec4192edad34e21a738, type: 3}
+  m_PrefabInstance: {fileID: 7645273992431974525}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1132821232735426724
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7410692846874625324}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3c1a66f9e8e8c804196bb13247c8ed63, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RobotGame.Combat.PartHealth
+  maxHealth: 1000
+  currentHealth: 0
+  isDestroyed: 0
+  logDamage: 1

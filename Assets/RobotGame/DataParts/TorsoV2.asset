@@ -43,6 +43,12 @@ MonoBehaviour:
     isRequired: 0
     localPosition: {x: 0, y: 0, z: 0}
     localRotation: {x: 0, y: 0, z: 0}
+  - socketType: 4
+    transformName: ArmLSocket
+    isRequired: 0
+    localPosition: {x: 0, y: 0, z: 0}
+    localRotation: {x: 0, y: 0, z: 0}
   armorGrids: []
   animatorController: {fileID: 0}
   animatorAvatar: {fileID: 0}
+  combatReach: 0

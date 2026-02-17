@@ -56,6 +56,11 @@ namespace RobotGame.Data
         [Tooltip("Avatar para el animator (si usa humanoid/generic rig)")]
         public Avatar animatorAvatar;
         
+        [Header("Combate")]
+        [Tooltip("Alcance de ataque melee desde el centro del robot. Solo aplica si esta parte tiene armas.")]
+        [Min(0f)]
+        public float combatReach = 0f;
+        
         #region IInventoryItem Override
         
         /// <summary>

@@ -10,9 +10,9 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: e7a679addf65e984c8fba4c7edd4a7d7, type: 3}
-  m_Name: Attack1
+  m_Name: Attack2
   m_EditorClassIdentifier: Assembly-CSharp::RobotGame.Combat.AttackData
-  attackName: Attack1
+  attackName: Attack2
   description: 
   damageMultiplier: 1
   isAreaDamage: 0
@@ -20,9 +20,9 @@ MonoBehaviour:
   animationDuration: 3
   windupPercent: 0
   activePercent: 1
-  mainAnimationTrigger: Attack1
+  mainAnimationTrigger: Attack2
   accompanimentAnimation: Attack
-  zoneId: vertical
+  zoneId: horizontal
   allowMovement: 0
   allowRotation: 0
   approachBehavior: 1
@@ -39,5 +39,5 @@ MonoBehaviour:
   chainableAttacks: []
   requiresTargetLookingAway: 0
   requiredAngle: 0
-  angleTolerance: 0
+  angleTolerance: 45
   checkAngle: 0
