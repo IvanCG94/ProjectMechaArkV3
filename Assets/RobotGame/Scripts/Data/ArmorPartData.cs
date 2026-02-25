@@ -6,21 +6,25 @@ namespace RobotGame.Data
 {
     /// <summary>
     /// ScriptableObject para piezas de armadura, armas y decorativas.
-    /// Estas piezas se insertan en las grillas Head de las piezas estructurales.
+    /// Estas piezas se insertan en los studs Head de las piezas estructurales.
     /// 
-    /// IMPORTANTE: El tier de la pieza armor (definido en tailGrid.gridInfo.tier)
-    /// debe coincidir con el tier de la grilla Head donde se inserta.
+    /// NOMENCLATURA EN BLENDER:
+    /// - Tail_T{tier}-{subtier}_{nombre} para definir studs de conexión
+    /// - Box_{nombre} para definir áreas de colisión
+    /// 
+    /// EJEMPLO:
+    /// ChestPlate (prefab)
+    /// ├── ChestPlate_Visual (Mesh)
+    /// ├── Box_Main (Empty, escala define tamaño de colisión)
+    /// ├── Tail_T1-2_P1 (Empty @ posición 0, 0, 0)
+    /// └── Tail_T1-2_P2 (Empty @ posición 0, 0.125, 0)
     /// </summary>
     [CreateAssetMenu(fileName = "NewArmorPart", menuName = "RobotGame/Parts/Armor Part")]
     public class ArmorPartData : PartDataBase
     {
-        [Header("Configuración de Grilla")]
-        [Tooltip("Grilla Tail que define el espacio que ocupa esta pieza")]
-        public TailGridDefinition tailGrid;
-        
-        [Header("Grillas Head Adicionales (Opcional)")]
-        [Tooltip("Algunas piezas de armadura pueden tener sus propias grillas para apilar más piezas")]
-        public HeadGridDefinition[] additionalHeadGrids;
+        [Header("Configuración de Tier")]
+        [Tooltip("Tier de esta pieza (debe coincidir con la grilla Head donde se inserta)")]
+        public TierInfo tierInfo = TierInfo.Default;
         
         [Header("Estadísticas de Combate")]
         [Tooltip("Armadura/Defensa que provee")]
@@ -44,46 +48,37 @@ namespace RobotGame.Data
         public GameObject hitEffectPrefab;
         
         /// <summary>
-        /// Tier de la pieza armor (1-6). Obtenido del tailGrid.
-        /// Solo puede colocarse en grillas Head del mismo tier.
-        /// Retorna 1 si no está configurado (datos legacy).
+        /// Tier principal de la pieza (1-6).
         /// </summary>
-        public int ArmorTier => tailGrid?.gridInfo.Tier ?? 1;
+        public int MainTier => tierInfo.MainTier;
         
         /// <summary>
-        /// Tamaño de la pieza en celdas.
+        /// Sub-tier de la pieza (1-6).
         /// </summary>
-        public Vector2Int Size => new Vector2Int(tailGrid.gridInfo.sizeX, tailGrid.gridInfo.sizeY);
+        public int SubTier => tierInfo.SubTier;
         
         /// <summary>
-        /// Nivel de Surrounding de la pieza.
+        /// Tier de armadura (para compatibilidad con código legacy).
         /// </summary>
-        public SurroundingLevel Surrounding => tailGrid.gridInfo.surrounding;
+        public int ArmorTier => tierInfo.MainTier;
         
         /// <summary>
-        /// Verifica si esta pieza puede insertarse en una grilla Head específica.
+        /// TierInfo de la armadura.
         /// </summary>
-        public bool CanFitIn(GridInfo headGrid)
+        public TierInfo ArmorTierInfo => tierInfo;
+        
+        /// <summary>
+        /// Objeto de compatibilidad para código legacy que usa tailGrid.
+        /// </summary>
+        public TailGridCompat tailGrid => new TailGridCompat(tierInfo);
+        
+        /// <summary>
+        /// Verifica si esta pieza puede colocarse en una grilla con el tier especificado.
+        /// En el nuevo sistema, solo verifica compatibilidad de tier.
+        /// </summary>
+        public bool CanFitIn(TierInfo gridTier)
         {
-            // Verificar compatibilidad de Tier
-            if (!headGrid.CanAcceptTier(ArmorTier))
-            {
-                return false;
-            }
-            
-            // Verificar compatibilidad de Surrounding
-            if (!headGrid.surrounding.CanAccept(tailGrid.gridInfo.surrounding))
-            {
-                return false;
-            }
-            
-            // Verificar que el tamaño de la pieza no exceda el de la grilla
-            if (tailGrid.gridInfo.sizeX > headGrid.sizeX || tailGrid.gridInfo.sizeY > headGrid.sizeY)
-            {
-                return false;
-            }
-            
-            return true;
+            return gridTier.IsCompatibleWith(tierInfo);
         }
         
         private void OnValidate()
@@ -94,5 +89,42 @@ namespace RobotGame.Data
                 category = PartCategory.Armor;
             }
         }
+    }
+    
+    /// <summary>
+    /// Clase de compatibilidad para código legacy que usa tailGrid.gridInfo
+    /// </summary>
+    [System.Serializable]
+    public class TailGridCompat
+    {
+        public GridInfoCompat gridInfo;
+        
+        public TailGridCompat(TierInfo tier)
+        {
+            gridInfo = new GridInfoCompat(tier);
+        }
+    }
+    
+    /// <summary>
+    /// Clase de compatibilidad para código legacy que usa gridInfo.sizeX, gridInfo.sizeY
+    /// </summary>
+    [System.Serializable]
+    public class GridInfoCompat
+    {
+        public int sizeX = 1;
+        public int sizeY = 1;
+        public int tier = 1;
+        public TierInfo tierInfo;
+        
+        public GridInfoCompat(TierInfo tier)
+        {
+            this.tierInfo = tier;
+            this.tier = tier.MainTier;
+            // En el nuevo sistema no hay tamaño de grilla fijo
+            this.sizeX = 1;
+            this.sizeY = 1;
+        }
+        
+        public int Tier => tierInfo.MainTier;
     }
 }

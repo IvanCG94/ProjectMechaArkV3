@@ -305,7 +305,7 @@ namespace RobotGame.AI
             {
                 if (placedArmor.armorData == null) continue;
                 
-                GridHead grid = structuralPart.GetArmorGrid(placedArmor.targetGridName);
+                StudGridHead grid = structuralPart.GetArmorGrid(placedArmor.targetGridName);
                 
                 if (grid == null)
                 {

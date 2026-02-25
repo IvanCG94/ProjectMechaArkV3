@@ -30,6 +30,19 @@ namespace RobotGame.Data
     
     /// <summary>
     /// ScriptableObject para piezas estructurales (huesos del robot).
+    /// 
+    /// NOMENCLATURA EN BLENDER:
+    /// - Head_T{tier}-{subtier}_{nombre} para definir studs receptores
+    /// - Box_{nombre} para definir áreas de colisión
+    /// - Socket_{tipo} para conexiones estructurales
+    /// 
+    /// EJEMPLO:
+    /// Arm (prefab)
+    /// ├── Arm_Visual (Mesh)
+    /// ├── Box_ArmCollision (Empty, escala define tamaño)
+    /// ├── Head_T1-2_Front1 (Empty @ posición 0, 0, 0)
+    /// ├── Head_T1-2_Front2 (Empty @ posición 0, 0.125, 0)
+    /// └── Socket_Hand (Empty para conexión estructural)
     /// </summary>
     [CreateAssetMenu(fileName = "NewStructuralPart", menuName = "RobotGame/Parts/Structural Part")]
     public class StructuralPartData : PartDataBase
@@ -45,10 +58,6 @@ namespace RobotGame.Data
         [Tooltip("Sockets donde se pueden conectar otras piezas estructurales")]
         public List<StructuralSocketDefinition> structuralSockets = new List<StructuralSocketDefinition>();
         
-        [Header("Grillas para Armadura")]
-        [Tooltip("Grillas Head donde se pueden insertar piezas de armadura/decorativas")]
-        public List<HeadGridDefinition> armorGrids = new List<HeadGridDefinition>();
-        
         [Header("Animación")]
         [Tooltip("Controller de animación para esta pieza")]
         public RuntimeAnimatorController animatorController;
@@ -60,6 +69,13 @@ namespace RobotGame.Data
         [Tooltip("Alcance de ataque melee desde el centro del robot. Solo aplica si esta parte tiene armas.")]
         [Min(0f)]
         public float combatReach = 0f;
+        
+        /// <summary>
+        /// Lista vacía para compatibilidad con código legacy.
+        /// Las grillas ahora se detectan automáticamente desde los Empties Head_T*.
+        /// </summary>
+        [System.Obsolete("Las grillas ahora se detectan automáticamente. Esta propiedad existe solo para compatibilidad.")]
+        public List<object> armorGrids => new List<object>();
         
         #region IInventoryItem Override
         

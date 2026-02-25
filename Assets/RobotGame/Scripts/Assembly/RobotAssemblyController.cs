@@ -73,11 +73,14 @@ namespace RobotGame.Assembly
         private StructuralPartData selectedStructuralData;
         
         // Armor
-        private List<GridHead> availableGrids = new List<GridHead>();
-        private GridHead hoveredGrid = null;
+        private List<StudGridHead> availableGrids = new List<StudGridHead>();
+        private StudGridHead hoveredGrid = null;
         private int currentPositionX = 0;
         private int currentPositionY = 0;
         private GridRotation.Rotation currentRotation = GridRotation.Rotation.Deg0;
+        
+        // Rotación 3D de la pieza de armadura (para el nuevo sistema de studs)
+        private Quaternion armorRotation3D = Quaternion.identity;
         
         // Structural
         private List<StructuralSocket> availableSockets = new List<StructuralSocket>();
@@ -708,6 +711,9 @@ namespace RobotGame.Assembly
             
             currentMode = mode;
             
+            // Resetear rotación al cambiar de modo
+            armorRotation3D = Quaternion.identity;
+            
             // Sincronizar con panel de inventario
             if (inventoryPanel != null && inventoryPanel.IsOpen)
             {
@@ -736,7 +742,7 @@ namespace RobotGame.Assembly
             foreach (var col in allColliders)
             {
                 if (!col.isTrigger && 
-                    col.GetComponent<GridHead>() == null && 
+                    col.GetComponent<StudGridHead>() == null && 
                     col.GetComponent<StructuralSocket>() == null)
                 {
                     col.enabled = false;
@@ -775,10 +781,21 @@ namespace RobotGame.Assembly
                 CycleFallbackArmor(scroll > 0 ? 1 : -1);
             }
             
-            // Rotar con R
+            // Rotar con R (eje Y) o Shift+R (eje X)
             if (Input.GetKeyDown(rotateKey))
             {
-                RotateArmorWithPositionAdjust();
+                if (Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift))
+                {
+                    // Shift+R: Rotar 90° en X
+                    armorRotation3D = Quaternion.Euler(90, 0, 0) * armorRotation3D;
+                    Debug.Log($"Armadura rotada en X. Rotación actual: {armorRotation3D.eulerAngles}");
+                }
+                else
+                {
+                    // R: Rotar 90° en Y
+                    armorRotation3D = Quaternion.Euler(0, 90, 0) * armorRotation3D;
+                    Debug.Log($"Armadura rotada en Y. Rotación actual: {armorRotation3D.eulerAngles}");
+                }
             }
             
             // Colocar con click izquierdo
@@ -801,7 +818,7 @@ namespace RobotGame.Assembly
             Ray ray = mainCamera.ScreenPointToRay(Input.mousePosition);
             RaycastHit hit;
             
-            GridHead newHoveredGrid = null;
+            StudGridHead newHoveredGrid = null;
             
             bool debugMode = Input.GetKey(debugKey);
             
@@ -812,7 +829,7 @@ namespace RobotGame.Assembly
                     Debug.Log($"=== RAYCAST HIT: {hit.collider.gameObject.name} ===");
                 }
                 
-                GridHead grid = hit.collider.GetComponent<GridHead>();
+                StudGridHead grid = hit.collider.GetComponent<StudGridHead>();
                 
                 if (grid != null && availableGrids.Contains(grid))
                 {
@@ -829,21 +846,24 @@ namespace RobotGame.Assembly
             }
         }
         
-        private void CalculateGridPosition(GridHead grid, Vector3 worldPoint)
+        private void CalculateGridPosition(StudGridHead grid, Vector3 worldPoint)
         {
-            Vector3 localPoint = grid.transform.InverseTransformPoint(worldPoint);
+            // Encontrar el stud más cercano al punto de hit
+            int closestStudIndex = grid.FindClosestStud(worldPoint);
+            grid.CurrentHoveredStudIndex = closestStudIndex;
             
-            // Usar el cellSize de la grilla en lugar de hardcoded
-            float cellSize = grid.CellSize;
-            
-            int cellX = Mathf.FloorToInt(localPoint.x / cellSize);
-            int cellY = Mathf.FloorToInt(localPoint.y / cellSize);
-            
-            cellX = Mathf.Clamp(cellX, 0, grid.GridInfo.sizeX - 1);
-            cellY = Mathf.Clamp(cellY, 0, grid.GridInfo.sizeY - 1);
-            
-            currentPositionX = cellX;
-            currentPositionY = cellY;
+            // Para compatibilidad, también actualizamos las coordenadas de celda
+            // aunque ya no se usan realmente para el posicionamiento
+            if (closestStudIndex >= 0)
+            {
+                currentPositionX = closestStudIndex; // Usamos el índice como "X"
+                currentPositionY = 0; // No usado en el nuevo sistema
+            }
+            else
+            {
+                currentPositionX = 0;
+                currentPositionY = 0;
+            }
         }
         
         /// <summary>
@@ -913,6 +933,9 @@ namespace RobotGame.Assembly
                 fallbackArmorIndex = 0;
             
             selectedArmorData = fallbackArmorParts[fallbackArmorIndex];
+            
+            // Resetear rotación al cambiar de pieza
+            armorRotation3D = Quaternion.identity;
         }
         
         private void TryPlaceArmor()
@@ -933,11 +956,7 @@ namespace RobotGame.Assembly
                 return;
             }
             
-            if (!hoveredGrid.CanPlace(armorData, currentPositionX, currentPositionY, currentRotation))
-            {
-                return;
-            }
-            
+            // Crear la pieza temporalmente para obtener su TailGrid
             ArmorPart armorPart = RobotFactory.Instance.CreateArmorPart(armorData);
             if (armorPart == null)
             {
@@ -945,7 +964,43 @@ namespace RobotGame.Assembly
                 return;
             }
             
-            if (hoveredGrid.TryPlace(armorPart, currentPositionX, currentPositionY, currentRotation))
+            var tailGrid = armorPart.TailGrid;
+            if (tailGrid == null || tailGrid.StudCount == 0)
+            {
+                Debug.LogError("La pieza de armadura no tiene TailGrid configurado");
+                Destroy(armorPart.gameObject);
+                return;
+            }
+            
+            int anchorIndex = hoveredGrid.CurrentHoveredStudIndex;
+            
+            // Validar que TODOS los Tails puedan colocarse CON LA ROTACIÓN ACTUAL
+            if (!hoveredGrid.CanPlaceAllTails(tailGrid, anchorIndex, armorRotation3D))
+            {
+                Debug.LogWarning("RobotAssemblyController: No todos los Tails pueden colocarse con esta rotación");
+                Destroy(armorPart.gameObject);
+                return;
+            }
+            
+            // Calcular la posición correcta (considerando el offset del primer Tail Y la rotación)
+            Vector3 armorPosition = hoveredGrid.CalculateArmorPosition(tailGrid, anchorIndex, armorRotation3D);
+            armorPart.transform.position = armorPosition;
+            armorPart.transform.rotation = armorRotation3D;
+            
+            // Obtener el hueso/transform del Head para hacer parent correcto
+            Transform boneTransform = hoveredGrid.GetCurrentStudParentTransform();
+            armorPart.transform.SetParent(boneTransform, worldPositionStays: true);
+            
+            // VALIDACIÓN DE COLISIÓN: Verificar que no colisione con otras piezas
+            if (CheckArmorCollision(armorPart))
+            {
+                Debug.LogWarning("RobotAssemblyController: La pieza colisiona con otra armadura existente");
+                Destroy(armorPart.gameObject);
+                return;
+            }
+            
+            // Colocar y marcar TODOS los studs como ocupados
+            if (hoveredGrid.PlaceArmorWithAllTails(armorPart, anchorIndex, armorRotation3D))
             {
                 // Restar del inventario
                 if (useInventory)
@@ -953,46 +1008,135 @@ namespace RobotGame.Assembly
                     PlayerInventory.Instance.RemoveItem(armorData, 1);
                 }
                 
-                Debug.Log($"Armadura '{armorData.displayName}' colocada");
+                Debug.Log($"Armadura '{armorData.displayName}' colocada en hueso '{boneTransform.name}' con rotación {armorRotation3D.eulerAngles}");
                 
                 if (armorPart.AdditionalGrids != null && armorPart.AdditionalGrids.Count > 0)
                 {
                     CollectAvailableGrids();
                 }
+                
+                // Resetear rotación para la próxima pieza
+                // armorRotation3D = Quaternion.identity; // Descomentar si quieres resetear después de colocar
             }
             else
             {
-                Debug.LogError("Error al colocar la pieza en la grilla");
+                Debug.LogError("Error al registrar la pieza en la grilla");
                 Destroy(armorPart.gameObject);
             }
+        }
+        
+        /// <summary>
+        /// Verifica si una pieza de armadura colisiona con otras piezas existentes.
+        /// Usa comparación directa de bounds en lugar de Physics.Overlap para mayor confiabilidad.
+        /// </summary>
+        private bool CheckArmorCollision(ArmorPart newPart)
+        {
+            if (newPart == null) return false;
+            
+            // Sincronizar física para que los bounds estén actualizados
+            Physics.SyncTransforms();
+            
+            // Obtener todos los colliders de la nueva pieza
+            var newColliders = newPart.GetComponentsInChildren<Collider>();
+            if (newColliders.Length == 0)
+            {
+                Debug.Log("CheckArmorCollision: La nueva pieza no tiene colliders");
+                return false;
+            }
+            
+            // Recopilar todas las armaduras colocadas en todas las grillas
+            List<ArmorPart> existingArmors = new List<ArmorPart>();
+            foreach (var grid in availableGrids)
+            {
+                if (grid == null) continue;
+                foreach (var placed in grid.PlacedParts)
+                {
+                    if (placed != null && placed != newPart && !existingArmors.Contains(placed))
+                    {
+                        existingArmors.Add(placed);
+                    }
+                }
+            }
+            
+            if (existingArmors.Count == 0)
+            {
+                Debug.Log("CheckArmorCollision: No hay armaduras existentes para verificar");
+                return false;
+            }
+            
+            Debug.Log($"CheckArmorCollision: Verificando {newColliders.Length} colliders de '{newPart.gameObject.name}' contra {existingArmors.Count} armaduras existentes");
+            
+            // Para cada collider de la nueva pieza
+            foreach (var newCol in newColliders)
+            {
+                Bounds newBounds = newCol.bounds;
+                
+                // Reducir ligeramente para evitar falsos positivos en bordes
+                Vector3 shrinkAmount = newBounds.extents * 0.1f;
+                newBounds.extents -= shrinkAmount;
+                
+                // Comparar contra cada armadura existente
+                foreach (var existingArmor in existingArmors)
+                {
+                    var existingColliders = existingArmor.GetComponentsInChildren<Collider>();
+                    
+                    foreach (var existingCol in existingColliders)
+                    {
+                        Bounds existingBounds = existingCol.bounds;
+                        
+                        // Verificar intersección de bounds
+                        if (newBounds.Intersects(existingBounds))
+                        {
+                            Debug.Log($"CheckArmorCollision: Colisión detectada!");
+                            Debug.Log($"  Nueva: '{newPart.gameObject.name}' collider '{newCol.gameObject.name}' bounds center:{newBounds.center} size:{newBounds.size}");
+                            Debug.Log($"  Existente: '{existingArmor.gameObject.name}' collider '{existingCol.gameObject.name}' bounds center:{existingBounds.center} size:{existingBounds.size}");
+                            return true;
+                        }
+                    }
+                }
+            }
+            
+            Debug.Log("CheckArmorCollision: No se detectaron colisiones");
+            return false;
         }
         
         private void TryRemoveArmor()
         {
             if (hoveredGrid == null) return;
             
-            ArmorPart part = hoveredGrid.GetPartAtCell(currentPositionX, currentPositionY);
-            if (part != null)
+            // Usar el nuevo método que busca por stud actual
+            ArmorPart part = hoveredGrid.GetPartAtCurrentStud();
+            
+            if (part == null)
             {
-                ArmorPartData partData = part.ArmorData;
-                bool hadAdditionalGrids = part.AdditionalGrids != null && part.AdditionalGrids.Count > 0;
-                
-                if (hoveredGrid.Remove(part))
+                Debug.Log("TryRemoveArmor: No hay pieza en el stud actual");
+                return;
+            }
+            
+            ArmorPartData partData = part.ArmorData;
+            bool hadAdditionalGrids = part.AdditionalGrids != null && part.AdditionalGrids.Count > 0;
+            
+            Debug.Log($"TryRemoveArmor: Intentando remover '{part.gameObject.name}'");
+            
+            if (hoveredGrid.RemovePart(part))
+            {
+                // Devolver al inventario
+                if (useInventory && partData != null)
                 {
-                    // Devolver al inventario
-                    if (useInventory && partData != null)
-                    {
-                        PlayerInventory.Instance.AddItem(partData, 1);
-                    }
-                    
-                    Destroy(part.gameObject);
-                    Debug.Log($"Armadura removida{(useInventory ? " y devuelta al inventario" : "")}");
-                    
-                    if (hadAdditionalGrids)
-                    {
-                        CollectAvailableGrids();
-                    }
+                    PlayerInventory.Instance.AddItem(partData, 1);
                 }
+                
+                Destroy(part.gameObject);
+                Debug.Log($"Armadura '{part.gameObject.name}' removida{(useInventory ? " y devuelta al inventario" : "")}");
+                
+                if (hadAdditionalGrids)
+                {
+                    CollectAvailableGrids();
+                }
+            }
+            else
+            {
+                Debug.LogWarning($"TryRemoveArmor: No se pudo remover '{part.gameObject.name}'");
             }
         }
         
@@ -1233,7 +1377,7 @@ namespace RobotGame.Assembly
             Debug.Log($"RobotAssemblyController: {availableGrids.Count} grillas disponibles");
         }
         
-        private void CollectArmorPartGrids(IReadOnlyList<GridHead> grids)
+        private void CollectArmorPartGrids(IReadOnlyList<StudGridHead> grids)
         {
             foreach (var grid in grids)
             {
@@ -1372,26 +1516,21 @@ namespace RobotGame.Assembly
             
             armorPreviewObject.SetActive(true);
             
-            // Calcular tamaño rotado
-            int originalSizeX = armorData.tailGrid.gridInfo.sizeX;
-            int originalSizeY = armorData.tailGrid.gridInfo.sizeY;
-            var rotatedSize = GridRotation.RotateSize(originalSizeX, originalSizeY, currentRotation);
+            // Detectar Tails del prefab para calcular offset
+            var tailStuds = StudDetector.DetectTailStuds(armorData.prefab.transform);
+            Vector3 firstTailOffset = Vector3.zero;
+            if (tailStuds.Count > 0)
+            {
+                firstTailOffset = tailStuds[0].localPosition;
+            }
             
-            // Usar el cellSize de la grilla si está disponible, sino usar default
-            float cellSize = hoveredGrid != null ? hoveredGrid.CellSize : 0.1f;
-            float halfCell = cellSize * 0.5f;
+            // Aplicar rotación 3D al offset del primer Tail
+            Vector3 rotatedFirstTailOffset = armorRotation3D * firstTailOffset;
             
-            // El pivotContainer se posiciona en el centro del área rotada
-            float centerX = rotatedSize.x * halfCell;
-            float centerY = rotatedSize.y * halfCell;
-            pivotContainer.transform.localPosition = new Vector3(centerX, centerY, 0f);
-            
-            // El modelContainer se posiciona para centrar el modelo original
-            float originalCenterX = originalSizeX * halfCell;
-            float originalCenterY = originalSizeY * halfCell;
-            modelContainer.transform.localPosition = new Vector3(-originalCenterX, -originalCenterY, 0f);
-            
-            pivotContainer.transform.localRotation = GridRotation.ToQuaternion(currentRotation);
+            // Configurar preview con rotación
+            pivotContainer.transform.localPosition = Vector3.zero;
+            pivotContainer.transform.localRotation = armorRotation3D;
+            modelContainer.transform.localPosition = -firstTailOffset; // Offset en espacio local del modelo
             
             // Color según estado
             Color previewColor;
@@ -1403,11 +1542,24 @@ namespace RobotGame.Assembly
                 Ray ray = mainCamera.ScreenPointToRay(Input.mousePosition);
                 Vector3 worldPos = ray.origin + ray.direction * 2f;
                 armorPreviewObject.transform.position = worldPos;
-                armorPreviewObject.transform.rotation = Quaternion.identity;
+                armorPreviewObject.transform.rotation = armorRotation3D;
             }
             else
             {
-                bool canPlace = hoveredGrid.CanPlace(armorData, currentPositionX, currentPositionY, currentRotation);
+                // Obtener posición del stud seleccionado
+                Vector3 studPos = hoveredGrid.GetCurrentHoveredStudPosition();
+                armorPreviewObject.transform.position = studPos;
+                armorPreviewObject.transform.rotation = Quaternion.identity; // La rotación está en pivotContainer
+                
+                // Validar si todos los tails pueden colocarse considerando la rotación
+                bool canPlace = false;
+                
+                int anchorIndex = hoveredGrid.CurrentHoveredStudIndex;
+                if (anchorIndex >= 0 && tailStuds.Count > 0)
+                {
+                    // Verificar si todos los tails pueden colocarse CON LA ROTACIÓN ACTUAL
+                    canPlace = CanPlaceAllTailsFromData(hoveredGrid, tailStuds, anchorIndex, armorRotation3D);
+                }
                 
                 // Verificar inventario también
                 if (canPlace && useInventory && !PlayerInventory.Instance.HasItem(armorData, 1))
@@ -1415,17 +1567,133 @@ namespace RobotGame.Assembly
                     canPlace = false;
                 }
                 
-                previewColor = canPlace ? previewColorValid : previewColorInvalid;
+                // Verificar colisión con otras piezas usando bounds del preview
+                if (canPlace)
+                {
+                    canPlace = !CheckPreviewCollision();
+                }
                 
-                Vector3 cellPos = hoveredGrid.CellToWorldPosition(currentPositionX, currentPositionY);
-                armorPreviewObject.transform.position = cellPos;
-                armorPreviewObject.transform.rotation = hoveredGrid.transform.rotation;
+                previewColor = canPlace ? previewColorValid : previewColorInvalid;
             }
             
             if (previewMaterial != null)
             {
                 previewMaterial.color = previewColor;
             }
+        }
+        
+        /// <summary>
+        /// Verifica si el preview actual colisionaría con otras piezas de armadura.
+        /// Usa comparación directa de bounds contra las armaduras colocadas.
+        /// </summary>
+        private bool CheckPreviewCollision()
+        {
+            if (modelContainer == null) return false;
+            
+            // Obtener bounds combinados de todos los renderers del preview
+            var renderers = modelContainer.GetComponentsInChildren<MeshRenderer>();
+            if (renderers.Length == 0) return false;
+            
+            Bounds previewBounds = new Bounds();
+            bool boundsInitialized = false;
+            
+            foreach (var renderer in renderers)
+            {
+                if (!boundsInitialized)
+                {
+                    previewBounds = renderer.bounds;
+                    boundsInitialized = true;
+                }
+                else
+                {
+                    previewBounds.Encapsulate(renderer.bounds);
+                }
+            }
+            
+            if (!boundsInitialized) return false;
+            
+            // Reducir ligeramente para evitar falsos positivos en bordes
+            Vector3 shrinkAmount = previewBounds.extents * 0.15f;
+            previewBounds.extents -= shrinkAmount;
+            
+            // Recopilar todas las armaduras colocadas en todas las grillas
+            foreach (var grid in availableGrids)
+            {
+                if (grid == null) continue;
+                
+                foreach (var existingArmor in grid.PlacedParts)
+                {
+                    if (existingArmor == null) continue;
+                    
+                    // Obtener colliders de la armadura existente
+                    var existingColliders = existingArmor.GetComponentsInChildren<Collider>();
+                    
+                    foreach (var existingCol in existingColliders)
+                    {
+                        Bounds existingBounds = existingCol.bounds;
+                        
+                        // Verificar intersección de bounds
+                        if (previewBounds.Intersects(existingBounds))
+                        {
+                            return true;
+                        }
+                    }
+                }
+            }
+            
+            return false;
+        }
+        
+        /// <summary>
+        /// Verifica si todos los Tails de una lista pueden colocarse en la grilla.
+        /// Usa POSICIONES MUNDIALES para la comparación, aplicando la rotación especificada.
+        /// Todos los Heads deben pertenecer al mismo grupo (mismo hueso).
+        /// </summary>
+        private bool CanPlaceAllTailsFromData(StudGridHead grid, List<StudPoint> tailStuds, int anchorHeadIndex, Quaternion rotation)
+        {
+            if (grid == null || tailStuds == null || tailStuds.Count == 0)
+                return false;
+            
+            if (anchorHeadIndex < 0 || anchorHeadIndex >= grid.Studs.Count)
+                return false;
+            
+            var firstTail = tailStuds[0];
+            Vector3 anchorHeadWorldPos = grid.GetStudWorldPosition(anchorHeadIndex);
+            var anchorHead = grid.Studs[anchorHeadIndex];
+            
+            // GroupId requerido - todos los Heads deben pertenecer al mismo grupo
+            string requiredGroupId = anchorHead.groupId;
+            
+            List<int> matchedHeadIndices = new List<int>();
+            
+            foreach (var tail in tailStuds)
+            {
+                // Verificar tier
+                if (!tail.tierInfo.IsCompatibleWith(anchorHead.tierInfo))
+                    return false;
+                
+                // Calcular offset del Tail respecto al primer Tail (en espacio local)
+                Vector3 tailOffsetLocal = tail.localPosition - firstTail.localPosition;
+                
+                // APLICAR LA ROTACIÓN al offset
+                Vector3 rotatedOffset = rotation * tailOffsetLocal;
+                
+                // Posición mundial esperada para este Tail
+                Vector3 expectedWorldPos = anchorHeadWorldPos + rotatedOffset;
+                
+                // Buscar Head en esa posición mundial CON EL MISMO GRUPO
+                int headIndex = grid.FindHeadAtWorldPosition(expectedWorldPos, tail.tierInfo, requiredGroupId);
+                
+                if (headIndex < 0 || grid.IsStudOccupied(headIndex))
+                    return false;
+                
+                if (matchedHeadIndices.Contains(headIndex))
+                    return false;
+                
+                matchedHeadIndices.Add(headIndex);
+            }
+            
+            return true;
         }
         
         private void UpdateArmorPreviewModel(ArmorPartData armorData)

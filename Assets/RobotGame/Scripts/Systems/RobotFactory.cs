@@ -323,7 +323,7 @@ namespace RobotGame.Systems
                 if (placedArmor.armorData == null) continue;
                 
                 // Buscar la grilla
-                GridHead grid = structuralPart.GetArmorGrid(placedArmor.targetGridName);
+                StudGridHead grid = structuralPart.GetArmorGrid(placedArmor.targetGridName);
                 
                 if (grid == null)
                 {

@@ -16,7 +16,7 @@ MonoBehaviour:
   description: 
   icon: {fileID: 0}
   core: {fileID: 11400000, guid: aed3484aaaf2de845ae492ba4872ea26, type: 2}
-  hips: {fileID: 11400000, guid: 9355feb6de61b2b4ca34607c2e0df38e, type: 2}
+  hips: {fileID: 11400000, guid: 5bc404546e337314f96e8fe74e53f92d, type: 2}
   hipsArmorPieces: []
   attachedParts:
   - partData: {fileID: 11400000, guid: 541ccf4624a5ba244adeac4ef2872493, type: 2}

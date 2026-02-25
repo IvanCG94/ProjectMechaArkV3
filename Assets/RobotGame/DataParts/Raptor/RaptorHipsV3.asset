@@ -36,7 +36,9 @@ MonoBehaviour:
   armorGrids:
   - gridInfo:
       isHead: 1
-      tier: 2
+      tierInfo:
+        tier: 2
+        subTier: 1
       sizeX: 1
       sizeY: 1
       surrounding:
@@ -47,7 +49,9 @@ MonoBehaviour:
     transformName: Head_T2_1x1_S1_TBLR_PlacaV3L
   - gridInfo:
       isHead: 1
-      tier: 2
+      tierInfo:
+        tier: 2
+        subTier: 1
       sizeX: 1
       sizeY: 2
       surrounding:
@@ -58,7 +62,9 @@ MonoBehaviour:
     transformName: Head_T2_1x2_S1_TB_RaptorHipsAccesoryL
   - gridInfo:
       isHead: 1
-      tier: 2
+      tierInfo:
+        tier: 2
+        subTier: 1
       sizeX: 1
       sizeY: 4
       surrounding:
@@ -69,7 +75,9 @@ MonoBehaviour:
     transformName: Head_T2_1x4_S2FH_PlacaRaptorV3L
   - gridInfo:
       isHead: 1
-      tier: 2
+      tierInfo:
+        tier: 2
+        subTier: 1
       sizeX: 1
       sizeY: 1
       surrounding:
@@ -80,7 +88,9 @@ MonoBehaviour:
     transformName: Head_T2_1x1_S1_TBLR_PlacaV3R
   - gridInfo:
       isHead: 1
-      tier: 2
+      tierInfo:
+        tier: 2
+        subTier: 1
       sizeX: 1
       sizeY: 2
       surrounding:
@@ -91,7 +101,9 @@ MonoBehaviour:
     transformName: Head_T2_1x2_S1_TB_RaptorHipsAccesoryR
   - gridInfo:
       isHead: 1
-      tier: 2
+      tierInfo:
+        tier: 2
+        subTier: 1
       sizeX: 1
       sizeY: 4
       surrounding:
@@ -102,3 +114,4 @@ MonoBehaviour:
     transformName: Head_T2_1x4_S2FH_PlacaRaptorV3R
   animatorController: {fileID: 0}
   animatorAvatar: {fileID: 0}
+  combatReach: 0

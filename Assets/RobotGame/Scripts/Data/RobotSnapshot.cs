@@ -114,7 +114,7 @@ namespace RobotGame.Data
             return snapshot;
         }
         
-        private static void CaptureGridArmors(GridHead grid, List<ArmorSnapshot> armorList)
+        private static void CaptureGridArmors(StudGridHead grid, List<ArmorSnapshot> armorList)
         {
             foreach (var armor in grid.PlacedParts)
             {
@@ -123,7 +123,7 @@ namespace RobotGame.Data
                 armorSnapshot.gridTransformName = grid.name;
                 armorSnapshot.positionX = armor.GridPositionX;
                 armorSnapshot.positionY = armor.GridPositionY;
-                armorSnapshot.rotation = (int)armor.CurrentRotation;
+                armorSnapshot.rotation = armor.CurrentRotation;
                 armorList.Add(armorSnapshot);
             }
         }
@@ -311,7 +311,7 @@ namespace RobotGame.Data
                 if (armorSnapshot.armorData == null) continue;
                 
                 // Buscar la grilla por nombre
-                GridHead targetGrid = null;
+                StudGridHead targetGrid = null;
                 foreach (var grid in structuralPart.ArmorGrids)
                 {
                     if (grid.name == armorSnapshot.gridTransformName)
@@ -326,11 +326,8 @@ namespace RobotGame.Data
                 // Crear y colocar la armadura
                 ArmorPart armor = factory.CreateArmorPart(armorSnapshot.armorData);
                 
-                // Aplicar rotación
-                // TODO: Implementar rotación en ArmorPart si es necesario
-                
-                // Colocar en la grilla
-                targetGrid.TryPlace(armor, armorSnapshot.positionX, armorSnapshot.positionY);
+                // Colocar en la grilla usando el nuevo sistema
+                targetGrid.TryPlace(armor);
             }
         }
         

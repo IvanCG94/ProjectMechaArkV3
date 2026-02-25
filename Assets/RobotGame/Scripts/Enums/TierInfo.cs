@@ -236,6 +236,24 @@ namespace RobotGame.Enums
             return result.IsValid;
         }
         
+        /// <summary>
+        /// Parsea un string "X.Y" a TierInfo. Retorna Default si falla.
+        /// </summary>
+        public static TierInfo Parse(string str)
+        {
+            if (TryParse(str, out TierInfo result))
+                return result;
+            return Default;
+        }
+        
+        /// <summary>
+        /// Conversión implícita desde string para compatibilidad.
+        /// </summary>
+        public static implicit operator TierInfo(string str)
+        {
+            return Parse(str);
+        }
+        
         #endregion
     }
 }

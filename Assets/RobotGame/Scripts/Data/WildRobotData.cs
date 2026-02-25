@@ -171,12 +171,8 @@ namespace RobotGame.Data
                     errors.Add($"Armadura '{armor.armorData.displayName}' (Tier {armor.armorData.tier}) no es compatible con el robot (Tier {tier})");
                 }
                 
-                // Verificar que la grilla existe en el padre
-                var grid = parentPart.armorGrids.Find(g => g.gridInfo.gridName == armor.targetGridName);
-                if (grid == null || grid.transformName == null)
-                {
-                    errors.Add($"Grilla '{armor.targetGridName}' no existe en '{parentPart.displayName}'");
-                }
+                // NOTA: Las grillas ahora se detectan automáticamente desde los prefabs
+                // La validación de existencia de grilla se hace en runtime
             }
         }
         

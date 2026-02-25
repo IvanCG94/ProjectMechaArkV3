@@ -28,7 +28,9 @@ MonoBehaviour:
   tailGrid:
     gridInfo:
       isHead: 0
-      tier: 2
+      tierInfo:
+        tier: 2
+        subTier: 1
       sizeX: 1
       sizeY: 4
       surrounding:

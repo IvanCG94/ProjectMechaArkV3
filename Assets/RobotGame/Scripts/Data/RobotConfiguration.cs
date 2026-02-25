@@ -140,20 +140,8 @@ namespace RobotGame.Data
                     errors.Add($"Armadura '{armor.armorData.displayName}' no es compatible con el Core (Tier {core.tier})");
                 }
                 
-                // Verificar que la grilla existe en el padre
-                var grid = parentPart.armorGrids.Find(g => g.gridInfo.gridName == armor.targetGridName);
-                if (grid == null || grid.transformName == null)
-                {
-                    errors.Add($"Grilla '{armor.targetGridName}' no existe en '{parentPart.displayName}'");
-                }
-                else
-                {
-                    // Verificar compatibilidad de Surrounding
-                    if (!armor.armorData.CanFitIn(grid.gridInfo))
-                    {
-                        errors.Add($"Armadura '{armor.armorData.displayName}' no es compatible con la grilla '{armor.targetGridName}'");
-                    }
-                }
+                // NOTA: Las grillas ahora se detectan automáticamente desde los prefabs
+                // La validación de compatibilidad se hace en runtime con el nuevo sistema de studs
             }
         }
         

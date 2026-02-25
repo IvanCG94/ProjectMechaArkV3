@@ -446,7 +446,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::RobotGame.AI.WildRobotSpawner
   possibleRobots:
   - {fileID: 11400000, guid: 3892618bcfdef894ca687a5c8828067e, type: 2}
-  maxActiveRobots: 1
+  maxActiveRobots: 0
   spawnInterval: 30
   spawnRadius: 5
   spawnOnStart: 1
@@ -2761,38 +2761,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::RobotGame.Inventory.PlayerInventory
   maxSlotsPerCategory: 50
   startingItems:
-  - item: {fileID: 11400000, guid: b056d3f276463e146827e759f3070819, type: 2}
-    quantity: 2
-  - item: {fileID: 11400000, guid: 9355feb6de61b2b4ca34607c2e0df38e, type: 2}
-    quantity: 1
-  - item: {fileID: 11400000, guid: 1b2564a08ef89a840a8942dfde089298, type: 2}
-    quantity: 1
-  - item: {fileID: 11400000, guid: 0e20e43e5631b164ab1188f748bb4c5f, type: 2}
-    quantity: 1
-  - item: {fileID: 11400000, guid: c2d5b7d2fb2367445a46cd55ebf708ab, type: 2}
+  - item: {fileID: 11400000, guid: 7299fa8f0fc82aa43b181a54d4443ce5, type: 2}
     quantity: 4
-  - item: {fileID: 11400000, guid: d69586ac1b364a242a67b9e737b84e8e, type: 2}
+  - item: {fileID: 11400000, guid: 95a4fee86bdbb654e832ad9a213a2075, type: 2}
     quantity: 4
-  - item: {fileID: 11400000, guid: fe66ded9d142ce341a8b846ff3fed070, type: 2}
-    quantity: 4
-  - item: {fileID: 11400000, guid: cb114fe10920bef4d9f4f026396dd1b7, type: 2}
-    quantity: 4
-  - item: {fileID: 11400000, guid: 3fa55805114d5f348b660629da15419e, type: 2}
-    quantity: 4
-  - item: {fileID: 11400000, guid: 68f36318ccf792849881bc8aa8bcd7bd, type: 2}
-    quantity: 2
-  - item: {fileID: 11400000, guid: c1ee95eeabc868e458431d29732533ad, type: 2}
-    quantity: 2
-  - item: {fileID: 11400000, guid: 2d06dab5054d00c4f9c752393d3f5b29, type: 2}
-    quantity: 2
-  - item: {fileID: 11400000, guid: 4a0a42060c12d094f92506fb96cb1ded, type: 2}
-    quantity: 1
-  - item: {fileID: 11400000, guid: 2d06dab5054d00c4f9c752393d3f5b29, type: 2}
-    quantity: 2
-  - item: {fileID: 11400000, guid: 764c6a1d836dd91418c087bff306f96f, type: 2}
-    quantity: 2
-  - item: {fileID: 11400000, guid: 8bc474fa9b694d445aaf1ea913704dbf, type: 2}
-    quantity: 1
   allItems: []
 --- !u!1 &1624930344
 GameObject:
@@ -3006,6 +2978,9 @@ MonoBehaviour:
   maxHealth: 50
   currentHealth: 0
   isDestroyed: 0
+  damageFlashDuration: 0.2
+  damageFlashColor: {r: 1, g: 0, b: 0, a: 1}
+  enableDamageFlash: 1
   logDamage: 1
 --- !u!65 &1694705878
 BoxCollider:
@@ -3391,6 +3366,9 @@ MonoBehaviour:
   maxHealth: 50
   currentHealth: 0
   isDestroyed: 0
+  damageFlashDuration: 0.2
+  damageFlashColor: {r: 1, g: 0, b: 0, a: 1}
+  enableDamageFlash: 1
   logDamage: 1
 --- !u!65 &1850008248
 BoxCollider:

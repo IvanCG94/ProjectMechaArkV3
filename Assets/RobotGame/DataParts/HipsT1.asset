@@ -13,10 +13,10 @@ MonoBehaviour:
   m_Name: HipsT1
   m_EditorClassIdentifier: Assembly-CSharp::RobotGame.Data.StructuralPartData
   partId: HipsT1
-  displayName: Basic hips
+  displayName: Hips T1
   description: 
   icon: {fileID: 21300000, guid: 77cf66d515f285b47a0f2b86dd6cd02b, type: 3}
-  prefab: {fileID: 919132149155446097, guid: a241ce47760183e459f205c96d1c2fc2, type: 3}
+  prefab: {fileID: 563251346165643449, guid: a886415334ea39d47b3b5a247eac7966, type: 3}
   category: 0
   tier:
     tier: 1
@@ -29,120 +29,10 @@ MonoBehaviour:
   canBeRoot: 1
   structuralSockets:
   - socketType: 1
-    transformName: TorsoSocket
-    isRequired: 1
+    transformName: Socket_torso
+    isRequired: 0
     localPosition: {x: 0, y: 0, z: 0}
     localRotation: {x: 0, y: 0, z: 0}
-  armorGrids:
-  - gridInfo:
-      isHead: 1
-      tier: 0
-      sizeX: 2
-      sizeY: 2
-      surrounding:
-        level: 1
-        edges: 15
-        fullType: 0
-      gridName: HipsArmorL
-    transformName: Head_2x2_S1_LRTB_HipsArmorL
-  - gridInfo:
-      isHead: 1
-      tier: 0
-      sizeX: 2
-      sizeY: 4
-      surrounding:
-        level: 3
-        edges: 0
-        fullType: 1
-      gridName: ThighL
-    transformName: Head_2x4_S3FH_ThighL
-  - gridInfo:
-      isHead: 1
-      tier: 0
-      sizeX: 1
-      sizeY: 1
-      surrounding:
-        level: 0
-        edges: 0
-        fullType: 0
-      gridName: FootArmorL
-    transformName: Head_1x1_SN_FootArmorL
-  - gridInfo:
-      isHead: 1
-      tier: 0
-      sizeX: 1
-      sizeY: 1
-      surrounding:
-        level: 1
-        edges: 3
-        fullType: 0
-      gridName: KneeL
-    transformName: Head_1x1_S1_LR_KneeL
-  - gridInfo:
-      isHead: 1
-      tier: 0
-      sizeX: 2
-      sizeY: 4
-      surrounding:
-        level: 3
-        edges: 0
-        fullType: 1
-      gridName: ShinL
-    transformName: Head_2x4_S3FH_ShinL
-  - gridInfo:
-      isHead: 1
-      tier: 0
-      sizeX: 2
-      sizeY: 2
-      surrounding:
-        level: 1
-        edges: 15
-        fullType: 0
-      gridName: HipsArmorR
-    transformName: Head_2x2_S1_LRTB_HipsArmorR
-  - gridInfo:
-      isHead: 1
-      tier: 0
-      sizeX: 2
-      sizeY: 4
-      surrounding:
-        level: 3
-        edges: 0
-        fullType: 1
-      gridName: ThighR
-    transformName: Head_2x4_S3FH_ThighR
-  - gridInfo:
-      isHead: 1
-      tier: 0
-      sizeX: 1
-      sizeY: 1
-      surrounding:
-        level: 0
-        edges: 0
-        fullType: 0
-      gridName: FootArmorR
-    transformName: Head_1x1_SN_FootArmorR
-  - gridInfo:
-      isHead: 1
-      tier: 0
-      sizeX: 1
-      sizeY: 1
-      surrounding:
-        level: 1
-        edges: 3
-        fullType: 0
-      gridName: KneeR
-    transformName: Head_1x1_S1_LR_KneeR
-  - gridInfo:
-      isHead: 1
-      tier: 0
-      sizeX: 2
-      sizeY: 4
-      surrounding:
-        level: 3
-        edges: 0
-        fullType: 1
-      gridName: ShinR
-    transformName: Head_2x4_S3FH_ShinR
-  animatorController: {fileID: 0}
+  animatorController: {fileID: 9100000, guid: 34d661efc465b4c42827ad231b4aff1a, type: 2}
   animatorAvatar: {fileID: 0}
+  combatReach: 0
