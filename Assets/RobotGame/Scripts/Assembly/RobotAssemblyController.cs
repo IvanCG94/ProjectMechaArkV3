@@ -98,6 +98,12 @@ namespace RobotGame.Assembly
         private Material previewMaterial;
         private ArmorPartData currentPreviewData;
         
+        // Cache de validación del preview (para evitar recalcular cada frame)
+        private int lastValidatedStudIndex = -1;
+        private Quaternion lastValidatedRotation = Quaternion.identity;
+        private StudGridHead lastValidatedGrid = null;
+        private bool cachedCanPlace = false;
+        
         // Preview Structural
         private GameObject structuralPreviewObject;
         private StructuralPartData currentStructuralPreviewData;
@@ -490,6 +496,10 @@ namespace RobotGame.Assembly
             if (item is ArmorPartData armorData)
             {
                 selectedArmorData = armorData;
+                
+                // Invalidar cache de validación
+                lastValidatedStudIndex = -1;
+                lastValidatedGrid = null;
                 
                 // Cambiar a modo armor si no estamos en él
                 if (currentMode != AssemblyMode.Armor)
@@ -940,19 +950,27 @@ namespace RobotGame.Assembly
         
         private void TryPlaceArmor()
         {
-            if (hoveredGrid == null) return;
+            Debug.Log("=== TryPlaceArmor INICIADO ===");
+            
+            if (hoveredGrid == null)
+            {
+                Debug.LogWarning("FALLO: hoveredGrid es null");
+                return;
+            }
             
             ArmorPartData armorData = GetCurrentArmorData();
             if (armorData == null) 
             {
-                Debug.LogWarning("RobotAssemblyController: No hay armadura seleccionada");
+                Debug.LogWarning("FALLO: No hay armadura seleccionada");
                 return;
             }
+            
+            Debug.Log($"Intentando colocar: '{armorData.displayName}'");
             
             // Verificar inventario
             if (useInventory && !PlayerInventory.Instance.HasItem(armorData, 1))
             {
-                Debug.LogWarning($"RobotAssemblyController: No tienes {armorData.displayName} en el inventario");
+                Debug.LogWarning($"FALLO: No tienes {armorData.displayName} en el inventario");
                 return;
             }
             
@@ -960,47 +978,64 @@ namespace RobotGame.Assembly
             ArmorPart armorPart = RobotFactory.Instance.CreateArmorPart(armorData);
             if (armorPart == null)
             {
-                Debug.LogError("Error al crear la pieza de armadura");
+                Debug.LogError("FALLO: Error al crear la pieza de armadura");
                 return;
             }
             
             var tailGrid = armorPart.TailGrid;
             if (tailGrid == null || tailGrid.StudCount == 0)
             {
-                Debug.LogError("La pieza de armadura no tiene TailGrid configurado");
+                Debug.LogError("FALLO: La pieza de armadura no tiene TailGrid configurado");
                 Destroy(armorPart.gameObject);
                 return;
             }
+            
+            Debug.Log($"TailGrid tiene {tailGrid.StudCount} Tails");
             
             int anchorIndex = hoveredGrid.CurrentHoveredStudIndex;
+            Debug.Log($"Anchor Head index: {anchorIndex}");
             
-            // Validar que TODOS los Tails puedan colocarse CON LA ROTACIÓN ACTUAL
-            if (!hoveredGrid.CanPlaceAllTails(tailGrid, anchorIndex, armorRotation3D))
+            // Obtener rotación del hueso y combinar con rotación del usuario
+            Quaternion boneRotation = hoveredGrid.GetCurrentStudRotation();
+            Quaternion finalRotation = boneRotation * armorRotation3D;
+            
+            Debug.Log($"Rotación hueso: {boneRotation.eulerAngles}, Usuario: {armorRotation3D.eulerAngles}, Final: {finalRotation.eulerAngles}");
+            
+            // Validar que TODOS los Tails puedan colocarse CON LA ROTACIÓN FINAL
+            if (!hoveredGrid.CanPlaceAllTails(tailGrid, anchorIndex, finalRotation))
             {
-                Debug.LogWarning("RobotAssemblyController: No todos los Tails pueden colocarse con esta rotación");
+                Debug.LogWarning("FALLO: Validación de STUDS falló - No todos los Tails pueden colocarse");
                 Destroy(armorPart.gameObject);
                 return;
             }
             
+            Debug.Log("OK: Validación de studs pasó");
+            
             // Calcular la posición correcta (considerando el offset del primer Tail Y la rotación)
-            Vector3 armorPosition = hoveredGrid.CalculateArmorPosition(tailGrid, anchorIndex, armorRotation3D);
+            Vector3 armorPosition = hoveredGrid.CalculateArmorPosition(tailGrid, anchorIndex, finalRotation);
             armorPart.transform.position = armorPosition;
-            armorPart.transform.rotation = armorRotation3D;
+            armorPart.transform.rotation = finalRotation;
+            
+            Debug.Log($"Posición calculada: {armorPosition}, Rotación final: {finalRotation.eulerAngles}");
             
             // Obtener el hueso/transform del Head para hacer parent correcto
             Transform boneTransform = hoveredGrid.GetCurrentStudParentTransform();
             armorPart.transform.SetParent(boneTransform, worldPositionStays: true);
             
+            Debug.Log($"Parent asignado: '{boneTransform.name}'");
+            
             // VALIDACIÓN DE COLISIÓN: Verificar que no colisione con otras piezas
             if (CheckArmorCollision(armorPart))
             {
-                Debug.LogWarning("RobotAssemblyController: La pieza colisiona con otra armadura existente");
+                Debug.LogWarning("FALLO: Validación de COLISIÓN falló - La pieza colisiona con Box_ existente");
                 Destroy(armorPart.gameObject);
                 return;
             }
             
+            Debug.Log("OK: Validación de colisión pasó");
+            
             // Colocar y marcar TODOS los studs como ocupados
-            if (hoveredGrid.PlaceArmorWithAllTails(armorPart, anchorIndex, armorRotation3D))
+            if (hoveredGrid.PlaceArmorWithAllTails(armorPart, anchorIndex, finalRotation))
             {
                 // Restar del inventario
                 if (useInventory)
@@ -1008,96 +1043,161 @@ namespace RobotGame.Assembly
                     PlayerInventory.Instance.RemoveItem(armorData, 1);
                 }
                 
-                Debug.Log($"Armadura '{armorData.displayName}' colocada en hueso '{boneTransform.name}' con rotación {armorRotation3D.eulerAngles}");
+                // Invalidar cache de validación (cambió el estado del robot)
+                lastValidatedStudIndex = -1;
+                lastValidatedGrid = null;
+                
+                Debug.Log($"=== ÉXITO: Armadura '{armorData.displayName}' colocada en '{boneTransform.name}' ===");
                 
                 if (armorPart.AdditionalGrids != null && armorPart.AdditionalGrids.Count > 0)
                 {
                     CollectAvailableGrids();
                 }
-                
-                // Resetear rotación para la próxima pieza
-                // armorRotation3D = Quaternion.identity; // Descomentar si quieres resetear después de colocar
             }
             else
             {
-                Debug.LogError("Error al registrar la pieza en la grilla");
+                Debug.LogError("FALLO: PlaceArmorWithAllTails retornó false");
                 Destroy(armorPart.gameObject);
             }
         }
         
         /// <summary>
-        /// Verifica si una pieza de armadura colisiona con otras piezas existentes.
-        /// Usa comparación directa de bounds en lugar de Physics.Overlap para mayor confiabilidad.
+        /// Verifica si una pieza de armadura colisiona con colliders Box_ existentes.
+        /// Solo verifica colliders cuyo GameObject empiece con "Box_".
         /// </summary>
         private bool CheckArmorCollision(ArmorPart newPart)
         {
             if (newPart == null) return false;
             
-            // Sincronizar física para que los bounds estén actualizados
             Physics.SyncTransforms();
             
-            // Obtener todos los colliders de la nueva pieza
-            var newColliders = newPart.GetComponentsInChildren<Collider>();
-            if (newColliders.Length == 0)
+            // Obtener colliders Box_ de la nueva pieza
+            var newBoxColliders = GetBoxColliders(newPart.gameObject);
+            
+            if (newBoxColliders.Count == 0)
             {
-                Debug.Log("CheckArmorCollision: La nueva pieza no tiene colliders");
                 return false;
             }
             
-            // Recopilar todas las armaduras colocadas en todas las grillas
-            List<ArmorPart> existingArmors = new List<ArmorPart>();
+            // Recopilar todos los colliders Box_ existentes
+            List<Collider> existingBoxColliders = new List<Collider>();
+            
+            // 1. Box_ de armaduras colocadas
             foreach (var grid in availableGrids)
             {
                 if (grid == null) continue;
                 foreach (var placed in grid.PlacedParts)
                 {
-                    if (placed != null && placed != newPart && !existingArmors.Contains(placed))
+                    if (placed != null && placed != newPart)
                     {
-                        existingArmors.Add(placed);
+                        existingBoxColliders.AddRange(GetBoxColliders(placed.gameObject));
                     }
                 }
             }
             
-            if (existingArmors.Count == 0)
+            // 2. Box_ de partes estructurales (excluyendo los de newPart)
+            if (targetRobot != null)
             {
-                Debug.Log("CheckArmorCollision: No hay armaduras existentes para verificar");
+                var allBoxes = GetBoxColliders(targetRobot.gameObject);
+                foreach (var box in allBoxes)
+                {
+                    // Excluir si es hijo de la nueva pieza
+                    if (box.transform.IsChildOf(newPart.transform))
+                        continue;
+                    
+                    existingBoxColliders.Add(box);
+                }
+            }
+            
+            if (existingBoxColliders.Count == 0)
+            {
                 return false;
             }
             
-            Debug.Log($"CheckArmorCollision: Verificando {newColliders.Length} colliders de '{newPart.gameObject.name}' contra {existingArmors.Count} armaduras existentes");
-            
-            // Para cada collider de la nueva pieza
-            foreach (var newCol in newColliders)
+            // Verificar intersección usando GetBoxColliderBounds (funciona con colliders deshabilitados)
+            foreach (var newCol in newBoxColliders)
             {
-                Bounds newBounds = newCol.bounds;
+                Bounds newBounds = GetBoxColliderBounds(newCol);
                 
-                // Reducir ligeramente para evitar falsos positivos en bordes
-                Vector3 shrinkAmount = newBounds.extents * 0.1f;
-                newBounds.extents -= shrinkAmount;
+                // Reducir ligeramente para evitar falsos positivos
+                newBounds.extents *= 0.9f;
                 
-                // Comparar contra cada armadura existente
-                foreach (var existingArmor in existingArmors)
+                foreach (var existingCol in existingBoxColliders)
                 {
-                    var existingColliders = existingArmor.GetComponentsInChildren<Collider>();
+                    if (existingCol == null) continue;
                     
-                    foreach (var existingCol in existingColliders)
+                    Bounds existingBounds = GetBoxColliderBounds(existingCol);
+                    
+                    if (newBounds.Intersects(existingBounds))
                     {
-                        Bounds existingBounds = existingCol.bounds;
-                        
-                        // Verificar intersección de bounds
-                        if (newBounds.Intersects(existingBounds))
-                        {
-                            Debug.Log($"CheckArmorCollision: Colisión detectada!");
-                            Debug.Log($"  Nueva: '{newPart.gameObject.name}' collider '{newCol.gameObject.name}' bounds center:{newBounds.center} size:{newBounds.size}");
-                            Debug.Log($"  Existente: '{existingArmor.gameObject.name}' collider '{existingCol.gameObject.name}' bounds center:{existingBounds.center} size:{existingBounds.size}");
-                            return true;
-                        }
+                        Debug.Log($"¡COLISIÓN DETECTADA! '{newCol.gameObject.name}' con '{existingCol.gameObject.name}'");
+                        return true;
                     }
                 }
             }
             
-            Debug.Log("CheckArmorCollision: No se detectaron colisiones");
             return false;
+        }
+        
+        /// <summary>
+        /// Obtiene todos los colliders cuyo GameObject empiece con "Box_".
+        /// </summary>
+        private List<Collider> GetBoxColliders(GameObject root)
+        {
+            var result = new List<Collider>();
+            var allColliders = root.GetComponentsInChildren<Collider>(true); // incluir inactivos
+            
+            foreach (var col in allColliders)
+            {
+                if (col.gameObject.name.StartsWith("Box_"))
+                {
+                    result.Add(col);
+                }
+            }
+            
+            return result;
+        }
+        
+        /// <summary>
+        /// Calcula los bounds de un BoxCollider incluso si está deshabilitado.
+        /// Cuando un collider está disabled, Unity retorna bounds de tamaño 0.
+        /// </summary>
+        private Bounds GetBoxColliderBounds(Collider col)
+        {
+            if (col is BoxCollider box)
+            {
+                // Calcular bounds manualmente usando transform
+                Vector3 worldCenter = box.transform.TransformPoint(box.center);
+                Vector3 worldSize = Vector3.Scale(box.size, box.transform.lossyScale);
+                
+                // Crear bounds en world space
+                // Nota: esto es aproximado para rotaciones, pero funciona bien para la mayoría de casos
+                Bounds bounds = new Bounds(worldCenter, worldSize);
+                
+                // Para rotaciones, necesitamos calcular el AABB correcto
+                Vector3 halfExtents = box.size * 0.5f;
+                Vector3[] corners = new Vector3[8];
+                corners[0] = box.center + new Vector3(-halfExtents.x, -halfExtents.y, -halfExtents.z);
+                corners[1] = box.center + new Vector3(halfExtents.x, -halfExtents.y, -halfExtents.z);
+                corners[2] = box.center + new Vector3(-halfExtents.x, halfExtents.y, -halfExtents.z);
+                corners[3] = box.center + new Vector3(halfExtents.x, halfExtents.y, -halfExtents.z);
+                corners[4] = box.center + new Vector3(-halfExtents.x, -halfExtents.y, halfExtents.z);
+                corners[5] = box.center + new Vector3(halfExtents.x, -halfExtents.y, halfExtents.z);
+                corners[6] = box.center + new Vector3(-halfExtents.x, halfExtents.y, halfExtents.z);
+                corners[7] = box.center + new Vector3(halfExtents.x, halfExtents.y, halfExtents.z);
+                
+                // Transformar a world space y calcular AABB
+                bounds = new Bounds(box.transform.TransformPoint(corners[0]), Vector3.zero);
+                for (int i = 1; i < 8; i++)
+                {
+                    bounds.Encapsulate(box.transform.TransformPoint(corners[i]));
+                }
+                
+                return bounds;
+            }
+            
+            // Para otros tipos de collider, usar bounds normal (solo funciona si está enabled)
+            return col.bounds;
         }
         
         private void TryRemoveArmor()
@@ -1127,6 +1227,11 @@ namespace RobotGame.Assembly
                 }
                 
                 Destroy(part.gameObject);
+                
+                // Invalidar cache de validación (cambió el estado del robot)
+                lastValidatedStudIndex = -1;
+                lastValidatedGrid = null;
+                
                 Debug.Log($"Armadura '{part.gameObject.name}' removida{(useInventory ? " y devuelta al inventario" : "")}");
                 
                 if (hadAdditionalGrids)
@@ -1524,14 +1629,6 @@ namespace RobotGame.Assembly
                 firstTailOffset = tailStuds[0].localPosition;
             }
             
-            // Aplicar rotación 3D al offset del primer Tail
-            Vector3 rotatedFirstTailOffset = armorRotation3D * firstTailOffset;
-            
-            // Configurar preview con rotación
-            pivotContainer.transform.localPosition = Vector3.zero;
-            pivotContainer.transform.localRotation = armorRotation3D;
-            modelContainer.transform.localPosition = -firstTailOffset; // Offset en espacio local del modelo
-            
             // Color según estado
             Color previewColor;
             
@@ -1539,41 +1636,56 @@ namespace RobotGame.Assembly
             {
                 previewColor = previewColorNeutral;
                 
+                // Sin grilla: mostrar en el aire con rotación del usuario
+                pivotContainer.transform.localPosition = Vector3.zero;
+                pivotContainer.transform.localRotation = armorRotation3D;
+                modelContainer.transform.localPosition = -firstTailOffset;
+                
                 Ray ray = mainCamera.ScreenPointToRay(Input.mousePosition);
                 Vector3 worldPos = ray.origin + ray.direction * 2f;
                 armorPreviewObject.transform.position = worldPos;
-                armorPreviewObject.transform.rotation = armorRotation3D;
+                armorPreviewObject.transform.rotation = Quaternion.identity;
+                
+                // Resetear cache cuando no hay grilla
+                lastValidatedGrid = null;
+                lastValidatedStudIndex = -1;
             }
             else
             {
+                // Con grilla: obtener rotación del hueso y combinar con rotación del usuario
+                Quaternion boneRotation = hoveredGrid.GetCurrentStudRotation();
+                Quaternion finalRotation = boneRotation * armorRotation3D;
+                
                 // Obtener posición del stud seleccionado
                 Vector3 studPos = hoveredGrid.GetCurrentHoveredStudPosition();
+                int currentStudIndex = hoveredGrid.CurrentHoveredStudIndex;
+                
+                // Posicionar el preview en la posición del stud con rotación combinada
                 armorPreviewObject.transform.position = studPos;
-                armorPreviewObject.transform.rotation = Quaternion.identity; // La rotación está en pivotContainer
+                armorPreviewObject.transform.rotation = finalRotation;
                 
-                // Validar si todos los tails pueden colocarse considerando la rotación
-                bool canPlace = false;
+                // El modelo se offsetea por el primer Tail
+                pivotContainer.transform.localPosition = Vector3.zero;
+                pivotContainer.transform.localRotation = Quaternion.identity;
+                modelContainer.transform.localPosition = -firstTailOffset;
                 
-                int anchorIndex = hoveredGrid.CurrentHoveredStudIndex;
-                if (anchorIndex >= 0 && tailStuds.Count > 0)
+                // Solo revalidar si cambió el stud, la grilla o la rotación
+                bool needsRevalidation = (currentStudIndex != lastValidatedStudIndex) ||
+                                         (hoveredGrid != lastValidatedGrid) ||
+                                         (finalRotation != lastValidatedRotation);
+                
+                if (needsRevalidation)
                 {
-                    // Verificar si todos los tails pueden colocarse CON LA ROTACIÓN ACTUAL
-                    canPlace = CanPlaceAllTailsFromData(hoveredGrid, tailStuds, anchorIndex, armorRotation3D);
+                    // Simular colocación completa (mismo código que TryPlaceArmor)
+                    cachedCanPlace = SimulatePlacement(armorData, currentStudIndex, finalRotation);
+                    
+                    // Guardar estado para cache
+                    lastValidatedStudIndex = currentStudIndex;
+                    lastValidatedGrid = hoveredGrid;
+                    lastValidatedRotation = finalRotation;
                 }
                 
-                // Verificar inventario también
-                if (canPlace && useInventory && !PlayerInventory.Instance.HasItem(armorData, 1))
-                {
-                    canPlace = false;
-                }
-                
-                // Verificar colisión con otras piezas usando bounds del preview
-                if (canPlace)
-                {
-                    canPlace = !CheckPreviewCollision();
-                }
-                
-                previewColor = canPlace ? previewColorValid : previewColorInvalid;
+                previewColor = cachedCanPlace ? previewColorValid : previewColorInvalid;
             }
             
             if (previewMaterial != null)
@@ -1583,26 +1695,87 @@ namespace RobotGame.Assembly
         }
         
         /// <summary>
-        /// Verifica si el preview actual colisionaría con otras piezas de armadura.
-        /// Usa comparación directa de bounds contra las armaduras colocadas.
+        /// Simula la colocación de una armadura sin colocarla realmente.
+        /// Usa exactamente la misma lógica que TryPlaceArmor.
+        /// </summary>
+        private bool SimulatePlacement(ArmorPartData armorData, int anchorIndex, Quaternion finalRotation)
+        {
+            if (hoveredGrid == null || armorData == null) return false;
+            
+            // Verificar inventario
+            if (useInventory && !PlayerInventory.Instance.HasItem(armorData, 1))
+            {
+                return false;
+            }
+            
+            // Crear la pieza temporalmente para validar
+            ArmorPart tempArmor = RobotFactory.Instance.CreateArmorPart(armorData);
+            if (tempArmor == null) return false;
+            
+            bool canPlace = false;
+            
+            try
+            {
+                var tailGrid = tempArmor.TailGrid;
+                if (tailGrid == null || tailGrid.StudCount == 0)
+                {
+                    return false;
+                }
+                
+                // Validar studs
+                if (!hoveredGrid.CanPlaceAllTails(tailGrid, anchorIndex, finalRotation))
+                {
+                    return false;
+                }
+                
+                // Posicionar para validar colisión
+                Vector3 armorPosition = hoveredGrid.CalculateArmorPosition(tailGrid, anchorIndex, finalRotation);
+                tempArmor.transform.position = armorPosition;
+                tempArmor.transform.rotation = finalRotation;
+                
+                Transform boneTransform = hoveredGrid.GetCurrentStudParentTransform();
+                tempArmor.transform.SetParent(boneTransform, worldPositionStays: true);
+                
+                // Validar colisión
+                if (CheckArmorCollision(tempArmor))
+                {
+                    return false;
+                }
+                
+                canPlace = true;
+            }
+            finally
+            {
+                // Siempre destruir la pieza temporal
+                if (tempArmor != null)
+                {
+                    Destroy(tempArmor.gameObject);
+                }
+            }
+            
+            return canPlace;
+        }
+        
+        /// <summary>
+        /// Verifica si el preview actual colisionaría con colliders Box_ existentes.
         /// </summary>
         private bool CheckPreviewCollision()
         {
             if (modelContainer == null) return false;
             
-            // Obtener bounds combinados de todos los renderers del preview
+            // Obtener bounds del preview desde los renderers
             var renderers = modelContainer.GetComponentsInChildren<MeshRenderer>();
             if (renderers.Length == 0) return false;
             
             Bounds previewBounds = new Bounds();
-            bool boundsInitialized = false;
+            bool initialized = false;
             
             foreach (var renderer in renderers)
             {
-                if (!boundsInitialized)
+                if (!initialized)
                 {
                     previewBounds = renderer.bounds;
-                    boundsInitialized = true;
+                    initialized = true;
                 }
                 else
                 {
@@ -1610,34 +1783,43 @@ namespace RobotGame.Assembly
                 }
             }
             
-            if (!boundsInitialized) return false;
+            if (!initialized) return false;
             
-            // Reducir ligeramente para evitar falsos positivos en bordes
-            Vector3 shrinkAmount = previewBounds.extents * 0.15f;
-            previewBounds.extents -= shrinkAmount;
+            // Reducir ligeramente
+            previewBounds.extents *= 0.85f;
             
-            // Recopilar todas las armaduras colocadas en todas las grillas
+            // Recopilar todos los colliders Box_ existentes
+            List<Collider> existingBoxColliders = new List<Collider>();
+            
+            // 1. Box_ de armaduras colocadas
             foreach (var grid in availableGrids)
             {
                 if (grid == null) continue;
-                
-                foreach (var existingArmor in grid.PlacedParts)
+                foreach (var placed in grid.PlacedParts)
                 {
-                    if (existingArmor == null) continue;
-                    
-                    // Obtener colliders de la armadura existente
-                    var existingColliders = existingArmor.GetComponentsInChildren<Collider>();
-                    
-                    foreach (var existingCol in existingColliders)
+                    if (placed != null)
                     {
-                        Bounds existingBounds = existingCol.bounds;
-                        
-                        // Verificar intersección de bounds
-                        if (previewBounds.Intersects(existingBounds))
-                        {
-                            return true;
-                        }
+                        existingBoxColliders.AddRange(GetBoxColliders(placed.gameObject));
                     }
+                }
+            }
+            
+            // 2. Box_ de partes estructurales
+            if (targetRobot != null)
+            {
+                existingBoxColliders.AddRange(GetBoxColliders(targetRobot.gameObject));
+            }
+            
+            // Verificar intersección usando GetBoxColliderBounds (funciona con colliders deshabilitados)
+            foreach (var existingCol in existingBoxColliders)
+            {
+                if (existingCol == null) continue;
+                
+                Bounds existingBounds = GetBoxColliderBounds(existingCol);
+                
+                if (previewBounds.Intersects(existingBounds))
+                {
+                    return true;
                 }
             }
             

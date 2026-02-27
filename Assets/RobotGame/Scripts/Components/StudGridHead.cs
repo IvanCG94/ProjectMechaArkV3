@@ -568,6 +568,16 @@ namespace RobotGame.Components
         }
         
         /// <summary>
+        /// Obtiene la rotación del hueso donde está el stud actual.
+        /// Esta rotación debe usarse como "base" para colocar armaduras.
+        /// </summary>
+        public Quaternion GetCurrentStudRotation()
+        {
+            Transform parent = GetCurrentStudParentTransform();
+            return parent != null ? parent.rotation : Quaternion.identity;
+        }
+        
+        /// <summary>
         /// Verifica si TODOS los Tails de una armadura pueden colocarse.
         /// Cada Tail debe coincidir con un Head libre en la MISMA POSICIÓN MUNDIAL.
         /// </summary>
