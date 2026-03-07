@@ -94,7 +94,7 @@ namespace RobotGame.Editor
                 }
                 else
                 {
-                    Debug.LogWarning("No se encontró ningún StructuralPart en la escena");
+                    // Debug.LogWarning("No se encontró ningún StructuralPart en la escena");
                 }
             }
             
@@ -158,11 +158,11 @@ namespace RobotGame.Editor
                 // Usar el tier del primer stud encontrado
                 data.tierInfo = tailStuds[0].tierInfo;
                 EditorUtility.SetDirty(data);
-                Debug.Log($"ArmorPartData: Detectado Tier {data.tierInfo} con {tailStuds.Count} studs");
+                // Debug.Log($"ArmorPartData: Detectado Tier {data.tierInfo} con {tailStuds.Count} studs");
             }
             else
             {
-                Debug.LogWarning($"ArmorPartData: No se encontraron studs Tail_ en {data.prefab.name}");
+                // Debug.LogWarning($"ArmorPartData: No se encontraron studs Tail_ en {data.prefab.name}");
             }
         }
         
@@ -198,7 +198,23 @@ namespace RobotGame.Editor
             
             if (data.prefab != null)
             {
+                // Botón para detectar todo automáticamente
+                if (GUILayout.Button("Detectar Todo del Prefab (Sockets + Studs)"))
+                {
+                    DetectAllFromPrefab(data);
+                }
+                
+                EditorGUILayout.Space();
                 EditorGUILayout.LabelField("Contenido del Prefab:", EditorStyles.miniLabel);
+                
+                // Mostrar sockets detectados
+                var detectedSockets = SocketAutoDetector.DetectSockets(data.prefab);
+                EditorGUILayout.LabelField($"  Sockets (Socket_): {detectedSockets.Count}");
+                
+                foreach (var socket in detectedSockets)
+                {
+                    EditorGUILayout.LabelField($"    - {socket.socketType} ({socket.transformName})");
+                }
                 
                 // Mostrar studs Head detectados
                 var headStuds = StudDetector.DetectHeadStuds(data.prefab.transform);
@@ -222,11 +238,48 @@ namespace RobotGame.Editor
                 // Mostrar boxes detectados
                 int boxCount = CountBoxes(data.prefab.transform);
                 EditorGUILayout.LabelField($"  BoxColliders (Box_): {boxCount}");
+                
+                // Mostrar diferencias entre detectado y configurado
+                EditorGUILayout.Space();
+                if (data.structuralSockets.Count != detectedSockets.Count)
+                {
+                    EditorGUILayout.HelpBox(
+                        $"Sockets configurados ({data.structuralSockets.Count}) != detectados ({detectedSockets.Count}). " +
+                        "Presiona 'Detectar Todo' para sincronizar.", 
+                        MessageType.Warning);
+                }
             }
             else
             {
                 EditorGUILayout.HelpBox("Asigna un prefab para ver la auto-detección", MessageType.Info);
             }
+        }
+        
+        private void DetectAllFromPrefab(StructuralPartData data)
+        {
+            // Detectar sockets
+            var detectedSockets = SocketAutoDetector.DetectSockets(data.prefab);
+            
+            if (detectedSockets.Count > 0)
+            {
+                data.structuralSockets.Clear();
+                data.structuralSockets.AddRange(detectedSockets);
+                // Debug.Log($"StructuralPartData '{data.displayName}': Detectados {detectedSockets.Count} sockets");
+            }
+            else
+            {
+                // Debug.Log($"StructuralPartData '{data.displayName}': No se encontraron sockets Socket_*");
+            }
+            
+            // Detectar studs Head (solo para logging, se detectan en runtime)
+            var headStuds = StudDetector.DetectHeadStuds(data.prefab.transform);
+            if (headStuds.Count > 0)
+            {
+                // Debug.Log($"StructuralPartData '{data.displayName}': {headStuds.Count} studs Head_ detectados (se usarán en runtime)");
+            }
+            
+            EditorUtility.SetDirty(data);
+            AssetDatabase.SaveAssets();
         }
         
         private int CountBoxes(Transform root)

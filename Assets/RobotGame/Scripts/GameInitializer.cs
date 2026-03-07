@@ -90,7 +90,7 @@ namespace RobotGame
         {
             if (initialRobotConfig == null)
             {
-                Debug.LogError("GameInitializer: No hay configuración de robot inicial asignada.");
+                // Debug.LogError("GameInitializer: No hay configuración de robot inicial asignada.");
                 return;
             }
             
@@ -100,7 +100,7 @@ namespace RobotGame
             
             if (playerRobot == null)
             {
-                Debug.LogError("GameInitializer: No se pudo crear el robot del jugador.");
+                // Debug.LogError("GameInitializer: No se pudo crear el robot del jugador.");
                 return;
             }
             
@@ -128,9 +128,9 @@ namespace RobotGame
             
             if (debugMode)
             {
-                Debug.Log($"Robot creado: {playerRobot.RobotName}");
-                Debug.Log($"Core del jugador: {(playerCore != null ? "OK" : "NO ENCONTRADO")}");
-                Debug.Log($"Controles: WASD=mover, Space=saltar, Shift=correr, Click/J=atacar");
+                // Debug.Log($"Robot creado: {playerRobot.RobotName}");
+                // Debug.Log($"Core del jugador: {(playerCore != null ? "OK" : "NO ENCONTRADO")}");
+                // Debug.Log($"Controles: WASD=mover, Space=saltar, Shift=correr, Click/J=atacar");
             }
         }
         
@@ -211,7 +211,7 @@ namespace RobotGame
             
             if (debugMode)
             {
-                Debug.Log("[GameInitializer] Sistema de combate configurado");
+                // Debug.Log("[GameInitializer] Sistema de combate configurado");
             }
         }
         
@@ -284,13 +284,13 @@ namespace RobotGame
         {
             if (playerCore == null)
             {
-                Debug.LogWarning("No hay core para transferir.");
+                // Debug.LogWarning("No hay core para transferir.");
                 return;
             }
             
             if (targetRobot == null)
             {
-                Debug.LogWarning("Robot destino es null.");
+                // Debug.LogWarning("Robot destino es null.");
                 return;
             }
             
@@ -300,11 +300,11 @@ namespace RobotGame
             // Insertar en el nuevo robot
             if (playerCore.InsertInto(targetRobot))
             {
-                Debug.Log($"Core transferido a: {targetRobot.RobotName}");
+                // Debug.Log($"Core transferido a: {targetRobot.RobotName}");
             }
             else
             {
-                Debug.LogWarning("Falló la transferencia del core.");
+                // Debug.LogWarning("Falló la transferencia del core.");
             }
         }
     }

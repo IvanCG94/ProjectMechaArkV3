@@ -173,7 +173,7 @@ namespace RobotGame.Combat
             if (animEvents == null)
             {
                 animEvents = animator.gameObject.AddComponent<AttackAnimationEvents>();
-                Debug.Log($"[CombatPart] AttackAnimationEvents agregado automáticamente a '{animator.gameObject.name}'");
+                // Debug.Log($"[CombatPart] AttackAnimationEvents agregado automáticamente a '{animator.gameObject.name}'");
             }
         }
         
@@ -196,7 +196,7 @@ namespace RobotGame.Combat
         {
             UnlinkAllAttackZones();
             
-            Debug.Log($"[CombatPart] {name}: Buscando AttackZones para vincular...");
+            // Debug.Log($"[CombatPart] {name}: Buscando AttackZones para vincular...");
             
             // Lista para almacenar todas las zonas encontradas
             List<AttackZone> foundZones = new List<AttackZone>();
@@ -212,7 +212,7 @@ namespace RobotGame.Combat
                     if (zone != null && !foundZones.Contains(zone))
                     {
                         foundZones.Add(zone);
-                        Debug.Log($"[CombatPart] Encontrada zona '{zone.ZoneId}' en '{child.name}' (hijo de '{current.name}')");
+                        // Debug.Log($"[CombatPart] Encontrada zona '{zone.ZoneId}' en '{child.name}' (hijo de '{current.name}')");
                     }
                 }
                 
@@ -221,7 +221,7 @@ namespace RobotGame.Combat
                 if (parentZone != null && !foundZones.Contains(parentZone))
                 {
                     foundZones.Add(parentZone);
-                    Debug.Log($"[CombatPart] Encontrada zona '{parentZone.ZoneId}' en padre '{current.name}'");
+                    // Debug.Log($"[CombatPart] Encontrada zona '{parentZone.ZoneId}' en padre '{current.name}'");
                 }
                 
                 current = current.parent;
@@ -235,22 +235,22 @@ namespace RobotGame.Combat
                 if (!foundZones.Contains(zone))
                 {
                     foundZones.Add(zone);
-                    Debug.Log($"[CombatPart] Encontrada zona '{zone.ZoneId}' en '{zone.name}' (búsqueda global)");
+                    // Debug.Log($"[CombatPart] Encontrada zona '{zone.ZoneId}' en '{zone.name}' (búsqueda global)");
                 }
             }
             
-            Debug.Log($"[CombatPart] {name}: Total de zonas encontradas: {foundZones.Count}");
+            // Debug.Log($"[CombatPart] {name}: Total de zonas encontradas: {foundZones.Count}");
             
             // Vincular zonas a ataques por zoneId
             foreach (var attack in availableAttacks)
             {
                 if (attack == null) continue;
                 
-                Debug.Log($"[CombatPart] Procesando ataque '{attack.attackName}', zoneId: '{attack.zoneId}', RequiresZone: {attack.RequiresZone}");
+                // Debug.Log($"[CombatPart] Procesando ataque '{attack.attackName}', zoneId: '{attack.zoneId}', RequiresZone: {attack.RequiresZone}");
                 
                 if (!attack.RequiresZone)
                 {
-                    Debug.Log($"[CombatPart] Ataque '{attack.attackName}' no requiere zona (zoneId vacío)");
+                    // Debug.Log($"[CombatPart] Ataque '{attack.attackName}' no requiere zona (zoneId vacío)");
                     continue;
                 }
                 
@@ -262,16 +262,16 @@ namespace RobotGame.Combat
                 {
                     matchingZone.Link(attack, this);
                     linkedAttackZones.Add(matchingZone);
-                    Debug.Log($"[CombatPart] ✓ Zona '{matchingZone.ZoneId}' vinculada a ataque '{attack.attackName}'");
+                    // Debug.Log($"[CombatPart] ✓ Zona '{matchingZone.ZoneId}' vinculada a ataque '{attack.attackName}'");
                 }
                 else
                 {
-                    Debug.LogWarning($"[CombatPart] ✗ No se encontró AttackZone con id '{attack.zoneId}' para ataque '{attack.attackName}'");
-                    Debug.LogWarning($"[CombatPart] Zonas disponibles: {string.Join(", ", foundZones.ConvertAll(z => z.ZoneId))}");
+                    // Debug.LogWarning($"[CombatPart] ✗ No se encontró AttackZone con id '{attack.zoneId}' para ataque '{attack.attackName}'");
+                    // Debug.LogWarning($"[CombatPart] Zonas disponibles: {string.Join(", ", foundZones.ConvertAll(z => z.ZoneId))}");
                 }
             }
             
-            Debug.Log($"[CombatPart] {name}: Vinculación completada. Zonas vinculadas: {linkedAttackZones.Count}");
+            // Debug.Log($"[CombatPart] {name}: Vinculación completada. Zonas vinculadas: {linkedAttackZones.Count}");
         }
         
         /// <summary>
@@ -330,7 +330,7 @@ namespace RobotGame.Combat
             // Si no requiere zona, siempre es viable
             if (!attack.RequiresZone)
             {
-                Debug.Log($"[CombatPart] IsAttackViable '{attack.attackName}': TRUE (no requiere zona)");
+                // Debug.Log($"[CombatPart] IsAttackViable '{attack.attackName}': TRUE (no requiere zona)");
                 return true;
             }
             
@@ -339,12 +339,12 @@ namespace RobotGame.Combat
             
             if (linkedZone == null)
             {
-                Debug.Log($"[CombatPart] IsAttackViable '{attack.attackName}': FALSE (zona no encontrada en linkedAttackZones, count: {linkedAttackZones.Count})");
+                // Debug.Log($"[CombatPart] IsAttackViable '{attack.attackName}': FALSE (zona no encontrada en linkedAttackZones, count: {linkedAttackZones.Count})");
                 return false;
             }
             
             bool result = linkedZone.IsPlayerInZone;
-            Debug.Log($"[CombatPart] IsAttackViable '{attack.attackName}': {result} (zona '{linkedZone.ZoneId}' PlayerInZone = {linkedZone.IsPlayerInZone})");
+            // Debug.Log($"[CombatPart] IsAttackViable '{attack.attackName}': {result} (zona '{linkedZone.ZoneId}' PlayerInZone = {linkedZone.IsPlayerInZone})");
             
             return result;
         }
@@ -420,12 +420,12 @@ namespace RobotGame.Combat
             
             if (weaponHitboxes.Count > 0)
             {
-                Debug.Log($"[CombatPart] {gameObject.name}: Detectados {weaponHitboxes.Count} hitbox(es)");
+                // Debug.Log($"[CombatPart] {gameObject.name}: Detectados {weaponHitboxes.Count} hitbox(es)");
             }
             else
             {
-                Debug.LogWarning($"[CombatPart] {gameObject.name}: No se detectaron hitboxes. " +
-                    "Crea GameObjects hijos con Collider y nombre 'Hitbox' o 'Hitbox_1', etc.");
+                // Debug.LogWarning($"[CombatPart] {gameObject.name}: No se detectaron hitboxes. " +
+                //     "Crea GameObjects hijos con Collider y nombre 'Hitbox' o 'Hitbox_1', etc.");
             }
         }
         

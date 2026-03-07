@@ -155,7 +155,7 @@ namespace RobotGame.Editor
             
             tagManager.ApplyModifiedProperties();
             
-            Debug.Log("[RobotLayerSetup] Layers creados correctamente.");
+            // Debug.Log("[RobotLayerSetup] Layers creados correctamente.");
             
             // Refrescar la ventana
             Repaint();
@@ -168,12 +168,12 @@ namespace RobotGame.Editor
             if (string.IsNullOrEmpty(layer.stringValue))
             {
                 layer.stringValue = name;
-                Debug.Log($"[RobotLayerSetup] Layer {index} configurado como '{name}'");
+                // Debug.Log($"[RobotLayerSetup] Layer {index} configurado como '{name}'");
             }
             else if (layer.stringValue != name)
             {
-                Debug.LogWarning($"[RobotLayerSetup] Layer {index} ya tiene valor '{layer.stringValue}'. " +
-                    $"Cámbialo manualmente a '{name}' si es necesario.");
+                // Debug.LogWarning($"[RobotLayerSetup] Layer {index} ya tiene valor '{layer.stringValue}'. " +
+                //     $"Cámbialo manualmente a '{name}' si es necesario.");
             }
         }
         
@@ -195,7 +195,7 @@ namespace RobotGame.Editor
             Physics.IgnoreLayerCollision(LAYER_ROBOT_NAVIGATION, LAYER_ROBOT_PARTS, true);
             Physics.IgnoreLayerCollision(LAYER_ROBOT_NAVIGATION, LAYER_ROBOT_NAVIGATION, true);
             
-            Debug.Log("[RobotLayerSetup] Matriz de colisiones configurada.");
+            // Debug.Log("[RobotLayerSetup] Matriz de colisiones configurada.");
             
             // Refrescar la ventana
             Repaint();

@@ -55,7 +55,7 @@ namespace RobotGame.Combat
             
             if (combatController == null)
             {
-                Debug.LogError("[CombatInputHandler] No se encontró CombatController!");
+                // Debug.LogError("[CombatInputHandler] No se encontró CombatController!");
             }
         }
         
@@ -130,7 +130,7 @@ namespace RobotGame.Combat
             
             if (allAttacks.Count == 0)
             {
-                Debug.LogWarning("[CombatInputHandler] No hay ataques disponibles");
+                // Debug.LogWarning("[CombatInputHandler] No hay ataques disponibles");
                 return;
             }
             
@@ -159,7 +159,7 @@ namespace RobotGame.Combat
             }
             
             var (part, attack) = allAttacks[selectedPartIndex];
-            Debug.Log($"[CombatInputHandler] Seleccionado: {attack.attackName} ({part.name})");
+            // Debug.Log($"[CombatInputHandler] Seleccionado: {attack.attackName} ({part.name})");
         }
         
         private void SelectAttackByIndex(int index)
@@ -170,7 +170,7 @@ namespace RobotGame.Combat
             {
                 selectedPartIndex = index;
                 var (part, attack) = allAttacks[index];
-                Debug.Log($"[CombatInputHandler] Seleccionado: {attack.attackName} ({part.name})");
+                // Debug.Log($"[CombatInputHandler] Seleccionado: {attack.attackName} ({part.name})");
             }
         }
         

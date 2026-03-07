@@ -150,11 +150,11 @@ namespace RobotGame.Components
             
             if (allHeadStuds.Count == 0)
             {
-                Debug.Log($"StructuralPart: No se encontraron studs Head_ en {partData?.displayName ?? gameObject.name}");
+                // Debug.Log($"StructuralPart: No se encontraron studs Head_ en {partData?.displayName ?? gameObject.name}");
                 return;
             }
             
-            Debug.Log($"StructuralPart: Detectados {allHeadStuds.Count} studs Head en {partData?.displayName ?? gameObject.name}");
+            // Debug.Log($"StructuralPart: Detectados {allHeadStuds.Count} studs Head en {partData?.displayName ?? gameObject.name}");
             
             // Agrupar studs por TierInfo
             var studsByTier = new Dictionary<TierInfo, List<StudPoint>>();
@@ -180,7 +180,7 @@ namespace RobotGame.Components
                 
                 armorGrids.Add(grid);
                 
-                Debug.Log($"StructuralPart: Agregado StudGridHead T{tier} con {studsForTier.Count} studs en {partData?.displayName ?? gameObject.name}");
+                // Debug.Log($"StructuralPart: Agregado StudGridHead T{tier} con {studsForTier.Count} studs en {partData?.displayName ?? gameObject.name}");
             }
         }
         
@@ -311,5 +311,92 @@ namespace RobotGame.Components
             
             return parts;
         }
+        
+        #region Weight Calculation
+        
+        /// <summary>
+        /// Calcula el peso total de esta parte + todas sus partes hijas + armaduras.
+        /// Usado para el sistema de movilidad jerárquico.
+        /// </summary>
+        public float CalculateBranchWeight()
+        {
+            float weight = 0f;
+            
+            // Peso de esta parte
+            if (partData != null)
+            {
+                weight += partData.weight;
+            }
+            
+            // Peso de las armaduras en esta parte
+            foreach (var grid in armorGrids)
+            {
+                foreach (var armor in grid.PlacedParts)
+                {
+                    if (armor != null && armor.ArmorData != null)
+                    {
+                        weight += armor.ArmorData.weight;
+                    }
+                }
+            }
+            
+            // Peso de partes hijas (recursivo)
+            foreach (var socket in childSockets)
+            {
+                if (socket.IsOccupied && socket.AttachedPart != null)
+                {
+                    weight += socket.AttachedPart.CalculateBranchWeight();
+                }
+            }
+            
+            return weight;
+        }
+        
+        /// <summary>
+        /// Calcula el multiplicador de velocidad para esta parte basado en peso/fuerza.
+        /// Solo aplicable si isLocomotionPart = true.
+        /// </summary>
+        public float GetBranchSpeedMultiplier()
+        {
+            if (partData == null || !partData.isLocomotionPart)
+            {
+                return 1f;
+            }
+            
+            float branchWeight = CalculateBranchWeight();
+            float strength = partData.strength;
+            
+            // Sin fuerza no puede mover nada
+            if (strength <= 0f)
+            {
+                return branchWeight > 0f ? 0f : 1f;
+            }
+            
+            float ratio = branchWeight / strength;
+            
+            // Constantes (mismas que Robot.cs)
+            const float OPTIMAL_RATIO = 1.0f;
+            const float MAX_RATIO = 2.0f;
+            const float MAX_SPEED = 1.3f;
+            
+            // Si el ratio es menor o igual a óptimo, puede ir más rápido
+            if (ratio <= OPTIMAL_RATIO)
+            {
+                float t = 1f - (ratio / OPTIMAL_RATIO);
+                return Mathf.Lerp(1f, MAX_SPEED, t);
+            }
+            
+            // Si el ratio excede el máximo, no puede moverse
+            if (ratio >= MAX_RATIO)
+            {
+                return 0f;
+            }
+            
+            // Interpolar linealmente entre 1.0 y 0
+            float overloadFactor = (ratio - OPTIMAL_RATIO) / (MAX_RATIO - OPTIMAL_RATIO);
+            return Mathf.Lerp(1f, 0f, overloadFactor);
+        }
+        
+        #endregion
     }
 }

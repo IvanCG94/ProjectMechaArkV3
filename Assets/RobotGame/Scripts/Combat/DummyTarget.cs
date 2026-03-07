@@ -128,7 +128,7 @@ namespace RobotGame.Combat
             // Efecto de escala (pequeño "golpe")
             StartCoroutine(HitScaleEffect());
             
-            Debug.Log($"[DummyTarget] ¡Recibió {damage:F1} daño! Salud: {currentHealth:F1}/{damageable.MaxHealth:F1}");
+            // Debug.Log($"[DummyTarget] ¡Recibió {damage:F1} daño! Salud: {currentHealth:F1}/{damageable.MaxHealth:F1}");
         }
         
         private void OnDeath()
@@ -140,7 +140,7 @@ namespace RobotGame.Combat
             
             isFlashing = false;
             
-            Debug.Log($"[DummyTarget] ¡MUERTO! Presiona [{resetKey}] para resetear");
+            // Debug.Log($"[DummyTarget] ¡MUERTO! Presiona [{resetKey}] para resetear");
         }
         
         #endregion
@@ -162,7 +162,7 @@ namespace RobotGame.Combat
             isFlashing = false;
             transform.localScale = Vector3.one;
             
-            Debug.Log("[DummyTarget] ¡Reseteado!");
+            // Debug.Log("[DummyTarget] ¡Reseteado!");
         }
         
         #endregion

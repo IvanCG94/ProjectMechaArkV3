@@ -99,7 +99,7 @@ namespace RobotGame.Inventory
         
         private void Start()
         {
-            Debug.Log($"PlayerInventory: Inicializando con {startingItems.Count} items iniciales");
+            // Debug.Log($"PlayerInventory: Inicializando con {startingItems.Count} items iniciales");
             
             // Agregar items iniciales (para testing)
             foreach (var initialItem in startingItems)
@@ -107,15 +107,15 @@ namespace RobotGame.Inventory
                 if (initialItem.item != null)
                 {
                     AddItem(initialItem.item, initialItem.quantity);
-                    Debug.Log($"PlayerInventory: Agregado {initialItem.quantity}x {initialItem.item.name}");
+                    // Debug.Log($"PlayerInventory: Agregado {initialItem.quantity}x {initialItem.item.name}");
                 }
                 else
                 {
-                    Debug.LogWarning("PlayerInventory: Item inicial es null");
+                    // Debug.LogWarning("PlayerInventory: Item inicial es null");
                 }
             }
             
-            Debug.Log($"PlayerInventory: Total items después de inicializar: {allItems.Count}");
+            // Debug.Log($"PlayerInventory: Total items después de inicializar: {allItems.Count}");
         }
         
         private void OnDestroy()
@@ -148,7 +148,7 @@ namespace RobotGame.Inventory
             IInventoryItem invItem = item as IInventoryItem;
             if (invItem == null)
             {
-                Debug.LogWarning($"PlayerInventory: {item.name} no implementa IInventoryItem");
+                // Debug.LogWarning($"PlayerInventory: {item.name} no implementa IInventoryItem");
                 return quantity;
             }
             
@@ -174,7 +174,7 @@ namespace RobotGame.Inventory
                 int categoryCount = GetCategoryItemCount(invItem.Category);
                 if (maxSlotsPerCategory > 0 && categoryCount >= maxSlotsPerCategory)
                 {
-                    Debug.LogWarning($"PlayerInventory: Categoría {invItem.Category} llena");
+                    // Debug.LogWarning($"PlayerInventory: Categoría {invItem.Category} llena");
                     break;
                 }
                 
@@ -189,7 +189,7 @@ namespace RobotGame.Inventory
             {
                 OnItemAdded?.Invoke(invItem, added, GetItemCount(item));
                 OnInventoryChanged?.Invoke();
-                Debug.Log($"PlayerInventory: +{added} {invItem.DisplayName} (Total: {GetItemCount(item)})");
+                // Debug.Log($"PlayerInventory: +{added} {invItem.DisplayName} (Total: {GetItemCount(item)})");
             }
             
             return remaining;
@@ -205,7 +205,7 @@ namespace RobotGame.Inventory
             {
                 return AddItem(item, quantity);
             }
-            Debug.LogWarning($"PlayerInventory: Item con ID '{itemId}' no encontrado");
+            // Debug.LogWarning($"PlayerInventory: Item con ID '{itemId}' no encontrado");
             return quantity;
         }
         
@@ -250,7 +250,7 @@ namespace RobotGame.Inventory
             {
                 OnItemRemoved?.Invoke(invItem, removed, GetItemCount(item));
                 OnInventoryChanged?.Invoke();
-                Debug.Log($"PlayerInventory: -{removed} {invItem.DisplayName} (Restante: {GetItemCount(item)})");
+                // Debug.Log($"PlayerInventory: -{removed} {invItem.DisplayName} (Restante: {GetItemCount(item)})");
             }
             
             return removed;
@@ -395,7 +395,7 @@ namespace RobotGame.Inventory
         {
             allItems.Clear();
             OnInventoryChanged?.Invoke();
-            Debug.Log("PlayerInventory: Inventario limpiado");
+            // Debug.Log("PlayerInventory: Inventario limpiado");
         }
         
         /// <summary>
@@ -405,7 +405,7 @@ namespace RobotGame.Inventory
         {
             allItems.RemoveAll(s => s.Item?.Category == category);
             OnInventoryChanged?.Invoke();
-            Debug.Log($"PlayerInventory: Categoría {category} limpiada");
+            // Debug.Log($"PlayerInventory: Categoría {category} limpiada");
         }
         
         #endregion
@@ -440,22 +440,22 @@ namespace RobotGame.Inventory
         [ContextMenu("Print Inventory")]
         public void PrintInventory()
         {
-            Debug.Log("=== PLAYER INVENTORY ===");
+            // Debug.Log("=== PLAYER INVENTORY ===");
             
             foreach (InventoryCategory category in Enum.GetValues(typeof(InventoryCategory)))
             {
                 var items = GetItemsByCategory(category);
                 if (items.Count > 0)
                 {
-                    Debug.Log($"[{category}]");
+                    // Debug.Log($"[{category}]");
                     foreach (var stack in items)
                     {
-                        Debug.Log($"  - {stack}");
+                        // Debug.Log($"  - {stack}");
                     }
                 }
             }
             
-            Debug.Log($"Total slots: {GetTotalSlotCount()}");
+            // Debug.Log($"Total slots: {GetTotalSlotCount()}");
         }
         
         #endregion

@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 using RobotGame.Components;
 using RobotGame.Control;
@@ -126,6 +127,13 @@ namespace RobotGame.AI
         // Velocidad de aproximación (modificada por ataque)
         private float currentApproachSpeedMultiplier = 1f;
         
+        // Sistema de animación
+        private List<Animator> partAnimators = new List<Animator>();
+        private int speedHash;
+        private int isGroundedHash;
+        private float currentAnimSpeed;
+        private float animSpeedVelocity;
+        
         #region Properties
         
         /// <summary>
@@ -252,6 +260,13 @@ namespace RobotGame.AI
         {
             spawnPosition = transform.position;
             
+            // Cachear hashes de parámetros de animación
+            speedHash = Animator.StringToHash("Speed");
+            isGroundedHash = Animator.StringToHash("IsGrounded");
+            
+            // Recopilar animators de las partes estructurales
+            CollectPartAnimators();
+            
             if (wildData != null)
             {
                 currentHealth = MaxHealth;
@@ -274,6 +289,92 @@ namespace RobotGame.AI
             
             // Refrescar partes de combate después de un frame para asegurar que todo esté configurado
             Invoke(nameof(RefreshCombatParts), 0.1f);
+            
+            // Aplicar multiplicador de movilidad basado en peso/fuerza
+            Invoke(nameof(ApplyMobilityMultiplier), 0.2f);
+        }
+        
+        /// <summary>
+        /// Recopila todos los Animators de las partes estructurales del robot.
+        /// </summary>
+        private void CollectPartAnimators()
+        {
+            partAnimators.Clear();
+            
+            if (robot == null) return;
+            
+            foreach (var part in robot.GetAllStructuralParts())
+            {
+                if (part.Animator != null)
+                {
+                    partAnimators.Add(part.Animator);
+                }
+            }
+        }
+        
+        /// <summary>
+        /// Actualiza el parámetro Speed en todos los Animators basado en la velocidad de movimiento.
+        /// </summary>
+        private void UpdateAnimatorSpeed()
+        {
+            if (partAnimators.Count == 0 || movement == null) return;
+            
+            // Calcular velocidad normalizada (0-1) basada en la velocidad actual vs máxima
+            float maxSpeed = wildData != null ? wildData.moveSpeed * 1.5f : 9f;
+            float targetSpeed = movement.CurrentSpeed / maxSpeed;
+            targetSpeed = Mathf.Clamp01(targetSpeed);
+            
+            // Suavizar el cambio
+            currentAnimSpeed = Mathf.SmoothDamp(currentAnimSpeed, targetSpeed, ref animSpeedVelocity, 0.1f);
+            
+            // Enviar a todos los Animators
+            foreach (var anim in partAnimators)
+            {
+                if (anim == null) continue;
+                
+                // Solo actualizar si el animator tiene el parámetro
+                if (HasParameter(anim, speedHash))
+                {
+                    anim.SetFloat(speedHash, currentAnimSpeed);
+                }
+                
+                if (HasParameter(anim, isGroundedHash))
+                {
+                    anim.SetBool(isGroundedHash, movement.IsGrounded);
+                }
+            }
+        }
+        
+        /// <summary>
+        /// Verifica si un Animator tiene un parámetro específico.
+        /// </summary>
+        private bool HasParameter(Animator anim, int paramHash)
+        {
+            foreach (var param in anim.parameters)
+            {
+                if (param.nameHash == paramHash)
+                    return true;
+            }
+            return false;
+        }
+        
+        /// <summary>
+        /// Aplica el multiplicador de movilidad a las animaciones y movimiento.
+        /// </summary>
+        private void ApplyMobilityMultiplier()
+        {
+            if (robot == null) return;
+            
+            // Aplicar sistema jerárquico a todos los animators
+            robot.ApplyMobilityToAnimators();
+            
+            // Ajustar velocidad de movimiento basado en las Hips
+            float hipsMultiplier = robot.GetHipsSpeedMultiplier();
+            if (wildData != null && movement != null)
+            {
+                movement.MoveSpeed = wildData.moveSpeed * hipsMultiplier;
+                movement.SprintSpeed = wildData.moveSpeed * 1.5f * hipsMultiplier;
+            }
         }
         
         /// <summary>
@@ -320,6 +421,9 @@ namespace RobotGame.AI
         private void Update()
         {
             if (!IsAlive) return;
+            
+            // Actualizar parámetros de animación
+            UpdateAnimatorSpeed();
             
             // Si está siendo controlado por el jugador, no ejecutar IA
             if (isBeingControlled) return;
@@ -425,7 +529,7 @@ namespace RobotGame.AI
             // Entrar al nuevo estado
             OnEnterState(newState);
             
-            Debug.Log($"WildRobot '{wildData?.speciesName}': {currentState}");
+            // Debug.Log($"WildRobot '{wildData?.speciesName}': {currentState}");
         }
         
         private void OnEnterState(WildRobotState state)
@@ -1045,7 +1149,7 @@ namespace RobotGame.AI
                     {
                         selectedAttack = chainAttack;
                         selectedZone = selectedAttackPart.GetAttackZone(chainAttack.zoneId);
-                        Debug.Log($"[WildRobot] Encadenando a: '{chainAttack.attackName}'");
+                        // Debug.Log($"[WildRobot] Encadenando a: '{chainAttack.attackName}'");
                         return;
                     }
                 }
@@ -1322,20 +1426,20 @@ namespace RobotGame.AI
         {
             if (!isTamed)
             {
-                Debug.Log($"WildRobot '{wildData?.speciesName}': Señal ignorada (no domesticado)");
+                // Debug.Log($"WildRobot '{wildData?.speciesName}': Señal ignorada (no domesticado)");
                 return;
             }
             
             if (isBeingControlled)
             {
-                Debug.Log($"WildRobot '{wildData?.speciesName}': Señal ignorada (siendo controlado)");
+                // Debug.Log($"WildRobot '{wildData?.speciesName}': Señal ignorada (siendo controlado)");
                 return;
             }
             
             Vector3? ownerPos = GetOwnerPosition();
             if (ownerPos == null)
             {
-                Debug.Log($"WildRobot '{wildData?.speciesName}': Señal ignorada (no hay dueño)");
+                // Debug.Log($"WildRobot '{wildData?.speciesName}': Señal ignorada (no hay dueño)");
                 return;
             }
             
@@ -1345,19 +1449,19 @@ namespace RobotGame.AI
             {
                 // Estaba quieto → empezar a seguir
                 ChangeState(WildRobotState.TamedFollow);
-                Debug.Log($"WildRobot '{wildData?.speciesName}': Señal recibida → Siguiendo");
+                // Debug.Log($"WildRobot '{wildData?.speciesName}': Señal recibida → Siguiendo");
             }
             else if (currentState == WildRobotState.TamedFollow && distance <= followStopDistance)
             {
                 // Está cerca y siguiendo → quedarse
                 ChangeState(WildRobotState.TamedStay);
-                Debug.Log($"WildRobot '{wildData?.speciesName}': Señal recibida → Quieto");
+                // Debug.Log($"WildRobot '{wildData?.speciesName}': Señal recibida → Quieto");
             }
             else
             {
                 // Está lejos o en otro estado → venir
                 ChangeState(WildRobotState.TamedFollow);
-                Debug.Log($"WildRobot '{wildData?.speciesName}': Señal recibida → Viniendo (dist: {distance:F1}m)");
+                // Debug.Log($"WildRobot '{wildData?.speciesName}': Señal recibida → Viniendo (dist: {distance:F1}m)");
             }
         }
         
@@ -1375,7 +1479,7 @@ namespace RobotGame.AI
             StopMoving();
             ChangeState(WildRobotState.Idle);
             
-            Debug.Log($"WildRobot '{wildData?.speciesName}': Control tomado por jugador");
+            // Debug.Log($"WildRobot '{wildData?.speciesName}': Control tomado por jugador");
         }
         
         /// <summary>
@@ -1393,7 +1497,7 @@ namespace RobotGame.AI
                 ChangeState(WildRobotState.TamedFollow);
             }
             
-            Debug.Log($"WildRobot '{wildData?.speciesName}': Control liberado");
+            // Debug.Log($"WildRobot '{wildData?.speciesName}': Control liberado");
         }
         
         #endregion
@@ -1407,7 +1511,7 @@ namespace RobotGame.AI
         {
             if (newOwner == null)
             {
-                Debug.LogWarning("WildRobot: No se puede domesticar sin un dueño válido");
+                // Debug.LogWarning("WildRobot: No se puede domesticar sin un dueño válido");
                 return;
             }
             
@@ -1418,7 +1522,7 @@ namespace RobotGame.AI
             StopMoving();
             ChangeState(WildRobotState.Idle);
             
-            Debug.Log($"WildRobot '{wildData?.speciesName}': Domesticado por {newOwner.name}");
+            // Debug.Log($"WildRobot '{wildData?.speciesName}': Domesticado por {newOwner.name}");
         }
         
         /// <summary>
@@ -1428,7 +1532,7 @@ namespace RobotGame.AI
         {
             if (!isTamed)
             {
-                Debug.LogWarning("WildRobot: El robot ya es salvaje");
+                // Debug.LogWarning("WildRobot: El robot ya es salvaje");
                 return;
             }
             
@@ -1436,7 +1540,7 @@ namespace RobotGame.AI
             isTamed = false;
             owner = null;
             
-            Debug.Log($"WildRobot '{wildData?.speciesName}': Liberado (era de {previousOwner?.name})");
+            // Debug.Log($"WildRobot '{wildData?.speciesName}': Liberado (era de {previousOwner?.name})");
         }
         
         #endregion
@@ -1518,14 +1622,14 @@ namespace RobotGame.AI
         {
             var viable = new System.Collections.Generic.List<(CombatPart part, AttackData attack)>();
             
-            Debug.Log($"[WildRobot] FilterViableAttacks: Evaluando {attacks.Count} ataques");
+            // Debug.Log($"[WildRobot] FilterViableAttacks: Evaluando {attacks.Count} ataques");
             
             foreach (var (part, attack) in attacks)
             {
                 if (part == null || attack == null) continue;
                 
                 bool isViable = part.IsAttackViable(attack);
-                Debug.Log($"[WildRobot] - Ataque '{attack.attackName}' (zoneId: '{attack.zoneId}'): Viable = {isViable}");
+                // Debug.Log($"[WildRobot] - Ataque '{attack.attackName}' (zoneId: '{attack.zoneId}'): Viable = {isViable}");
                 
                 if (isViable)
                 {
@@ -1533,7 +1637,7 @@ namespace RobotGame.AI
                 }
             }
             
-            Debug.Log($"[WildRobot] FilterViableAttacks: {viable.Count} ataques viables de {attacks.Count}");
+            // Debug.Log($"[WildRobot] FilterViableAttacks: {viable.Count} ataques viables de {attacks.Count}");
             
             return viable;
         }
@@ -1613,7 +1717,7 @@ namespace RobotGame.AI
         /// </summary>
         private void PerformLegacyAttack()
         {
-            Debug.Log($"[WildRobot] '{wildData.speciesName}' ataca (legacy) por {wildData.attackDamage} de daño!");
+            // Debug.Log($"[WildRobot] '{wildData.speciesName}' ataca (legacy) por {wildData.attackDamage} de daño!");
             
             // TODO: Implementar daño directo si no hay sistema de hitbox
         }
@@ -1721,14 +1825,14 @@ namespace RobotGame.AI
             
             if (selectedAttack != null)
             {
-                Debug.Log($"[WildRobot] Ataque seleccionado: '{selectedAttack.attackName}' " +
-                         $"(zona: {(selectedZone != null ? selectedZone.ZoneId : "NINGUNA")}, " +
-                         $"parte: {selectedAttackPart?.name}, " +
-                         $"zonas en parte: {selectedAttackPart?.LinkedAttackZones?.Count ?? 0})");
+                // Debug.Log($"[WildRobot] Ataque seleccionado: '{selectedAttack.attackName}' " +
+                //                          $"(zona: {(selectedZone != null ? selectedZone.ZoneId : "NINGUNA")}, " +
+                //                          $"parte: {selectedAttackPart?.name}, " +
+                //                          $"zonas en parte: {selectedAttackPart?.LinkedAttackZones?.Count ?? 0})");
             }
             else
             {
-                Debug.LogWarning($"[WildRobot] No se pudo seleccionar ningún ataque!");
+                // Debug.LogWarning($"[WildRobot] No se pudo seleccionar ningún ataque!");
             }
         }
         
@@ -2095,7 +2199,7 @@ namespace RobotGame.AI
             if (selectedAttackPart == null || selectedAttack == null) return;
             if (combatController == null || !combatController.CanAttack) return;
             
-            Debug.Log($"[WildRobot] Ejecutando ataque: '{selectedAttack.attackName}'");
+            // Debug.Log($"[WildRobot] Ejecutando ataque: '{selectedAttack.attackName}'");
             
             combatController.TryExecuteAttack(selectedAttackPart, selectedAttack);
             lastAttackTime = Time.time;
@@ -2108,7 +2212,7 @@ namespace RobotGame.AI
         public void RegisterAttackHit()
         {
             lastAttackHit = true;
-            Debug.Log($"[WildRobot] Ataque impactó!");
+            // Debug.Log($"[WildRobot] Ataque impactó!");
         }
         
         /// <summary>
@@ -2117,7 +2221,7 @@ namespace RobotGame.AI
         public void RegisterAttackMiss()
         {
             lastAttackHit = false;
-            Debug.Log($"[WildRobot] Ataque falló!");
+            // Debug.Log($"[WildRobot] Ataque falló!");
         }
         
         #endregion
@@ -2131,7 +2235,7 @@ namespace RobotGame.AI
             
             currentHealth -= damage;
             
-            Debug.Log($"WildRobot '{wildData.speciesName}' recibió {damage} de daño. Salud: {currentHealth}/{MaxHealth}");
+            // Debug.Log($"WildRobot '{wildData.speciesName}' recibió {damage} de daño. Salud: {currentHealth}/{MaxHealth}");
             
             if (currentHealth <= 0)
             {
@@ -2147,7 +2251,7 @@ namespace RobotGame.AI
         
         private void OnDeath()
         {
-            Debug.Log($"WildRobot '{wildData.speciesName}' ha sido derrotado!");
+            // Debug.Log($"WildRobot '{wildData.speciesName}' ha sido derrotado!");
             
             // TODO: Generar loot
             // TODO: Efectos de muerte

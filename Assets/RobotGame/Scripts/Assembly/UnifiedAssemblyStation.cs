@@ -263,7 +263,7 @@ namespace RobotGame.Assembly
                 else if (platforms.Length == 1)
                 {
                     platformA = platforms[0];
-                    Debug.LogWarning("UnifiedAssemblyStation: Solo se encontró una plataforma");
+                    // Debug.LogWarning("UnifiedAssemblyStation: Solo se encontró una plataforma");
                 }
             }
         }
@@ -282,10 +282,10 @@ namespace RobotGame.Assembly
                 playerController.Disable();
             }
             
-            Debug.Log("=== MENÚ DE ENSAMBLAJE ===");
-            Debug.Log("[P] Editar tu robot (con snapshot)");
-            Debug.Log("[O] Editar/crear cascarón (sin snapshot)");
-            Debug.Log("[ESC] Cancelar");
+            // Debug.Log("=== MENÚ DE ENSAMBLAJE ===");
+            // Debug.Log("[P] Editar tu robot (con snapshot)");
+            // Debug.Log("[O] Editar/crear cascarón (sin snapshot)");
+            // Debug.Log("[ESC] Cancelar");
         }
         
         private void HideSelectionMenu()
@@ -326,7 +326,7 @@ namespace RobotGame.Assembly
             
             if (playerRobot == null)
             {
-                Debug.LogWarning("UnifiedAssemblyStation: No hay robot del jugador en la plataforma");
+                // Debug.LogWarning("UnifiedAssemblyStation: No hay robot del jugador en la plataforma");
                 HideSelectionMenu();
                 return;
             }
@@ -334,7 +334,7 @@ namespace RobotGame.Assembly
             // Verificar tier
             if (playerRobot.CurrentTier > stationTier)
             {
-                Debug.LogWarning($"UnifiedAssemblyStation: Robot requiere estación de tier superior");
+                // Debug.LogWarning($"UnifiedAssemblyStation: Robot requiere estación de tier superior");
                 HideSelectionMenu();
                 return;
             }
@@ -349,7 +349,7 @@ namespace RobotGame.Assembly
                 playerController.EnterEditModeState();
             }
             
-            Debug.Log($"UnifiedAssemblyStation: Editando robot propio '{targetRobot.name}' (CON snapshot)");
+            // Debug.Log($"UnifiedAssemblyStation: Editando robot propio '{targetRobot.name}' (CON snapshot)");
             OnEditModeStarted?.Invoke(this, currentEditMode, targetRobot);
         }
         
@@ -361,7 +361,7 @@ namespace RobotGame.Assembly
                 Robot newShell = CreateEmptyShell();
                 if (newShell == null)
                 {
-                    Debug.LogWarning("UnifiedAssemblyStation: No se pudo crear el cascarón");
+                    // Debug.LogWarning("UnifiedAssemblyStation: No se pudo crear el cascarón");
                     HideSelectionMenu();
                     return;
                 }
@@ -371,7 +371,7 @@ namespace RobotGame.Assembly
             
             if (shellRobot == null)
             {
-                Debug.LogWarning("UnifiedAssemblyStation: No hay cascarón en la otra plataforma");
+                // Debug.LogWarning("UnifiedAssemblyStation: No hay cascarón en la otra plataforma");
                 HideSelectionMenu();
                 return;
             }
@@ -379,7 +379,7 @@ namespace RobotGame.Assembly
             // Verificar que no tenga Core (es un cascarón)
             if (shellRobot.Core != null)
             {
-                Debug.LogWarning("UnifiedAssemblyStation: El robot tiene Core, no es un cascarón");
+                // Debug.LogWarning("UnifiedAssemblyStation: El robot tiene Core, no es un cascarón");
                 HideSelectionMenu();
                 return;
             }
@@ -394,7 +394,7 @@ namespace RobotGame.Assembly
                 playerController.EnterEditModeState();
             }
             
-            Debug.Log($"UnifiedAssemblyStation: Editando cascarón '{targetRobot.name}' (SIN snapshot)");
+            // Debug.Log($"UnifiedAssemblyStation: Editando cascarón '{targetRobot.name}' (SIN snapshot)");
             OnEditModeStarted?.Invoke(this, currentEditMode, targetRobot);
         }
         
@@ -405,7 +405,7 @@ namespace RobotGame.Assembly
         {
             if (TargetPlatform == null || !TargetPlatform.IsAvailable)
             {
-                Debug.LogWarning("UnifiedAssemblyStation: No hay plataforma disponible");
+                // Debug.LogWarning("UnifiedAssemblyStation: No hay plataforma disponible");
                 return null;
             }
             
@@ -419,7 +419,7 @@ namespace RobotGame.Assembly
             // Colocar en la plataforma
             TargetPlatform.PlaceShell(shell);
             
-            Debug.Log("UnifiedAssemblyStation: Cascarón vacío creado");
+            // Debug.Log("UnifiedAssemblyStation: Cascarón vacío creado");
             return shell;
         }
         
@@ -434,7 +434,7 @@ namespace RobotGame.Assembly
             
             if (result != MechaValidationResult.Valid)
             {
-                Debug.LogWarning($"UnifiedAssemblyStation: {GetValidationMessage(result)}");
+                // Debug.LogWarning($"UnifiedAssemblyStation: {GetValidationMessage(result)}");
                 return;
             }
             
@@ -448,7 +448,7 @@ namespace RobotGame.Assembly
                 playerController.EnterEditModeState();
             }
             
-            Debug.Log($"UnifiedAssemblyStation: Editando mecha '{mecha.WildData?.speciesName}' (CON snapshot)");
+            // Debug.Log($"UnifiedAssemblyStation: Editando mecha '{mecha.WildData?.speciesName}' (CON snapshot)");
             OnEditModeStarted?.Invoke(this, currentEditMode, targetRobot);
         }
         
@@ -517,11 +517,11 @@ namespace RobotGame.Assembly
             
             if (core == null)
             {
-                Debug.LogWarning("UnifiedAssemblyStation: No hay PlayerCore");
+                // Debug.LogWarning("UnifiedAssemblyStation: No hay PlayerCore");
                 return;
             }
             
-            Debug.Log($"UnifiedAssemblyStation: HandleCoreAction - Core en robot: {core.CurrentRobot != null}");
+            // Debug.Log($"UnifiedAssemblyStation: HandleCoreAction - Core en robot: {core.CurrentRobot != null}");
             
             // Si el Core está en un robot, extraerlo
             if (core.CurrentRobot != null)
@@ -532,7 +532,7 @@ namespace RobotGame.Assembly
                 Robot extracted = core.Extract();
                 if (extracted != null)
                 {
-                    Debug.Log($"UnifiedAssemblyStation: Core extraído de '{extracted.name}'");
+                    // Debug.Log($"UnifiedAssemblyStation: Core extraído de '{extracted.name}'");
                     
                     // Forzar re-detección de plataformas
                     platformA?.ForceRedetect();
@@ -540,7 +540,7 @@ namespace RobotGame.Assembly
                 }
                 else
                 {
-                    Debug.LogWarning("UnifiedAssemblyStation: No se pudo extraer el Core");
+                    // Debug.LogWarning("UnifiedAssemblyStation: No se pudo extraer el Core");
                 }
             }
             else
@@ -568,11 +568,11 @@ namespace RobotGame.Assembly
                 
                 if (robotToInsert != null && robotToInsert.Core == null)
                 {
-                    Debug.Log($"UnifiedAssemblyStation: Intentando insertar Core en '{robotToInsert.name}'");
+                    // Debug.Log($"UnifiedAssemblyStation: Intentando insertar Core en '{robotToInsert.name}'");
                     
                     if (core.InsertInto(robotToInsert))
                     {
-                        Debug.Log($"UnifiedAssemblyStation: Core insertado exitosamente en '{robotToInsert.name}'");
+                        // Debug.Log($"UnifiedAssemblyStation: Core insertado exitosamente en '{robotToInsert.name}'");
                         
                         // Forzar re-detección
                         platformA?.ForceRedetect();
@@ -580,12 +580,12 @@ namespace RobotGame.Assembly
                     }
                     else
                     {
-                        Debug.LogWarning("UnifiedAssemblyStation: InsertInto retornó false");
+                        // Debug.LogWarning("UnifiedAssemblyStation: InsertInto retornó false");
                     }
                 }
                 else
                 {
-                    Debug.LogWarning($"UnifiedAssemblyStation: No hay robot disponible para insertar. targetRobot={targetRobot?.name}, Core={targetRobot?.Core}");
+                    // Debug.LogWarning($"UnifiedAssemblyStation: No hay robot disponible para insertar. targetRobot={targetRobot?.name}, Core={targetRobot?.Core}");
                 }
             }
         }
@@ -602,7 +602,7 @@ namespace RobotGame.Assembly
         {
             if (!IsEditing) return;
             
-            Debug.Log($"UnifiedAssemblyStation: Solicitando salir del modo {currentEditMode}");
+            // Debug.Log($"UnifiedAssemblyStation: Solicitando salir del modo {currentEditMode}");
             
             // El evento notifica al controller para que valide
             OnEditModeEnded?.Invoke(this);
@@ -613,7 +613,7 @@ namespace RobotGame.Assembly
         /// </summary>
         public void CompleteExitEditMode()
         {
-            Debug.Log($"UnifiedAssemblyStation: Saliendo del modo {currentEditMode}");
+            // Debug.Log($"UnifiedAssemblyStation: Saliendo del modo {currentEditMode}");
             
             currentEditMode = AssemblyEditMode.None;
             targetRobot = null;

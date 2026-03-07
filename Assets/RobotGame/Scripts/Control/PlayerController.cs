@@ -1,5 +1,6 @@
 using UnityEngine;
 using System;
+using RobotGame.Components;
 
 namespace RobotGame.Control
 {
@@ -90,6 +91,7 @@ namespace RobotGame.Control
         private CapsuleCollider capsule;
         private Transform cameraTransform;
         private Combat.CombatController combatController;
+        private Robot currentRobot;
         
         // Input
         private Vector2 inputDirection;
@@ -101,6 +103,9 @@ namespace RobotGame.Control
         private bool wasGrounded;
         private float horizontalSpeed;
         private Vector3 lastMoveDirection = Vector3.forward;
+        
+        // Mobility
+        private float mobilityMultiplier = 1f;
         
         // Timers
         private float coyoteTimer;
@@ -153,6 +158,8 @@ namespace RobotGame.Control
                 rb = null;
                 capsule = null;
                 combatController = null;
+                currentRobot = null;
+                mobilityMultiplier = 1f;
                 return;
             }
             
@@ -163,13 +170,36 @@ namespace RobotGame.Control
             // Buscar CombatController
             combatController = targetTransform.GetComponent<Combat.CombatController>();
             
+            // Buscar Robot para sistema de movilidad
+            currentRobot = targetTransform.GetComponent<Robot>();
+            UpdateMobilityMultiplier();
+            
             // Buscar cámara
             if (Camera.main != null)
             {
                 cameraTransform = Camera.main.transform;
             }
             
-            Debug.Log($"PlayerController: Target -> {targetTransform.name}");
+            // Debug.Log($"PlayerController: Target -> {targetTransform.name}");
+        }
+        
+        /// <summary>
+        /// Actualiza el multiplicador de movilidad basado en el peso/fuerza de las Hips.
+        /// Llamar cuando cambie la configuración del robot.
+        /// </summary>
+        public void UpdateMobilityMultiplier()
+        {
+            if (currentRobot != null)
+            {
+                // Usar velocidad de las Hips para el movimiento del jugador
+                mobilityMultiplier = currentRobot.GetHipsSpeedMultiplier();
+                Debug.Log($"[PlayerController] MobilityMultiplier (Hips) actualizado: {mobilityMultiplier:F2}");
+            }
+            else
+            {
+                mobilityMultiplier = 1f;
+                Debug.Log("[PlayerController] MobilityMultiplier = 1 (no hay robot)");
+            }
         }
         
         private void SetupRigidbody()
@@ -222,7 +252,7 @@ namespace RobotGame.Control
             capsule.height = height;
             capsule.center = center;
             
-            Debug.Log($"PlayerController: Collider - Radius: {radius:F2}, Height: {height:F2}");
+            // Debug.Log($"PlayerController: Collider - Radius: {radius:F2}, Height: {height:F2}");
         }
         
         private Bounds CalculateBounds()
@@ -287,7 +317,7 @@ namespace RobotGame.Control
             }
             
             OnStateChanged?.Invoke(newState);
-            Debug.Log($"PlayerController: {prevState} -> {newState}");
+            // Debug.Log($"PlayerController: {prevState} -> {newState}");
         }
         
         public void Enable() => SetState(ControlState.Normal);
@@ -474,8 +504,12 @@ namespace RobotGame.Control
                 lastMoveDirection = moveDir.normalized;
             }
             
+            // Obtener velocidades del robot (o usar valores por defecto)
+            float currentWalkSpeed = currentRobot != null ? currentRobot.GetFinalMovementSpeed() : walkSpeed;
+            float currentSprintSpeed = currentRobot != null ? currentRobot.GetFinalSprintSpeed() : sprintSpeed;
+            
             float targetSpeed = (canMove && inputDirection.sqrMagnitude > 0.01f)
-                ? (isSprinting ? sprintSpeed : walkSpeed) 
+                ? (isSprinting ? currentSprintSpeed : currentWalkSpeed)
                 : 0f;
             
             horizontalSpeed = targetSpeed;

@@ -38,8 +38,8 @@ namespace RobotGame.Combat
             
             if (combatController == null)
             {
-                Debug.LogWarning($"[AttackAnimationEvents] {gameObject.name}: No se encontró CombatController en padres. " +
-                    "Se buscará cuando se reciba un evento.");
+                // Debug.LogWarning($"[AttackAnimationEvents] {gameObject.name}: No se encontró CombatController en padres. " +
+                //     "Se buscará cuando se reciba un evento.");
             }
         }
         
@@ -55,7 +55,7 @@ namespace RobotGame.Combat
         {
             if (showDebugLogs)
             {
-                Debug.Log($"<color=green>[AnimEvent] {gameObject.name}: OnHitboxStart()</color>");
+                // Debug.Log($"<color=green>[AnimEvent] {gameObject.name}: OnHitboxStart()</color>");
             }
             
             hitboxActive = true;
@@ -72,7 +72,7 @@ namespace RobotGame.Combat
             }
             else
             {
-                Debug.LogError($"[AttackAnimationEvents] {gameObject.name}: No se encontró CombatController!");
+                // Debug.LogError($"[AttackAnimationEvents] {gameObject.name}: No se encontró CombatController!");
             }
         }
         
@@ -84,7 +84,7 @@ namespace RobotGame.Combat
         {
             if (showDebugLogs)
             {
-                Debug.Log($"<color=yellow>[AnimEvent] {gameObject.name}: OnHitboxEnd()</color>");
+                // Debug.Log($"<color=yellow>[AnimEvent] {gameObject.name}: OnHitboxEnd()</color>");
             }
             
             hitboxActive = false;
@@ -104,7 +104,7 @@ namespace RobotGame.Combat
         {
             if (showDebugLogs)
             {
-                Debug.Log($"<color=red>[AnimEvent] {gameObject.name}: OnAttackEnd()</color>");
+                // Debug.Log($"<color=red>[AnimEvent] {gameObject.name}: OnAttackEnd()</color>");
             }
             
             hitboxActive = false;

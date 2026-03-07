@@ -377,11 +377,11 @@ namespace RobotGame.UI
         
         private void CreateSlots()
         {
-            Debug.Log($"InventoryPanelUI.CreateSlots: gridContainer={gridContainer != null}, slotPrefab={slotPrefab != null}");
+            // Debug.Log($"InventoryPanelUI.CreateSlots: gridContainer={gridContainer != null}, slotPrefab={slotPrefab != null}");
             
             if (gridContainer == null || slotPrefab == null)
             {
-                Debug.LogError("InventoryPanelUI: gridContainer o slotPrefab es null!");
+                // Debug.LogError("InventoryPanelUI: gridContainer o slotPrefab es null!");
                 return;
             }
             
@@ -405,7 +405,7 @@ namespace RobotGame.UI
             // Crear slots suficientes
             int totalSlots = columns * (visibleRows + 2); // Extra para scroll
             
-            Debug.Log($"InventoryPanelUI: Creando {totalSlots} slots");
+            // Debug.Log($"InventoryPanelUI: Creando {totalSlots} slots");
             
             for (int i = 0; i < totalSlots; i++)
             {
@@ -421,11 +421,11 @@ namespace RobotGame.UI
                 }
                 else
                 {
-                    Debug.LogWarning($"InventoryPanelUI: Slot {i} no tiene componente InventorySlotUI!");
+                    // Debug.LogWarning($"InventoryPanelUI: Slot {i} no tiene componente InventorySlotUI!");
                 }
             }
             
-            Debug.Log($"InventoryPanelUI: {slots.Count} slots creados con InventorySlotUI");
+            // Debug.Log($"InventoryPanelUI: {slots.Count} slots creados con InventorySlotUI");
         }
         
         #endregion
@@ -455,12 +455,12 @@ namespace RobotGame.UI
                 if (currentCategory == InventoryCategory.StructuralParts)
                 {
                     // Notificar cambio a modo estructural
-                    Debug.Log("InventoryPanelUI: Cambiado a modo Structural");
+                    // Debug.Log("InventoryPanelUI: Cambiado a modo Structural");
                 }
                 else if (currentCategory == InventoryCategory.ArmorParts)
                 {
                     // Notificar cambio a modo armadura
-                    Debug.Log("InventoryPanelUI: Cambiado a modo Armor");
+                    // Debug.Log("InventoryPanelUI: Cambiado a modo Armor");
                 }
             }
         }
@@ -498,7 +498,7 @@ namespace RobotGame.UI
             
             OnItemSelected?.Invoke(slot.Item);
             
-            Debug.Log($"InventoryPanelUI: Item seleccionado - {slot.Item?.DisplayName}");
+            // Debug.Log($"InventoryPanelUI: Item seleccionado - {slot.Item?.DisplayName}");
         }
         
         private void OnSlotHoverEnter(InventorySlotUI slot)

@@ -333,7 +333,7 @@ namespace RobotGame.Control
                 verticalVelocity = 0f;
             }
             
-            Debug.Log($"RobotMovement: ForceGroundCheck - IsGrounded: {isGrounded}, Position: {transform.position}");
+            // Debug.Log($"RobotMovement: ForceGroundCheck - IsGrounded: {isGrounded}, Position: {transform.position}");
         }
         
         /// <summary>

@@ -122,13 +122,13 @@ namespace RobotGame.Components
         {
             if (robot == null)
             {
-                Debug.LogWarning("RobotCore: Intentando insertar en un robot null.");
+                // Debug.LogWarning("RobotCore: Intentando insertar en un robot null.");
                 return false;
             }
             
             if (isActive && currentRobot != null)
             {
-                Debug.LogWarning("RobotCore: Ya está insertado en otro robot. Extráelo primero.");
+                // Debug.LogWarning("RobotCore: Ya está insertado en otro robot. Extráelo primero.");
                 return false;
             }
             
@@ -137,7 +137,7 @@ namespace RobotGame.Components
             
             if (coreSocketTransform == null)
             {
-                Debug.LogWarning("RobotCore: El robot no tiene CoreSocket disponible.");
+                // Debug.LogWarning("RobotCore: El robot no tiene CoreSocket disponible.");
                 return false;
             }
             

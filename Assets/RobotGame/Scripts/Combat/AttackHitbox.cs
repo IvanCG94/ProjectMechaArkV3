@@ -54,7 +54,7 @@ namespace RobotGame.Combat
             hitDamageables.Clear();
             
             string attackType = areaAttack ? "ÁREA" : "NORMAL";
-            Debug.Log($"[AttackHitbox] Activada ({attackType}) - Radio: {radius:F2}, Daño: {damage:F1}, AttackId: {currentAttackId}");
+            // Debug.Log($"[AttackHitbox] Activada ({attackType}) - Radio: {radius:F2}, Daño: {damage:F1}, AttackId: {currentAttackId}");
         }
         
         /// <summary>
@@ -64,7 +64,7 @@ namespace RobotGame.Combat
         {
             if (isActive)
             {
-                Debug.Log($"[AttackHitbox] Desactivada - Partes: {hitParts.Count}, Otros: {hitDamageables.Count}");
+                // Debug.Log($"[AttackHitbox] Desactivada - Partes: {hitParts.Count}, Otros: {hitDamageables.Count}");
             }
             
             isActive = false;
@@ -142,7 +142,7 @@ namespace RobotGame.Combat
                 
                 string criticalTag = partHealth.IsCriticalPart ? " [CRÍTICA]" : "";
                 string robotName = partHealth.ParentRobot != null ? partHealth.ParentRobot.RobotName : "SIN ROBOT";
-                Debug.Log($"[AttackHitbox] ¡GOLPE! {partHealth.gameObject.name}{criticalTag} de {robotName} - {currentDamage:F1} daño");
+                // Debug.Log($"[AttackHitbox] ¡GOLPE! {partHealth.gameObject.name}{criticalTag} de {robotName} - {currentDamage:F1} daño");
             }
             
             return true;
@@ -176,7 +176,7 @@ namespace RobotGame.Combat
             {
                 hitDamageables.Add(damageable);
                 newHits++;
-                Debug.Log($"[AttackHitbox] ¡GOLPE! {damageable.gameObject.name} - {currentDamage:F1} daño");
+                // Debug.Log($"[AttackHitbox] ¡GOLPE! {damageable.gameObject.name} - {currentDamage:F1} daño");
             }
             
             return true;

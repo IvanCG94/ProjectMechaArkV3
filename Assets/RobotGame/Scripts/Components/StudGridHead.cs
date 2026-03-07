@@ -121,7 +121,7 @@ namespace RobotGame.Components
         {
             if (headStuds == null || headStuds.Count == 0)
             {
-                Debug.LogWarning($"FindClosestStud: No hay studs en {gameObject.name}");
+                // Debug.LogWarning($"FindClosestStud: No hay studs en {gameObject.name}");
                 return -1;
             }
             
@@ -143,7 +143,7 @@ namespace RobotGame.Components
             
             if (closestIndex >= 0)
             {
-                Debug.Log($"FindClosestStud: Stud más cercano [{closestIndex}] '{headStuds[closestIndex].name}' a dist:{closestDistance:F3}");
+                // Debug.Log($"FindClosestStud: Stud más cercano [{closestIndex}] '{headStuds[closestIndex].name}' a dist:{closestDistance:F3}");
             }
             
             return closestIndex;
@@ -212,11 +212,11 @@ namespace RobotGame.Components
             headStuds = StudDetector.DetectHeadStuds(transform);
             occupiedIndices.Clear();
             
-            Debug.Log($"StudGridHead: Detectados {headStuds.Count} studs Head");
+            // Debug.Log($"StudGridHead: Detectados {headStuds.Count} studs Head");
             
             foreach (var stud in headStuds)
             {
-                Debug.Log($"  - {stud.name} (T{stud.tierInfo}) @ {stud.localPosition}");
+                // Debug.Log($"  - {stud.name} (T{stud.tierInfo}) @ {stud.localPosition}");
             }
         }
         
@@ -229,11 +229,11 @@ namespace RobotGame.Components
             headStuds = studs ?? new List<StudPoint>();
             occupiedIndices.Clear();
             
-            Debug.Log($"StudGridHead.SetStuds: Asignados {headStuds.Count} studs Head en {gameObject.name}");
+            // Debug.Log($"StudGridHead.SetStuds: Asignados {headStuds.Count} studs Head en {gameObject.name}");
             
             foreach (var stud in headStuds)
             {
-                Debug.Log($"  - {stud.name} (T{stud.tierInfo}) @ local:{stud.localPosition}, group:'{stud.groupId}'");
+                // Debug.Log($"  - {stud.name} (T{stud.tierInfo}) @ local:{stud.localPosition}, group:'{stud.groupId}'");
             }
         }
         
@@ -262,7 +262,7 @@ namespace RobotGame.Components
             
             if (reconnected > 0)
             {
-                Debug.Log($"StudGridHead.ReconnectStudTransforms: Reconectados {reconnected} transforms en {gameObject.name}");
+                // Debug.Log($"StudGridHead.ReconnectStudTransforms: Reconectados {reconnected} transforms en {gameObject.name}");
             }
         }
         
@@ -298,59 +298,57 @@ namespace RobotGame.Components
         }
         
         /// <summary>
-        /// Asegura que la grilla tenga un BoxCollider configurado.
-        /// Usado para detección de raycast en el sistema de ensamblaje.
+        /// Busca el stud más cercano a una posición mundial dentro de una tolerancia.
+        /// Retorna -1 si no encuentra ninguno dentro de la tolerancia.
+        /// </summary>
+        public int FindClosestStudIndex(Vector3 worldPosition, float tolerance = 0.05f)
+        {
+            if (headStuds == null || headStuds.Count == 0) return -1;
+            
+            int closestIndex = -1;
+            float closestDist = float.MaxValue;
+            
+            for (int i = 0; i < headStuds.Count; i++)
+            {
+                Vector3 studWorld = GetStudWorldPosition(i);
+                float dist = Vector3.Distance(worldPosition, studWorld);
+                if (dist < closestDist && dist <= tolerance)
+                {
+                    closestDist = dist;
+                    closestIndex = i;
+                }
+            }
+            
+            return closestIndex;
+        }
+        
+        /// <summary>
+        /// Obtiene el nombre de la pieza que ocupa un stud específico.
+        /// </summary>
+        public string GetOccupantName(int studIndex)
+        {
+            if (!occupiedIndices.Contains(studIndex)) return null;
+            
+            // Buscar en las piezas colocadas cuál ocupa este stud
+            foreach (var part in placedParts)
+            {
+                if (part == null) continue;
+                // No podemos saber exactamente qué stud ocupa cada parte sin más info
+                // Retornamos el nombre de alguna pieza colocada como aproximación
+                return part.gameObject.name;
+            }
+            
+            return "Desconocido";
+        }
+        
+        /// <summary>
+        /// Ya no crea colliders automáticos.
+        /// Los colliders para detección de raycast deben crearse manualmente como Box_ en Blender.
         /// </summary>
         public void EnsureCollider()
         {
-            BoxCollider collider = GetComponent<BoxCollider>();
-            if (collider == null)
-            {
-                collider = gameObject.AddComponent<BoxCollider>();
-            }
-            
-            // Calcular bounds basado en las posiciones ACTUALES de los studs
-            if (headStuds != null && headStuds.Count > 0)
-            {
-                // Obtener posiciones mundiales actuales y convertirlas a local
-                Vector3 firstStudWorld = GetStudWorldPosition(0);
-                Vector3 firstStudLocal = transform.InverseTransformPoint(firstStudWorld);
-                
-                Vector3 min = firstStudLocal;
-                Vector3 max = firstStudLocal;
-                
-                for (int i = 1; i < headStuds.Count; i++)
-                {
-                    Vector3 studWorld = GetStudWorldPosition(i);
-                    Vector3 studLocal = transform.InverseTransformPoint(studWorld);
-                    
-                    min = Vector3.Min(min, studLocal);
-                    max = Vector3.Max(max, studLocal);
-                }
-                
-                // Agregar padding generoso para facilitar el raycast
-                float padding = 0.15f;
-                Vector3 size = max - min + Vector3.one * padding;
-                Vector3 center = (min + max) / 2f;
-                
-                // Asegurar tamaño mínimo
-                size.x = Mathf.Max(size.x, 0.3f);
-                size.y = Mathf.Max(size.y, 0.3f);
-                size.z = Mathf.Max(size.z, 0.3f);
-                
-                collider.size = size;
-                collider.center = center;
-                
-                Debug.Log($"StudGridHead.EnsureCollider: {gameObject.name} - Collider size:{size}, center:{center}, studs:{headStuds.Count}");
-            }
-            else
-            {
-                collider.size = Vector3.one * 0.5f;
-                collider.center = Vector3.zero;
-                Debug.LogWarning($"StudGridHead.EnsureCollider: {gameObject.name} - Sin studs! Usando collider por defecto");
-            }
-            
-            collider.isTrigger = true;
+            // NO crear collider automático
+            // Los Box_ manuales se usan para detección de raycast
         }
         
         /// <summary>
@@ -480,7 +478,7 @@ namespace RobotGame.Components
             var tailGrid = armorPart.TailGrid;
             if (tailGrid == null || tailGrid.StudCount == 0)
             {
-                Debug.LogWarning($"StudGridHead.TryPlace: La pieza no tiene StudGridTail o studs");
+                // Debug.LogWarning($"StudGridHead.TryPlace: La pieza no tiene StudGridTail o studs");
                 return false;
             }
             
@@ -513,13 +511,13 @@ namespace RobotGame.Components
             if (armorPart == null) return false;
             if (CurrentHoveredStudIndex < 0 || CurrentHoveredStudIndex >= headStuds.Count)
             {
-                Debug.LogWarning("StudGridHead.TryPlaceAtCurrentStud: No hay stud seleccionado");
+                // Debug.LogWarning("StudGridHead.TryPlaceAtCurrentStud: No hay stud seleccionado");
                 return false;
             }
             
             if (IsStudOccupied(CurrentHoveredStudIndex))
             {
-                Debug.LogWarning("StudGridHead.TryPlaceAtCurrentStud: El stud ya está ocupado");
+                // Debug.LogWarning("StudGridHead.TryPlaceAtCurrentStud: El stud ya está ocupado");
                 return false;
             }
             
@@ -535,7 +533,7 @@ namespace RobotGame.Components
             // Notificar a la pieza
             armorPart.OnPlaced(this);
             
-            Debug.Log($"StudGridHead: Pieza colocada en stud {CurrentHoveredStudIndex} ({headStuds[CurrentHoveredStudIndex].name})");
+            // Debug.Log($"StudGridHead: Pieza colocada en stud {CurrentHoveredStudIndex} ({headStuds[CurrentHoveredStudIndex].name})");
             
             return true;
         }
@@ -601,13 +599,13 @@ namespace RobotGame.Components
         {
             if (tailGrid == null || tailGrid.StudCount == 0)
             {
-                Debug.Log("CanPlaceAllTails: tailGrid es null o vacío");
+                // Debug.Log("CanPlaceAllTails: tailGrid es null o vacío");
                 return false;
             }
             
             if (anchorHeadIndex < 0 || anchorHeadIndex >= headStuds.Count)
             {
-                Debug.Log($"CanPlaceAllTails: anchorHeadIndex {anchorHeadIndex} inválido (headStuds.Count={headStuds.Count})");
+                // Debug.Log($"CanPlaceAllTails: anchorHeadIndex {anchorHeadIndex} inválido (headStuds.Count={headStuds.Count})");
                 return false;
             }
             
@@ -625,8 +623,8 @@ namespace RobotGame.Components
             // Posición local del primer Tail (en el prefab de armadura)
             Vector3 firstTailLocalPos = tails[0].localPosition;
             
-            Debug.Log($"CanPlaceAllTails: Anchor Head[{anchorHeadIndex}] en {anchorHeadWorldPos}, Group:'{requiredGroupId}', Rotation:{rotation.eulerAngles}");
-            Debug.Log($"CanPlaceAllTails: Verificando {tails.Count} Tails...");
+            // Debug.Log($"CanPlaceAllTails: Anchor Head[{anchorHeadIndex}] en {anchorHeadWorldPos}, Group:'{requiredGroupId}', Rotation:{rotation.eulerAngles}");
+            // Debug.Log($"CanPlaceAllTails: Verificando {tails.Count} Tails...");
             
             // Para cada Tail, calcular dónde debería estar en espacio mundial
             // y buscar un Head libre en esa posición
@@ -639,7 +637,7 @@ namespace RobotGame.Components
                 // Verificar compatibilidad de tier
                 if (!tail.tierInfo.IsCompatibleWith(anchorHead.tierInfo))
                 {
-                    Debug.Log($"CanPlaceAllTails: Tail[{i}] tier {tail.tierInfo} incompatible con Head tier {anchorHead.tierInfo}");
+                    // Debug.Log($"CanPlaceAllTails: Tail[{i}] tier {tail.tierInfo} incompatible con Head tier {anchorHead.tierInfo}");
                     return false;
                 }
                 
@@ -653,35 +651,35 @@ namespace RobotGame.Components
                 // = posición del Head anchor + offset rotado
                 Vector3 expectedWorldPos = anchorHeadWorldPos + rotatedOffset;
                 
-                Debug.Log($"  Tail[{i}] '{tail.name}': localOffset={tailOffsetLocal}, rotatedOffset={rotatedOffset}, expectedWorld={expectedWorldPos}");
+                // Debug.Log($"  Tail[{i}] '{tail.name}': localOffset={tailOffsetLocal}, rotatedOffset={rotatedOffset}, expectedWorld={expectedWorldPos}");
                 
                 // Buscar un Head libre en esa posición mundial QUE PERTENEZCA AL MISMO GRUPO
                 int headIndex = FindHeadAtWorldPosition(expectedWorldPos, tail.tierInfo, requiredGroupId);
                 
                 if (headIndex < 0)
                 {
-                    Debug.Log($"CanPlaceAllTails: FALLO - No hay Head (grupo '{requiredGroupId}') para Tail[{i}] '{tail.name}' en posición mundial {expectedWorldPos}");
+                    // Debug.Log($"CanPlaceAllTails: FALLO - No hay Head (grupo '{requiredGroupId}') para Tail[{i}] '{tail.name}' en posición mundial {expectedWorldPos}");
                     return false;
                 }
                 
                 if (IsStudOccupied(headIndex))
                 {
-                    Debug.Log($"CanPlaceAllTails: FALLO - Head[{headIndex}] para Tail[{i}] está ocupado");
+                    // Debug.Log($"CanPlaceAllTails: FALLO - Head[{headIndex}] para Tail[{i}] está ocupado");
                     return false;
                 }
                 
                 // Verificar que no estamos usando el mismo Head dos veces
                 if (matchedHeadIndices.Contains(headIndex))
                 {
-                    Debug.Log($"CanPlaceAllTails: FALLO - Head[{headIndex}] ya está asignado a otro Tail");
+                    // Debug.Log($"CanPlaceAllTails: FALLO - Head[{headIndex}] ya está asignado a otro Tail");
                     return false;
                 }
                 
-                Debug.Log($"  Tail[{i}] → Head[{headIndex}] (grupo '{headStuds[headIndex].groupId}') OK");
+                // Debug.Log($"  Tail[{i}] → Head[{headIndex}] (grupo '{headStuds[headIndex].groupId}') OK");
                 matchedHeadIndices.Add(headIndex);
             }
             
-            Debug.Log($"CanPlaceAllTails: ÉXITO - {tails.Count} Tails coinciden con Heads del grupo '{requiredGroupId}': [{string.Join(", ", matchedHeadIndices)}]");
+            // Debug.Log($"CanPlaceAllTails: ÉXITO - {tails.Count} Tails coinciden con Heads del grupo '{requiredGroupId}': [{string.Join(", ", matchedHeadIndices)}]");
             return true;
         }
         
@@ -745,11 +743,11 @@ namespace RobotGame.Components
             // Log del más cercano que no cumplió
             if (closestIndex >= 0)
             {
-                Debug.Log($"FindHeadAtWorldPosition: No encontró Head (grupo:'{requiredGroupId}') en {worldPosition}. Más cercano: [{closestIndex}] grupo:'{closestGroup}' a dist:{closestDistance:F4}m (tolerancia:{tolerance}m)");
+                // Debug.Log($"FindHeadAtWorldPosition: No encontró Head (grupo:'{requiredGroupId}') en {worldPosition}. Más cercano: [{closestIndex}] grupo:'{closestGroup}' a dist:{closestDistance:F4}m (tolerancia:{tolerance}m)");
             }
             else if (!string.IsNullOrEmpty(requiredGroupId))
             {
-                Debug.Log($"FindHeadAtWorldPosition: No hay Heads del grupo '{requiredGroupId}' cerca de {worldPosition}");
+                // Debug.Log($"FindHeadAtWorldPosition: No hay Heads del grupo '{requiredGroupId}' cerca de {worldPosition}");
             }
             
             return -1;
@@ -773,13 +771,13 @@ namespace RobotGame.Components
             var tailGrid = armorPart.TailGrid;
             if (tailGrid == null || tailGrid.StudCount == 0)
             {
-                Debug.LogWarning("PlaceArmorWithAllTails: Armadura sin TailGrid");
+                // Debug.LogWarning("PlaceArmorWithAllTails: Armadura sin TailGrid");
                 return false;
             }
             
             if (!CanPlaceAllTails(tailGrid, anchorHeadIndex, rotation))
             {
-                Debug.LogWarning("PlaceArmorWithAllTails: No se pueden colocar todos los Tails");
+                // Debug.LogWarning("PlaceArmorWithAllTails: No se pueden colocar todos los Tails");
                 return false;
             }
             
@@ -817,7 +815,7 @@ namespace RobotGame.Components
             
             armorPart.OnPlaced(this);
             
-            Debug.Log($"PlaceArmorWithAllTails: Armadura colocada en grupo '{requiredGroupId}' ocupando {occupiedHeadIndices.Count} studs: [{string.Join(", ", occupiedHeadIndices)}]");
+            // Debug.Log($"PlaceArmorWithAllTails: Armadura colocada en grupo '{requiredGroupId}' ocupando {occupiedHeadIndices.Count} studs: [{string.Join(", ", occupiedHeadIndices)}]");
             return true;
         }
         
@@ -941,17 +939,17 @@ namespace RobotGame.Components
         {
             if (CurrentHoveredStudIndex < 0 || CurrentHoveredStudIndex >= headStuds.Count)
             {
-                Debug.Log($"GetPartAtCurrentStud: índice inválido {CurrentHoveredStudIndex}");
+                // Debug.Log($"GetPartAtCurrentStud: índice inválido {CurrentHoveredStudIndex}");
                 return null;
             }
             
             if (!IsStudOccupied(CurrentHoveredStudIndex))
             {
-                Debug.Log($"GetPartAtCurrentStud: Head[{CurrentHoveredStudIndex}] no está ocupado");
+                // Debug.Log($"GetPartAtCurrentStud: Head[{CurrentHoveredStudIndex}] no está ocupado");
                 return null;
             }
             
-            Debug.Log($"GetPartAtCurrentStud: Buscando pieza en Head[{CurrentHoveredStudIndex}], placedParts.Count={placedParts.Count}");
+            // Debug.Log($"GetPartAtCurrentStud: Buscando pieza en Head[{CurrentHoveredStudIndex}], placedParts.Count={placedParts.Count}");
             
             // Buscar qué pieza está cerca de este stud
             Vector3 studWorldPos = GetStudWorldPosition(CurrentHoveredStudIndex);
@@ -964,7 +962,7 @@ namespace RobotGame.Components
                 var tailGrid = part.TailGrid;
                 if (tailGrid == null)
                 {
-                    Debug.Log($"  Parte '{part.gameObject.name}' no tiene TailGrid");
+                    // Debug.Log($"  Parte '{part.gameObject.name}' no tiene TailGrid");
                     continue;
                 }
                 
@@ -975,13 +973,13 @@ namespace RobotGame.Components
                     
                     if (distance <= positionTolerance * 2f) // Usar tolerancia más amplia
                     {
-                        Debug.Log($"  Encontrada: '{part.gameObject.name}' (tail '{tail.name}' dist={distance:F4}m)");
+                        // Debug.Log($"  Encontrada: '{part.gameObject.name}' (tail '{tail.name}' dist={distance:F4}m)");
                         return part;
                     }
                 }
             }
             
-            Debug.Log("GetPartAtCurrentStud: No se encontró ninguna pieza");
+            // Debug.Log("GetPartAtCurrentStud: No se encontró ninguna pieza");
             return null;
         }
         
@@ -1045,17 +1043,17 @@ namespace RobotGame.Components
         {
             if (armorPart == null)
             {
-                Debug.LogWarning("RemovePart: armorPart es null");
+                // Debug.LogWarning("RemovePart: armorPart es null");
                 return false;
             }
             
             if (!placedParts.Contains(armorPart))
             {
-                Debug.LogWarning($"RemovePart: '{armorPart.gameObject.name}' no está en placedParts (count={placedParts.Count})");
+                // Debug.LogWarning($"RemovePart: '{armorPart.gameObject.name}' no está en placedParts (count={placedParts.Count})");
                 return false;
             }
             
-            Debug.Log($"RemovePart: Removiendo '{armorPart.gameObject.name}', occupiedIndices antes: [{string.Join(", ", occupiedIndices)}]");
+            // Debug.Log($"RemovePart: Removiendo '{armorPart.gameObject.name}', occupiedIndices antes: [{string.Join(", ", occupiedIndices)}]");
             
             var tailGrid = armorPart.TailGrid;
             if (tailGrid != null && tailGrid.StudCount > 0)
@@ -1072,7 +1070,7 @@ namespace RobotGame.Components
                     // Calcular posición mundial del Tail
                     Vector3 tailWorldPos = armorPart.transform.TransformPoint(tail.localPosition);
                     
-                    Debug.Log($"  Buscando Head para Tail '{tail.name}' en worldPos {tailWorldPos}");
+                    // Debug.Log($"  Buscando Head para Tail '{tail.name}' en worldPos {tailWorldPos}");
                     
                     // Buscar qué Head ocupa este Tail
                     bool found = false;
@@ -1088,7 +1086,7 @@ namespace RobotGame.Components
                         {
                             occupiedIndices.Remove(i);
                             freedCount++;
-                            Debug.Log($"    Liberado Head[{i}] '{headStuds[i].name}' (dist={distance:F4}m)");
+                            // Debug.Log($"    Liberado Head[{i}] '{headStuds[i].name}' (dist={distance:F4}m)");
                             found = true;
                             break;
                         }
@@ -1096,21 +1094,21 @@ namespace RobotGame.Components
                     
                     if (!found)
                     {
-                        Debug.LogWarning($"    No se encontró Head ocupado para Tail '{tail.name}'");
+                        // Debug.LogWarning($"    No se encontró Head ocupado para Tail '{tail.name}'");
                     }
                 }
                 
-                Debug.Log($"RemovePart: Liberados {freedCount} de {tails.Count} studs");
+                // Debug.Log($"RemovePart: Liberados {freedCount} de {tails.Count} studs");
             }
             else
             {
-                Debug.LogWarning($"RemovePart: '{armorPart.gameObject.name}' no tiene TailGrid");
+                // Debug.LogWarning($"RemovePart: '{armorPart.gameObject.name}' no tiene TailGrid");
             }
             
             placedParts.Remove(armorPart);
             armorPart.OnRemoved();
             
-            Debug.Log($"RemovePart: occupiedIndices después: [{string.Join(", ", occupiedIndices)}]");
+            // Debug.Log($"RemovePart: occupiedIndices después: [{string.Join(", ", occupiedIndices)}]");
             
             return true;
         }

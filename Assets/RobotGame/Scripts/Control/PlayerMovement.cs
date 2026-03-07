@@ -219,12 +219,12 @@ namespace RobotGame.Control
         {
             if (isInEditMode)
             {
-                Debug.Log("PlayerMovement: No se puede habilitar en modo edición");
+                // Debug.Log("PlayerMovement: No se puede habilitar en modo edición");
                 return;
             }
             
             isEnabled = true;
-            Debug.Log("PlayerMovement: Movimiento HABILITADO");
+            // Debug.Log("PlayerMovement: Movimiento HABILITADO");
         }
         
         /// <summary>
@@ -247,7 +247,7 @@ namespace RobotGame.Control
                 verticalVelocity = 0f;
             }
             
-            Debug.Log($"PlayerMovement: ForceGroundCheck - IsGrounded: {isGrounded}, Position: {target?.position}");
+            // Debug.Log($"PlayerMovement: ForceGroundCheck - IsGrounded: {isGrounded}, Position: {target?.position}");
         }
         
         /// <summary>
@@ -262,7 +262,7 @@ namespace RobotGame.Control
             horizontalVelocity = Vector3.zero;
             currentSpeed = 0f;
             
-            Debug.Log("PlayerMovement: Movimiento DESHABILITADO");
+            // Debug.Log("PlayerMovement: Movimiento DESHABILITADO");
         }
         
         /// <summary>
@@ -279,7 +279,7 @@ namespace RobotGame.Control
                 capsuleCollider.enabled = false;
             }
             
-            Debug.Log("PlayerMovement: Entrando a modo edición (collider desactivado)");
+            // Debug.Log("PlayerMovement: Entrando a modo edición (collider desactivado)");
         }
         
         /// <summary>
@@ -296,7 +296,7 @@ namespace RobotGame.Control
             }
             
             Enable();
-            Debug.Log("PlayerMovement: Saliendo de modo edición (collider activado)");
+            // Debug.Log("PlayerMovement: Saliendo de modo edición (collider activado)");
         }
         
         /// <summary>
@@ -383,7 +383,7 @@ namespace RobotGame.Control
             if (rb == null)
             {
                 rb = target.gameObject.AddComponent<Rigidbody>();
-                Debug.Log("PlayerMovement: Rigidbody creado automáticamente");
+                // Debug.Log("PlayerMovement: Rigidbody creado automáticamente");
             }
             
             // Configurar Rigidbody como Kinematic
@@ -397,7 +397,7 @@ namespace RobotGame.Control
             if (capsuleCollider == null)
             {
                 capsuleCollider = target.gameObject.AddComponent<CapsuleCollider>();
-                Debug.Log("PlayerMovement: CapsuleCollider creado automáticamente");
+                // Debug.Log("PlayerMovement: CapsuleCollider creado automáticamente");
             }
             
             // Configurar Collider
@@ -405,7 +405,7 @@ namespace RobotGame.Control
             capsuleCollider.radius = colliderRadius;
             capsuleCollider.center = colliderCenter;
             
-            Debug.Log($"PlayerMovement: Rigidbody y Collider configurados en {target.name}");
+            // Debug.Log($"PlayerMovement: Rigidbody y Collider configurados en {target.name}");
         }
         
         #endregion

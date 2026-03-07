@@ -360,8 +360,6 @@ GameObject:
   m_Component:
   - component: {fileID: 98802577}
   - component: {fileID: 98802576}
-  - component: {fileID: 98802579}
-  - component: {fileID: 98802580}
   - component: {fileID: 98802582}
   - component: {fileID: 98802583}
   m_Layer: 0
@@ -408,30 +406,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &98802579
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 98802575}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 1551d5c288453f74090234749c6651c8, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::RobotGame.Testing.NomenclatureParserTester
---- !u!114 &98802580
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 98802575}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7c273a65fa0547946a40f0767b6f5234, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::RobotGame.Testing.GridRotationTester
 --- !u!114 &98802582
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -446,7 +420,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::RobotGame.AI.WildRobotSpawner
   possibleRobots:
   - {fileID: 11400000, guid: 3892618bcfdef894ca687a5c8828067e, type: 2}
-  maxActiveRobots: 0
+  maxActiveRobots: 1
   spawnInterval: 30
   spawnRadius: 5
   spawnOnStart: 1
@@ -2764,6 +2738,10 @@ MonoBehaviour:
   - item: {fileID: 11400000, guid: 7299fa8f0fc82aa43b181a54d4443ce5, type: 2}
     quantity: 4
   - item: {fileID: 11400000, guid: 95a4fee86bdbb654e832ad9a213a2075, type: 2}
+    quantity: 4
+  - item: {fileID: 11400000, guid: 97b0a742b28948b45afdc4604bb91726, type: 2}
+    quantity: 4
+  - item: {fileID: 11400000, guid: e74e1d0bbfccb174f831250cd4a4005f, type: 2}
     quantity: 4
   allItems: []
 --- !u!1 &1624930344

@@ -70,11 +70,11 @@ namespace RobotGame.Editor
             {
                 AssetDatabase.Refresh();
                 AssetDatabase.SaveAssets();
-                Debug.Log($"[SpriteGenerator] Generados y asignados {generated} sprites.");
+                // Debug.Log($"[SpriteGenerator] Generados y asignados {generated} sprites.");
             }
             else
             {
-                Debug.LogWarning("[SpriteGenerator] No se encontraron ScriptableObjects válidos con prefab asignado.");
+                // Debug.LogWarning("[SpriteGenerator] No se encontraron ScriptableObjects válidos con prefab asignado.");
             }
         }
         
@@ -247,7 +247,7 @@ namespace RobotGame.Editor
                 });
             }
             
-            Debug.Log($"[SpriteGenerator] Encontrados {previews.Count} ScriptableObjects con prefab.");
+            // Debug.Log($"[SpriteGenerator] Encontrados {previews.Count} ScriptableObjects con prefab.");
         }
         
         private void GenerateSprites()
@@ -271,7 +271,7 @@ namespace RobotGame.Editor
             AssetDatabase.Refresh();
             AssetDatabase.SaveAssets();
             
-            Debug.Log($"[SpriteGenerator] Generados y asignados {generated} sprites.");
+            // Debug.Log($"[SpriteGenerator] Generados y asignados {generated} sprites.");
             
             ScanScriptableObjects();
         }
@@ -287,14 +287,14 @@ namespace RobotGame.Editor
             
             if (prefabProperty == null || spriteProperty == null)
             {
-                Debug.LogWarning($"[SpriteGenerator] {so.name}: No tiene campos '{prefabField}' o '{spriteField}'");
+                // Debug.LogWarning($"[SpriteGenerator] {so.name}: No tiene campos '{prefabField}' o '{spriteField}'");
                 return false;
             }
             
             GameObject prefab = prefabProperty.objectReferenceValue as GameObject;
             if (prefab == null)
             {
-                Debug.LogWarning($"[SpriteGenerator] {so.name}: No tiene prefab asignado");
+                // Debug.LogWarning($"[SpriteGenerator] {so.name}: No tiene prefab asignado");
                 return false;
             }
             
@@ -327,7 +327,7 @@ namespace RobotGame.Editor
                 serializedObject.ApplyModifiedProperties();
                 EditorUtility.SetDirty(so);
                 
-                Debug.Log($"[SpriteGenerator] {so.name}: Sprite generado y asignado");
+                // Debug.Log($"[SpriteGenerator] {so.name}: Sprite generado y asignado");
                 return true;
             }
             

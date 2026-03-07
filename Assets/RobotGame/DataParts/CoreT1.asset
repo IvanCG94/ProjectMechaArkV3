@@ -23,7 +23,7 @@ MonoBehaviour:
     subTier: 1
   rarity: 0
   maxStackSize: 99
-  weight: 1
+  weight: 100
   durability: 100
   maxEnergy: 100
   energyRegenRate: 5

@@ -11,7 +11,7 @@ GameObject:
   - component: {fileID: 1171587950814096181}
   - component: {fileID: 3820432306564967901}
   - component: {fileID: 1000100383981320318}
-  m_Layer: 0
+  m_Layer: 11
   m_Name: AttackZone_Zarpazo
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -82,7 +82,7 @@ GameObject:
   - component: {fileID: 4017634023444326214}
   - component: {fileID: 241836229500314695}
   - component: {fileID: 5156378185897325248}
-  m_Layer: 0
+  m_Layer: 11
   m_Name: AttackZone_Horizontal
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -119,7 +119,7 @@ BoxCollider:
     serializedVersion: 2
     m_Bits: 0
   m_LayerOverridePriority: 0
-  m_IsTrigger: 0
+  m_IsTrigger: 1
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3

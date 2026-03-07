@@ -60,14 +60,14 @@ namespace RobotGame.Systems
         {
             if (config == null)
             {
-                Debug.LogError("RobotFactory: Configuración es null.");
+                // Debug.LogError("RobotFactory: Configuración es null.");
                 return null;
             }
             
             // Validar configuración
             if (!config.ValidateConfiguration(out List<string> errors))
             {
-                Debug.LogError($"RobotFactory: Configuración inválida:\n{string.Join("\n", errors)}");
+                // Debug.LogError($"RobotFactory: Configuración inválida:\n{string.Join("\n", errors)}");
                 return null;
             }
             
@@ -84,7 +84,7 @@ namespace RobotGame.Systems
             
             if (hips == null)
             {
-                Debug.LogError("RobotFactory: No se pudieron crear las Hips.");
+                // Debug.LogError("RobotFactory: No se pudieron crear las Hips.");
                 Destroy(robotGO);
                 return null;
             }
@@ -118,7 +118,7 @@ namespace RobotGame.Systems
         {
             if (hipsData == null || !hipsData.canBeRoot)
             {
-                Debug.LogError("RobotFactory: HipsData es null o no puede ser raíz.");
+                // Debug.LogError("RobotFactory: HipsData es null o no puede ser raíz.");
                 return null;
             }
             
@@ -171,7 +171,7 @@ namespace RobotGame.Systems
         {
             if (data == null || data.prefab == null)
             {
-                Debug.LogError("RobotFactory: StructuralPartData o prefab es null.");
+                // Debug.LogError("RobotFactory: StructuralPartData o prefab es null.");
                 return null;
             }
             
@@ -206,7 +206,7 @@ namespace RobotGame.Systems
         {
             if (data == null || data.prefab == null)
             {
-                Debug.LogError("RobotFactory: ArmorPartData o prefab es null.");
+                // Debug.LogError("RobotFactory: ArmorPartData o prefab es null.");
                 return null;
             }
             
@@ -233,7 +233,7 @@ namespace RobotGame.Systems
         {
             if (data == null)
             {
-                Debug.LogError("RobotFactory: CoreData es null.");
+                // Debug.LogError("RobotFactory: CoreData es null.");
                 return null;
             }
             
@@ -286,7 +286,7 @@ namespace RobotGame.Systems
                 
                 if (socket == null)
                 {
-                    Debug.LogWarning($"RobotFactory: Socket {attachedPiece.attachedToSocket} no encontrado en {parent.PartData.displayName}.");
+                    // Debug.LogWarning($"RobotFactory: Socket {attachedPiece.attachedToSocket} no encontrado en {parent.PartData.displayName}.");
                     continue;
                 }
                 
@@ -298,7 +298,7 @@ namespace RobotGame.Systems
                 // Conectar al socket
                 if (!socket.TryAttach(part))
                 {
-                    Debug.LogWarning($"RobotFactory: No se pudo conectar {part.PartData.displayName} a {socket.SocketType}.");
+                    // Debug.LogWarning($"RobotFactory: No se pudo conectar {part.PartData.displayName} a {socket.SocketType}.");
                     Destroy(part.gameObject);
                     continue;
                 }
@@ -327,7 +327,7 @@ namespace RobotGame.Systems
                 
                 if (grid == null)
                 {
-                    Debug.LogWarning($"RobotFactory: Grilla '{placedArmor.targetGridName}' no encontrada en {structuralPart.PartData.displayName}.");
+                    // Debug.LogWarning($"RobotFactory: Grilla '{placedArmor.targetGridName}' no encontrada en {structuralPart.PartData.displayName}.");
                     continue;
                 }
                 
@@ -339,7 +339,7 @@ namespace RobotGame.Systems
                 // Colocar en la grilla
                 if (!grid.TryPlace(armor, placedArmor.gridPositionX, placedArmor.gridPositionY))
                 {
-                    Debug.LogWarning($"RobotFactory: No se pudo colocar {armor.ArmorData.displayName} en grilla '{placedArmor.targetGridName}' posición ({placedArmor.gridPositionX}, {placedArmor.gridPositionY}).");
+                    // Debug.LogWarning($"RobotFactory: No se pudo colocar {armor.ArmorData.displayName} en grilla '{placedArmor.targetGridName}' posición ({placedArmor.gridPositionX}, {placedArmor.gridPositionY}).");
                     Destroy(armor.gameObject);
                 }
             }

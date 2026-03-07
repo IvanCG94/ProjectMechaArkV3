@@ -44,7 +44,7 @@ namespace RobotGame.Components
             
             if (logLayerAssignments)
             {
-                Debug.Log($"[RobotColliderSetup] {gameObject.name} → Layer {RobotLayers.ROBOT_NAVIGATION} (RobotNavigation)");
+                // Debug.Log($"[RobotColliderSetup] {gameObject.name} → Layer {RobotLayers.ROBOT_NAVIGATION} (RobotNavigation)");
             }
             
             // Asignar layers a las partes estructurales
@@ -111,7 +111,7 @@ namespace RobotGame.Components
             
             if (logLayerAssignments)
             {
-                Debug.Log($"[RobotColliderSetup] {partGO.name} → Layer {targetLayer} ({layerName})");
+                // Debug.Log($"[RobotColliderSetup] {partGO.name} → Layer {targetLayer} ({layerName})");
             }
         }
     }

@@ -421,6 +421,225 @@ namespace RobotGame.Components
             return weight;
         }
         
+        #region Mobility System
+        
+        /// <summary>
+        /// Velocidad máxima de animación (robot muy ligero/fuerte).
+        /// </summary>
+        private const float MAX_ANIMATION_SPEED = 1.3f;
+        
+        /// <summary>
+        /// Ratio peso/fuerza considerado óptimo (velocidad normal).
+        /// </summary>
+        private const float OPTIMAL_WEIGHT_RATIO = 1.0f;
+        
+        /// <summary>
+        /// Ratio máximo antes de que el robot no pueda moverse.
+        /// Si el peso es el doble de la fuerza, el robot no puede moverse.
+        /// </summary>
+        private const float MAX_WEIGHT_RATIO = 2.0f;
+        
+        /// <summary>
+        /// Calcula la fuerza total de las partes de locomoción (piernas, ruedas, etc).
+        /// </summary>
+        public float CalculateTotalStrength()
+        {
+            float strength = 0f;
+            
+            foreach (var part in GetAllStructuralParts())
+            {
+                if (part.PartData.isLocomotionPart)
+                {
+                    strength += part.PartData.strength;
+                    Debug.Log($"[Mobility] Parte locomotion: {part.PartData.displayName} -> Strength={part.PartData.strength}");
+                }
+            }
+            
+            if (strength == 0f)
+            {
+                Debug.Log("[Mobility] ADVERTENCIA: No hay partes con isLocomotionPart=true o strength=0");
+            }
+            
+            return strength;
+        }
+        
+        /// <summary>
+        /// Calcula el ratio peso/fuerza del robot.
+        /// - Ratio menor a 1.0 = robot puede moverse fácilmente (más fuerza que peso)
+        /// - Ratio igual a 1.0 = equilibrio perfecto
+        /// - Ratio mayor a 1.0 = robot tiene dificultad para moverse (más peso que fuerza)
+        /// </summary>
+        public float GetMobilityRatio()
+        {
+            float weight = CalculateTotalWeight();
+            float strength = CalculateTotalStrength();
+            
+            // Evitar división por cero
+            if (strength <= 0f)
+            {
+                return weight > 0f ? float.MaxValue : 1f;
+            }
+            
+            return weight / strength;
+        }
+        
+        /// <summary>
+        /// Calcula el multiplicador de velocidad de animación basado en el ratio peso/fuerza.
+        /// - Ratio 0.5 -> 1.3x (muy ágil, más fuerza que peso)
+        /// - Ratio 1.0 -> 1.0x (equilibrado)
+        /// - Ratio 1.5 -> 0.5x (sobrecargado)
+        /// - Ratio 2.0+ -> 0x (no puede moverse)
+        /// </summary>
+        public float GetAnimationSpeedMultiplier()
+        {
+            float ratio = GetMobilityRatio();
+            
+            // Si el ratio es menor o igual a óptimo, puede ir más rápido
+            if (ratio <= OPTIMAL_WEIGHT_RATIO)
+            {
+                // Interpolar entre 1.0 y MAX_ANIMATION_SPEED
+                // ratio 0.5 -> 1.3, ratio 1.0 -> 1.0
+                float t = 1f - (ratio / OPTIMAL_WEIGHT_RATIO); // 0.5 -> 0.5, 1.0 -> 0
+                return Mathf.Lerp(1f, MAX_ANIMATION_SPEED, t);
+            }
+            
+            // Si el ratio excede el máximo, no puede moverse
+            if (ratio >= MAX_WEIGHT_RATIO)
+            {
+                return 0f;
+            }
+            
+            // Interpolar linealmente entre 1.0 y 0 según el ratio
+            // ratio 1.0 -> 1.0, ratio 2.0 -> 0.0
+            float overloadFactor = (ratio - OPTIMAL_WEIGHT_RATIO) / (MAX_WEIGHT_RATIO - OPTIMAL_WEIGHT_RATIO);
+            return Mathf.Lerp(1f, 0f, overloadFactor);
+        }
+        
+        /// <summary>
+        /// Verifica si el robot puede moverse (tiene suficiente fuerza para su peso).
+        /// </summary>
+        public bool CanMove()
+        {
+            return GetMobilityRatio() < MAX_WEIGHT_RATIO;
+        }
+        
+        /// <summary>
+        /// Verifica si el robot está sobrecargado (ratio > 1.5).
+        /// </summary>
+        public bool IsOverloaded()
+        {
+            return GetMobilityRatio() > OPTIMAL_WEIGHT_RATIO;
+        }
+        
+        /// <summary>
+        /// Aplica el multiplicador de movilidad a todos los Animators del robot.
+        /// Llamar cuando cambie la configuración del robot.
+        /// </summary>
+        /// <summary>
+        /// Aplica el multiplicador de movilidad a todos los Animators del robot.
+        /// Sistema jerárquico: cada parte de locomoción calcula su propio ratio.
+        /// </summary>
+        public void ApplyMobilityToAnimators()
+        {
+            Debug.Log("[Mobility] === Aplicando sistema jerárquico ===");
+            
+            int animatorCount = 0;
+            foreach (var part in GetAllStructuralParts())
+            {
+                if (part.Animator == null) continue;
+                
+                float speedMultiplier;
+                
+                if (part.PartData != null && part.PartData.isLocomotionPart)
+                {
+                    // Parte de locomoción: calcula su propio ratio basado en peso de hijos
+                    speedMultiplier = part.GetBranchSpeedMultiplier();
+                    float branchWeight = part.CalculateBranchWeight();
+                    Debug.Log($"[Mobility] {part.PartData.displayName} (Locomotion): Weight={branchWeight:F1} | Strength={part.PartData.strength:F1} | Speed={speedMultiplier:F2}");
+                }
+                else
+                {
+                    // Parte no-locomotion: velocidad normal
+                    speedMultiplier = 1f;
+                }
+                
+                part.Animator.speed = speedMultiplier;
+                animatorCount++;
+            }
+            
+            Debug.Log($"[Mobility] Aplicado a {animatorCount} Animators");
+        }
+        
+        /// <summary>
+        /// Obtiene el multiplicador de velocidad de las Hips (para movimiento del jugador).
+        /// </summary>
+        public float GetHipsSpeedMultiplier()
+        {
+            if (hips != null)
+            {
+                return hips.GetBranchSpeedMultiplier();
+            }
+            return 1f;
+        }
+        
+        /// <summary>
+        /// Obtiene la velocidad base de movimiento de las Hips.
+        /// </summary>
+        public float GetBaseMovementSpeed()
+        {
+            if (hips != null && hips.PartData != null)
+            {
+                return hips.PartData.baseMovementSpeed;
+            }
+            return 5f; // Valor por defecto
+        }
+        
+        /// <summary>
+        /// Obtiene la velocidad base de sprint de las Hips.
+        /// </summary>
+        public float GetBaseSprintSpeed()
+        {
+            if (hips != null && hips.PartData != null)
+            {
+                return hips.PartData.baseSprintSpeed;
+            }
+            return 9f; // Valor por defecto
+        }
+        
+        /// <summary>
+        /// Obtiene la velocidad final de movimiento (base * multiplicador de movilidad).
+        /// </summary>
+        public float GetFinalMovementSpeed()
+        {
+            return GetBaseMovementSpeed() * GetHipsSpeedMultiplier();
+        }
+        
+        /// <summary>
+        /// Obtiene la velocidad final de sprint (base * multiplicador de movilidad).
+        /// </summary>
+        public float GetFinalSprintSpeed()
+        {
+            return GetBaseSprintSpeed() * GetHipsSpeedMultiplier();
+        }
+        
+        /// <summary>
+        /// Obtiene información de movilidad para UI/debug.
+        /// </summary>
+        public MobilityInfo GetMobilityInfo()
+        {
+            return new MobilityInfo
+            {
+                totalWeight = CalculateTotalWeight(),
+                totalStrength = CalculateTotalStrength(),
+                ratio = GetMobilityRatio(),
+                speedMultiplier = GetAnimationSpeedMultiplier(),
+                canMove = CanMove(),
+                isOverloaded = IsOverloaded()
+            };
+        }
+        
+        #endregion
+        
         /// <summary>
         /// Calcula la armadura total del robot.
         /// </summary>
@@ -465,7 +684,7 @@ namespace RobotGame.Components
                 // Nuevo ataque: inicializar tracking
                 currentAttackId = attackId;
                 currentAttackRemainingDamage = originalDamage;
-                Debug.Log($"[Robot] {robotName} - Nuevo ataque #{attackId} con {originalDamage:F1} de daño");
+                // Debug.Log($"[Robot] {robotName} - Nuevo ataque #{attackId} con {originalDamage:F1} de daño");
             }
             
             // Retornar el daño restante disponible
@@ -494,7 +713,7 @@ namespace RobotGame.Components
             if (attackId >= 0 && attackId == currentAttackId)
             {
                 currentAttackRemainingDamage = Mathf.Max(0f, currentAttackRemainingDamage - damageAbsorbed);
-                Debug.Log($"[Robot] {robotName} - Parte absorbió {damageAbsorbed:F1} daño. Restante: {currentAttackRemainingDamage:F1}");
+                // Debug.Log($"[Robot] {robotName} - Parte absorbió {damageAbsorbed:F1} daño. Restante: {currentAttackRemainingDamage:F1}");
             }
         }
         
@@ -561,7 +780,7 @@ namespace RobotGame.Components
             isDead = true;
             isOperational = false;
             
-            Debug.Log($"[Robot] {robotName} ha MUERTO! Parte crítica destruida: {criticalPart.gameObject.name}");
+            // Debug.Log($"[Robot] {robotName} ha MUERTO! Parte crítica destruida: {criticalPart.gameObject.name}");
             
             // Recolectar partes sobrevivientes para loot
             List<StructuralPart> survivingStructural = new List<StructuralPart>();
@@ -569,7 +788,7 @@ namespace RobotGame.Components
             
             CollectSurvivingParts(survivingStructural, survivingArmor);
             
-            Debug.Log($"[Robot] Loot disponible: {survivingStructural.Count} partes estructurales, {survivingArmor.Count} piezas de armadura");
+            // Debug.Log($"[Robot] Loot disponible: {survivingStructural.Count} partes estructurales, {survivingArmor.Count} piezas de armadura");
             
             // Disparar eventos
             OnRobotDeath?.Invoke(this, criticalPart);
@@ -649,5 +868,89 @@ namespace RobotGame.Components
         }
         
         #endregion
+        
+        #region Edit Mode Pose
+        
+        private const string TPOSE_STATE = "Armature_Tpose";
+        private const string IDLE_STATE = "Armature_Idle";
+        
+        /// <summary>
+        /// Activa o desactiva la pose de edición (T-Pose) en todas las partes del robot.
+        /// </summary>
+        /// <param name="active">True para activar T-Pose, false para volver al estado normal</param>
+        public void SetEditPose(bool active)
+        {
+            foreach (var part in GetAllStructuralParts())
+            {
+                if (part.Animator != null)
+                {
+                    if (active)
+                    {
+                        // Entrar a T-Pose
+                        if (HasAnimatorState(part.Animator, TPOSE_STATE))
+                        {
+                            part.Animator.Play(TPOSE_STATE, 0, 0f);
+                            part.Animator.speed = 0f; // Congelar en T-Pose
+                        }
+                    }
+                    else
+                    {
+                        // Salir de T-Pose
+                        part.Animator.speed = 1f;
+                        
+                        // Forzar transición a Idle para que las transiciones normales retomen el control
+                        if (HasAnimatorState(part.Animator, IDLE_STATE))
+                        {
+                            part.Animator.CrossFadeInFixedTime(IDLE_STATE, 0.15f, 0);
+                        }
+                    }
+                }
+            }
+        }
+        
+        /// <summary>
+        /// Verifica si un Animator tiene un estado específico.
+        /// </summary>
+        private bool HasAnimatorState(Animator animator, string stateName)
+        {
+            if (animator.runtimeAnimatorController == null) return false;
+            
+            int stateHash = Animator.StringToHash(stateName);
+            return animator.HasState(0, stateHash);
+        }
+        
+        #endregion
+    }
+    
+    /// <summary>
+    /// Información de movilidad del robot para UI/debug.
+    /// </summary>
+    [System.Serializable]
+    public struct MobilityInfo
+    {
+        /// <summary>Peso total del robot.</summary>
+        public float totalWeight;
+        
+        /// <summary>Fuerza total de locomoción.</summary>
+        public float totalStrength;
+        
+        /// <summary>Ratio peso/fuerza (1.0 = equilibrado).</summary>
+        public float ratio;
+        
+        /// <summary>Multiplicador de velocidad de animación.</summary>
+        public float speedMultiplier;
+        
+        /// <summary>Si el robot puede moverse.</summary>
+        public bool canMove;
+        
+        /// <summary>Si el robot está sobrecargado (lento).</summary>
+        public bool isOverloaded;
+        
+        public override string ToString()
+        {
+            return $"Weight: {totalWeight:F1} | Strength: {totalStrength:F1} | " +
+                   $"Ratio: {ratio:F2} | Speed: {speedMultiplier:F2}x | " +
+                   $"CanMove: {canMove} | Overloaded: {isOverloaded}";
+        }
     }
 }

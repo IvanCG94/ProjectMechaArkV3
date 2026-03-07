@@ -39,20 +39,20 @@ namespace RobotGame
             // Verificar que los layers existan
             if (!ValidateLayers())
             {
-                Debug.LogError("[CollisionLayerInitializer] Los layers no están configurados. " +
-                    "Ve a Edit → Project Settings → Tags and Layers y crea:\n" +
-                    "Layer 8: Player\n" +
-                    "Layer 9: RobotNavigation\n" +
-                    "Layer 10: RobotParts\n" +
-                    "Layer 11: RobotHitbox\n\n" +
-                    "O usa Tools → Robot Game → Setup Robot Layers en el Editor.");
+                // Debug.LogError("[CollisionLayerInitializer] Los layers no están configurados. " +
+                //     "Ve a Edit → Project Settings → Tags and Layers y crea:\n" +
+                //     "Layer 8: Player\n" +
+                //     "Layer 9: RobotNavigation\n" +
+                //     "Layer 10: RobotParts\n" +
+                //     "Layer 11: RobotHitbox\n\n" +
+                //     "O usa Tools → Robot Game → Setup Robot Layers en el Editor.");
                 return;
             }
             
             ConfigureCollisionMatrix();
             
             isInitialized = true;
-            Debug.Log("[CollisionLayerInitializer] Matriz de colisiones configurada correctamente.");
+            // Debug.Log("[CollisionLayerInitializer] Matriz de colisiones configurada correctamente.");
         }
         
         /// <summary>
@@ -70,25 +70,25 @@ namespace RobotGame
             
             if (string.IsNullOrEmpty(playerLayer))
             {
-                Debug.LogWarning($"[CollisionLayerInitializer] Layer {RobotLayers.PLAYER} no tiene nombre. Debería ser 'Player'");
+                // Debug.LogWarning($"[CollisionLayerInitializer] Layer {RobotLayers.PLAYER} no tiene nombre. Debería ser 'Player'");
                 valid = false;
             }
             
             if (string.IsNullOrEmpty(navLayer))
             {
-                Debug.LogWarning($"[CollisionLayerInitializer] Layer {RobotLayers.ROBOT_NAVIGATION} no tiene nombre. Debería ser 'RobotNavigation'");
+                // Debug.LogWarning($"[CollisionLayerInitializer] Layer {RobotLayers.ROBOT_NAVIGATION} no tiene nombre. Debería ser 'RobotNavigation'");
                 valid = false;
             }
             
             if (string.IsNullOrEmpty(partsLayer))
             {
-                Debug.LogWarning($"[CollisionLayerInitializer] Layer {RobotLayers.ROBOT_PARTS} no tiene nombre. Debería ser 'RobotParts'");
+                // Debug.LogWarning($"[CollisionLayerInitializer] Layer {RobotLayers.ROBOT_PARTS} no tiene nombre. Debería ser 'RobotParts'");
                 valid = false;
             }
             
             if (string.IsNullOrEmpty(hitboxLayer))
             {
-                Debug.LogWarning($"[CollisionLayerInitializer] Layer {RobotLayers.ROBOT_HITBOX} no tiene nombre. Debería ser 'RobotHitbox'");
+                // Debug.LogWarning($"[CollisionLayerInitializer] Layer {RobotLayers.ROBOT_HITBOX} no tiene nombre. Debería ser 'RobotHitbox'");
                 valid = false;
             }
             

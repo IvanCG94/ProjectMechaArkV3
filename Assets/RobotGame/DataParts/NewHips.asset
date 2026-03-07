@@ -33,160 +33,18 @@ MonoBehaviour:
     isRequired: 0
     localPosition: {x: 0, y: 1.1664124, z: -0.107525885}
     localRotation: {x: 0, y: 0, z: -2.7805295e-22}
-  armorGrids:
-  - gridInfo:
-      isHead: 1
-      tier: 0
-      sizeX: 1
-      sizeY: 1
-      surrounding:
-        level: 0
-        edges: 0
-        fullType: 0
-      gridName: FootArmorL
-    transformName: Head_1x1_SN_FootArmorL
-  - gridInfo:
-      isHead: 1
-      tier: 0
-      sizeX: 1
-      sizeY: 1
-      surrounding:
-        level: 1
-        edges: 3
-        fullType: 0
-      gridName: FootBoneL
-    transformName: Head_1x1_S1_LR_FootBoneL
-  - gridInfo:
-      isHead: 1
-      tier: 0
-      sizeX: 1
-      sizeY: 2
-      surrounding:
-        level: 2
-        edges: 3
-        fullType: 0
-      gridName: ShinBoneL
-    transformName: Head_1x2_S2_LR_ShinBoneL
-  - gridInfo:
-      isHead: 1
-      tier: 0
-      sizeX: 1
-      sizeY: 2
-      surrounding:
-        level: 0
-        edges: 0
-        fullType: 0
-      gridName: ThighLBoneR
-    transformName: Head_1x2_SN_ThighLBoneR
-  - gridInfo:
-      isHead: 1
-      tier: 0
-      sizeX: 1
-      sizeY: 3
-      surrounding:
-        level: 0
-        edges: 0
-        fullType: 0
-      gridName: ThighLBoneL
-    transformName: Head_1x3_SN_ThighLBoneL
-  - gridInfo:
-      isHead: 1
-      tier: 0
-      sizeX: 1
-      sizeY: 3
-      surrounding:
-        level: 0
-        edges: 0
-        fullType: 0
-      gridName: ThighRBoneL
-    transformName: Head_1x3_SN_ThighRBoneL
-  - gridInfo:
-      isHead: 1
-      tier: 0
-      sizeX: 1
-      sizeY: 4
-      surrounding:
-        level: 1
-        edges: 3
-        fullType: 0
-      gridName: ThighBoneL
-    transformName: Head_1x4_S1_LR_ThighBoneL
-  - gridInfo:
-      isHead: 1
-      tier: 0
-      sizeX: 1
-      sizeY: 1
-      surrounding:
-        level: 0
-        edges: 0
-        fullType: 0
-      gridName: FootArmorR
-    transformName: Head_1x1_SN_FootArmorR
-  - gridInfo:
-      isHead: 1
-      tier: 0
-      sizeX: 1
-      sizeY: 1
-      surrounding:
-        level: 1
-        edges: 3
-        fullType: 0
-      gridName: FootBoneR
-    transformName: Head_1x1_S1_LR_FootBoneR
-  - gridInfo:
-      isHead: 1
-      tier: 0
-      sizeX: 1
-      sizeY: 2
-      surrounding:
-        level: 2
-        edges: 3
-        fullType: 0
-      gridName: ShinBoneR
-    transformName: Head_1x2_S2_LR_ShinBoneR
-  - gridInfo:
-      isHead: 1
-      tier: 0
-      sizeX: 1
-      sizeY: 2
-      surrounding:
-        level: 0
-        edges: 0
-        fullType: 0
-      gridName: ThighBBoneR
-    transformName: Head_1x2_SN_ThighBBoneR
-  - gridInfo:
-      isHead: 1
-      tier: 0
-      sizeX: 1
-      sizeY: 3
-      surrounding:
-        level: 0
-        edges: 0
-        fullType: 0
-      gridName: ThighLBoneR
-    transformName: Head_1x3_SN_ThighLBoneR
-  - gridInfo:
-      isHead: 1
-      tier: 0
-      sizeX: 1
-      sizeY: 3
-      surrounding:
-        level: 0
-        edges: 0
-        fullType: 0
-      gridName: ThighRBoneR
-    transformName: Head_1x3_SN_ThighRBoneR
-  - gridInfo:
-      isHead: 1
-      tier: 0
-      sizeX: 1
-      sizeY: 4
-      surrounding:
-        level: 1
-        edges: 3
-        fullType: 0
-      gridName: ThighBoneR
-    transformName: Head_1x4_S1_LR_ThighBoneR
+  - socketType: 11
+    transformName: Socket_addon_L
+    isRequired: 0
+    localPosition: {x: 0, y: 1.1664124, z: -0.107525885}
+    localRotation: {x: 0, y: 0, z: -2.7805295e-22}
+  - socketType: 11
+    transformName: Socket_addon_R
+    isRequired: 0
+    localPosition: {x: 0, y: 1.1664124, z: -0.107525885}
+    localRotation: {x: 0, y: 0, z: -2.7805295e-22}
   animatorController: {fileID: 9100000, guid: 34d661efc465b4c42827ad231b4aff1a, type: 2}
   animatorAvatar: {fileID: 0}
+  combatReach: 0
+  strength: 20
+  isLocomotionPart: 1

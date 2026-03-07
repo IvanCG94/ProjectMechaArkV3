@@ -295,7 +295,7 @@ namespace RobotGame.Data
             List<string> errors;
             if (!ValidateConfiguration(out errors) && errors.Count > 0)
             {
-                Debug.LogWarning($"WildRobotData '{speciesName}' tiene problemas de configuración:\n{string.Join("\n", errors)}");
+                // Debug.LogWarning($"WildRobotData '{speciesName}' tiene problemas de configuración:\n{string.Join("\n", errors)}");
             }
         }
     }

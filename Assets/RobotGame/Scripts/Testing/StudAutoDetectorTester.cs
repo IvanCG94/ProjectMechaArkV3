@@ -36,7 +36,7 @@ namespace RobotGame.Testing
             if (testPrefab == null)
             {
                 testOutput = "ERROR: Asigna un prefab primero.";
-                Debug.LogWarning(testOutput);
+                // Debug.LogWarning(testOutput);
                 return;
             }
             
@@ -96,7 +96,7 @@ namespace RobotGame.Testing
                 testOutput += "  - Stud_X_Y (hijos del contenedor)\n";
             }
             
-            Debug.Log(testOutput);
+            // Debug.Log(testOutput);
         }
         
         [ContextMenu("Analyze All Children")]
@@ -105,7 +105,7 @@ namespace RobotGame.Testing
             if (testPrefab == null)
             {
                 testOutput = "ERROR: Asigna un prefab primero.";
-                Debug.LogWarning(testOutput);
+                // Debug.LogWarning(testOutput);
                 return;
             }
             
@@ -115,7 +115,7 @@ namespace RobotGame.Testing
             
             AnalyzeTransform(testPrefab.transform, 0);
             
-            Debug.Log(testOutput);
+            // Debug.Log(testOutput);
         }
         
         private void AnalyzeTransform(Transform t, int depth)
@@ -215,7 +215,7 @@ namespace RobotGame.Testing
                 testOutput += $"    → {(success ? $"✓ Position=({x},{y})" : "✗ No válido")}\n";
             }
             
-            Debug.Log(testOutput);
+            // Debug.Log(testOutput);
         }
         
         [ContextMenu("Create Test Hierarchy In Scene")]
@@ -254,7 +254,7 @@ namespace RobotGame.Testing
             testOutput += "2. Arrastrarlo al campo testPrefab\n";
             testOutput += "3. Ejecutar 'Detect Studs From Prefab'\n";
             
-            Debug.Log(testOutput);
+            // Debug.Log(testOutput);
         }
         
         private void CreateEmptyChild(GameObject parent, string name, Vector3 localPos)

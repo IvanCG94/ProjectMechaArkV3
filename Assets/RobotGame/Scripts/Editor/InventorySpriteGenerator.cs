@@ -40,11 +40,11 @@ namespace RobotGame.Editor
             if (generated > 0)
             {
                 AssetDatabase.Refresh();
-                Debug.Log($"[SpriteGenerator] Generados {generated} sprites de inventario.");
+                // Debug.Log($"[SpriteGenerator] Generados {generated} sprites de inventario.");
             }
             else
             {
-                Debug.LogWarning("[SpriteGenerator] No se seleccionaron prefabs válidos.");
+                // Debug.LogWarning("[SpriteGenerator] No se seleccionaron prefabs válidos.");
             }
         }
         
@@ -144,7 +144,7 @@ namespace RobotGame.Editor
             }
             
             AssetDatabase.Refresh();
-            Debug.Log($"[SpriteGenerator] Generados {generated} sprites de inventario.");
+            // Debug.Log($"[SpriteGenerator] Generados {generated} sprites de inventario.");
         }
         
         /// <summary>
@@ -181,7 +181,7 @@ namespace RobotGame.Editor
             
             if (preview == null)
             {
-                Debug.LogWarning($"[SpriteGenerator] No se pudo obtener preview para {prefab.name}. Usando método alternativo...");
+                // Debug.LogWarning($"[SpriteGenerator] No se pudo obtener preview para {prefab.name}. Usando método alternativo...");
                 return GenerateSpriteManual(prefab, outputDirectory, spriteName);
             }
             
@@ -217,7 +217,7 @@ namespace RobotGame.Editor
             
             DestroyImmediate(finalTexture);
             
-            Debug.Log($"[SpriteGenerator] Sprite generado: {outputPath}");
+            // Debug.Log($"[SpriteGenerator] Sprite generado: {outputPath}");
             
             // Importar como sprite
             AssetDatabase.ImportAsset(outputPath);
@@ -279,7 +279,7 @@ namespace RobotGame.Editor
                 
                 DestroyImmediate(texture);
                 
-                Debug.Log($"[SpriteGenerator] Sprite generado (manual): {outputPath}");
+                // Debug.Log($"[SpriteGenerator] Sprite generado (manual): {outputPath}");
                 
                 AssetDatabase.ImportAsset(outputPath);
                 ConfigureAsSprite(outputPath);

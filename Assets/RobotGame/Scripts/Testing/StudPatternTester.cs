@@ -25,7 +25,7 @@ namespace RobotGame.Testing
             testOutput += $"Bounding: {pattern.BoundingWidth}x{pattern.BoundingHeight}\n\n";
             testOutput += "Visual:\n" + pattern.ToVisualString();
             
-            Debug.Log(testOutput);
+            // Debug.Log(testOutput);
         }
         
         [ContextMenu("Test 2: Crear Patrón en L")]
@@ -46,7 +46,7 @@ namespace RobotGame.Testing
             testOutput += $"Bounding: {pattern.BoundingWidth}x{pattern.BoundingHeight}\n\n";
             testOutput += "Visual:\n" + pattern.ToVisualString();
             
-            Debug.Log(testOutput);
+            // Debug.Log(testOutput);
         }
         
         [ContextMenu("Test 3: Rotar Patrón L")]
@@ -65,7 +65,7 @@ namespace RobotGame.Testing
             testOutput += "Rotado 180°:\n" + pattern.Rotate180().ToVisualString() + "\n";
             testOutput += "Rotado 270°:\n" + pattern.Rotate270().ToVisualString() + "\n";
             
-            Debug.Log(testOutput);
+            // Debug.Log(testOutput);
         }
         
         [ContextMenu("Test 4: Validar Colocación")]
@@ -92,7 +92,7 @@ namespace RobotGame.Testing
             
             testOutput += $"\nTotal: {validPos.Count} posiciones válidas\n";
             
-            Debug.Log(testOutput);
+            // Debug.Log(testOutput);
         }
         
         [ContextMenu("Test 5: Colocación con Ocupación")]
@@ -133,7 +133,7 @@ namespace RobotGame.Testing
             testOutput += $"\nTotal: {validPos.Count} posiciones válidas\n";
             testOutput += "(Debería ser 2: en (2,0) y (2,1))\n";
             
-            Debug.Log(testOutput);
+            // Debug.Log(testOutput);
         }
         
         [ContextMenu("Test 6: Head con Hueco")]
@@ -181,7 +181,7 @@ namespace RobotGame.Testing
             }
             testOutput += "(Debería poder en y=0 y y=1, pero NO en y=2 por el hueco)\n";
             
-            Debug.Log(testOutput);
+            // Debug.Log(testOutput);
         }
         
         [ContextMenu("Test 7: Pieza Irregular en T")]
@@ -208,7 +208,7 @@ namespace RobotGame.Testing
             testOutput += "180°:\n" + tShape.Rotate180().ToVisualString() + "\n";
             testOutput += "270°:\n" + tShape.Rotate270().ToVisualString() + "\n";
             
-            Debug.Log(testOutput);
+            // Debug.Log(testOutput);
         }
         
         [ContextMenu("Run All Tests")]
@@ -239,7 +239,7 @@ namespace RobotGame.Testing
             
             testOutput = t1 + "\n\n" + t2 + "\n\n" + t3 + "\n\n" + t4 + "\n\n" + t5 + "\n\n" + t6 + "\n\n" + t7;
             
-            Debug.Log("=== ALL TESTS COMPLETE ===");
+            // Debug.Log("=== ALL TESTS COMPLETE ===");
         }
     }
 }

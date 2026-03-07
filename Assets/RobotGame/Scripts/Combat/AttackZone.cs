@@ -123,7 +123,7 @@ namespace RobotGame.Combat
             }
             else if (showDebugLogs)
             {
-                Debug.Log($"[AttackZone] '{zoneId}' Collider entró: {other.name} (NO es target. Target: {(currentTarget != null ? currentTarget.name : "NULL")})");
+                // Debug.Log($"[AttackZone] '{zoneId}' Collider entró: {other.name} (NO es target. Target: {(currentTarget != null ? currentTarget.name : "NULL")})");
             }
         }
         
@@ -207,12 +207,12 @@ namespace RobotGame.Combat
                 isTargetInZone = CheckTargetStillInZone();
                 if (showDebugLogs)
                 {
-                    Debug.Log($"[AttackZone] '{zoneId}' Nuevo target: {target.name}. Ya en zona: {isTargetInZone}");
+                    // Debug.Log($"[AttackZone] '{zoneId}' Nuevo target: {target.name}. Ya en zona: {isTargetInZone}");
                 }
             }
             else if (showDebugLogs && target == null)
             {
-                Debug.Log($"[AttackZone] '{zoneId}' Target removido");
+                // Debug.Log($"[AttackZone] '{zoneId}' Target removido");
             }
         }
         
@@ -248,7 +248,7 @@ namespace RobotGame.Combat
         {
             if (showDebugLogs && linkedAttack != null)
             {
-                Debug.Log($"[AttackZone] '{zoneId}' desvinculada de '{linkedAttack.attackName}'");
+                // Debug.Log($"[AttackZone] '{zoneId}' desvinculada de '{linkedAttack.attackName}'");
             }
             
             linkedAttack = null;

@@ -153,7 +153,7 @@ namespace RobotGame.Systems
                 if (playerCore != null)
                 {
                     playerRobot = playerCore.CurrentRobot;
-                    Debug.Log($"MountSystem: PlayerCore encontrado - Robot: {playerRobot?.name}");
+                    // Debug.Log($"MountSystem: PlayerCore encontrado - Robot: {playerRobot?.name}");
                 }
             }
             
@@ -164,7 +164,7 @@ namespace RobotGame.Systems
                 
                 if (playerController != null)
                 {
-                    Debug.Log("MountSystem: PlayerController encontrado");
+                    // Debug.Log("MountSystem: PlayerController encontrado");
                 }
             }
             
@@ -175,7 +175,7 @@ namespace RobotGame.Systems
                 
                 if (playerCamera != null)
                 {
-                    Debug.Log("MountSystem: PlayerCamera encontrado");
+                    // Debug.Log("MountSystem: PlayerCamera encontrado");
                 }
             }
             
@@ -186,7 +186,7 @@ namespace RobotGame.Systems
                 
                 if (combatInputHandler != null)
                 {
-                    Debug.Log("MountSystem: CombatInputHandler encontrado");
+                    // Debug.Log("MountSystem: CombatInputHandler encontrado");
                 }
             }
             
@@ -197,7 +197,7 @@ namespace RobotGame.Systems
                 
                 if (playerCombatController != null)
                 {
-                    Debug.Log("MountSystem: CombatController del jugador guardado");
+                    // Debug.Log("MountSystem: CombatController del jugador guardado");
                 }
             }
         }
@@ -255,13 +255,13 @@ namespace RobotGame.Systems
             if (target == null || isMounted) return;
             if (!target.IsAlive) return;
             
-            Debug.Log($"MountSystem: Montando en '{target.WildData?.speciesName}'");
+            // Debug.Log($"MountSystem: Montando en '{target.WildData?.speciesName}'");
             
             // Domesticar automáticamente si no está domesticado (comportamiento temporal)
             if (!target.IsTamed && playerCore != null)
             {
                 target.Tame(playerCore);
-                Debug.Log($"MountSystem: Robot domesticado automáticamente");
+                // Debug.Log($"MountSystem: Robot domesticado automáticamente");
             }
             
             // Guardar referencia
@@ -298,7 +298,7 @@ namespace RobotGame.Systems
             // Configurar combate para el mecha montado
             SetupMountCombat();
             
-            Debug.Log($"MountSystem: Montado exitosamente. PlayerController ahora controla el mecha.");
+            // Debug.Log($"MountSystem: Montado exitosamente. PlayerController ahora controla el mecha.");
         }
         
         /// <summary>
@@ -308,7 +308,7 @@ namespace RobotGame.Systems
         {
             if (!isMounted || currentMount == null) return;
             
-            Debug.Log($"MountSystem: Desmontando de '{currentMount.WildData?.speciesName}'");
+            // Debug.Log($"MountSystem: Desmontando de '{currentMount.WildData?.speciesName}'");
             
             // Calcular posición de desmonte (al lado del mecha, sobre el suelo)
             Vector3 dismountPos = CalculateSafeDismountPosition();
@@ -353,7 +353,7 @@ namespace RobotGame.Systems
             currentMount = null;
             isMounted = false;
             
-            Debug.Log($"MountSystem: Desmontado. Jugador en {playerRobot?.transform.position}");
+            // Debug.Log($"MountSystem: Desmontado. Jugador en {playerRobot?.transform.position}");
         }
         
         /// <summary>
@@ -382,13 +382,13 @@ namespace RobotGame.Systems
                 {
                     // Posición segura: sobre el suelo con un pequeño margen
                     Vector3 safePos = hit.point + Vector3.up * 0.1f;
-                    Debug.Log($"MountSystem: Posición de desmonte encontrada en {safePos}");
+                    // Debug.Log($"MountSystem: Posición de desmonte encontrada en {safePos}");
                     return safePos;
                 }
             }
             
             // Fallback: usar la posición del mecha directamente
-            Debug.LogWarning("MountSystem: No se encontró suelo, usando posición del mecha");
+            // Debug.LogWarning("MountSystem: No se encontró suelo, usando posición del mecha");
             return currentMount.transform.position;
         }
         
@@ -400,7 +400,7 @@ namespace RobotGame.Systems
             if (playerCamera != null)
             {
                 playerCamera.SetTarget(newTarget, true);
-                Debug.Log($"MountSystem: Camera target -> {newTarget.name}");
+                // Debug.Log($"MountSystem: Camera target -> {newTarget.name}");
             }
         }
         
@@ -415,7 +415,7 @@ namespace RobotGame.Systems
             Robot mountRobot = currentMount.Robot;
             if (mountRobot == null)
             {
-                Debug.LogWarning("MountSystem: El mecha no tiene componente Robot");
+                // Debug.LogWarning("MountSystem: El mecha no tiene componente Robot");
                 return;
             }
             
@@ -424,7 +424,7 @@ namespace RobotGame.Systems
             if (mountCombat == null)
             {
                 mountCombat = mountRobot.gameObject.AddComponent<CombatController>();
-                Debug.Log("MountSystem: CombatController agregado al mecha");
+                // Debug.Log("MountSystem: CombatController agregado al mecha");
             }
             
             // Refrescar las partes de combate del mecha
@@ -433,7 +433,7 @@ namespace RobotGame.Systems
             // Cambiar la referencia en CombatInputHandler
             combatInputHandler.SetCombatController(mountCombat);
             
-            Debug.Log($"MountSystem: CombatController cambiado al mecha. Partes de combate: {mountCombat.CombatParts.Count}");
+            // Debug.Log($"MountSystem: CombatController cambiado al mecha. Partes de combate: {mountCombat.CombatParts.Count}");
         }
         
         /// <summary>
@@ -447,7 +447,7 @@ namespace RobotGame.Systems
             if (playerCombatController != null)
             {
                 combatInputHandler.SetCombatController(playerCombatController);
-                Debug.Log("MountSystem: CombatController restaurado al jugador");
+                // Debug.Log("MountSystem: CombatController restaurado al jugador");
             }
             else if (playerRobot != null)
             {
@@ -457,7 +457,7 @@ namespace RobotGame.Systems
                 {
                     combatInputHandler.SetCombatController(playerCombat);
                     playerCombatController = playerCombat;
-                    Debug.Log("MountSystem: CombatController del jugador encontrado y restaurado");
+                    // Debug.Log("MountSystem: CombatController del jugador encontrado y restaurado");
                 }
             }
         }
@@ -561,11 +561,11 @@ namespace RobotGame.Systems
             
             if (signalCount > 0)
             {
-                Debug.Log($"MountSystem: Señal enviada a {signalCount} mecha(s)");
+                // Debug.Log($"MountSystem: Señal enviada a {signalCount} mecha(s)");
             }
             else
             {
-                Debug.Log("MountSystem: No hay mechas domesticados para recibir señal");
+                // Debug.Log("MountSystem: No hay mechas domesticados para recibir señal");
             }
         }
         

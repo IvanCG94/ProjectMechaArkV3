@@ -61,11 +61,11 @@ namespace RobotGame.Components
         {
             tailStuds = StudDetector.DetectTailStuds(transform);
             
-            Debug.Log($"StudGridTail: Detectados {tailStuds.Count} studs Tail");
+            // Debug.Log($"StudGridTail: Detectados {tailStuds.Count} studs Tail");
             
             foreach (var stud in tailStuds)
             {
-                Debug.Log($"  - {stud.name} (T{stud.tierInfo}) @ {stud.localPosition}");
+                // Debug.Log($"  - {stud.name} (T{stud.tierInfo}) @ {stud.localPosition}");
             }
         }
         

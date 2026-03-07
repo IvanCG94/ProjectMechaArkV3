@@ -70,6 +70,22 @@ namespace RobotGame.Data
         [Min(0f)]
         public float combatReach = 0f;
         
+        [Header("Estadísticas Físicas")]
+        [Tooltip("Fuerza que aporta esta parte. Las piernas son las principales contribuyentes.")]
+        [Min(0f)]
+        public float strength = 0f;
+        
+        [Tooltip("Si es true, esta parte contribuye a la fuerza de locomoción (piernas, ruedas, propulsores)")]
+        public bool isLocomotionPart = false;
+        
+        [Tooltip("Velocidad base de movimiento. Solo aplica a partes de locomoción (Hips/piernas).")]
+        [Min(0f)]
+        public float baseMovementSpeed = 5f;
+        
+        [Tooltip("Velocidad base de sprint. Solo aplica a partes de locomoción (Hips/piernas).")]
+        [Min(0f)]
+        public float baseSprintSpeed = 9f;
+        
         /// <summary>
         /// Lista vacía para compatibilidad con código legacy.
         /// Las grillas ahora se detectan automáticamente desde los Empties Head_T*.

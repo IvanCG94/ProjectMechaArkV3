@@ -120,7 +120,11 @@ namespace RobotGame.Control
                 Robot robot = playerController.Target.GetComponent<Robot>();
                 if (robot != null)
                 {
+                    currentRobot = robot;
                     CollectAnimators(robot);
+                    
+                    // Aplicar sistema de movilidad jerárquico
+                    robot.ApplyMobilityToAnimators();
                 }
             }
         }
@@ -175,12 +179,15 @@ namespace RobotGame.Control
                 currentRobot = robot;
                 CollectAnimators(robot);
                 
+                // Aplicar sistema de movilidad jerárquico a los animators
+                robot.ApplyMobilityToAnimators();
+                
                 // Reset de estado
                 currentAnimSpeed = 0f;
                 
                 if (showDebugInfo)
                 {
-                    Debug.Log($"PlayerAnimator: Robot cambiado a {robot.RobotName}, encontrados {partAnimators.Count} Animators");
+                    // Debug.Log($"PlayerAnimator: Robot cambiado a {robot.RobotName}, encontrados {partAnimators.Count} Animators");
                 }
             }
             else
@@ -210,14 +217,14 @@ namespace RobotGame.Control
                     
                     if (showDebugInfo)
                     {
-                        Debug.Log($"  - Animator encontrado en: {part.name}");
+                        // Debug.Log($"  - Animator encontrado en: {part.name}");
                     }
                 }
             }
             
             if (showDebugInfo)
             {
-                Debug.Log($"PlayerAnimator: Total {partAnimators.Count} Animators recolectados");
+                // Debug.Log($"PlayerAnimator: Total {partAnimators.Count} Animators recolectados");
             }
         }
         
@@ -240,7 +247,8 @@ namespace RobotGame.Control
             bool isSprinting = playerController.IsSprinting;
             float verticalVelocity = playerController.VerticalVelocity;
             
-            // Enviar a todos los Animators
+            // Enviar parámetros a todos los Animators
+            // Nota: animator.speed se maneja por ApplyMobilityToAnimators() con sistema jerárquico
             foreach (var animator in partAnimators)
             {
                 if (animator == null) continue;
@@ -262,7 +270,7 @@ namespace RobotGame.Control
             
             if (showDebugInfo)
             {
-                Debug.Log("PlayerAnimator: Jump trigger enviado");
+                // Debug.Log("PlayerAnimator: Jump trigger enviado");
             }
         }
         
@@ -272,7 +280,7 @@ namespace RobotGame.Control
             
             if (showDebugInfo)
             {
-                Debug.Log("PlayerAnimator: Land trigger enviado");
+                // Debug.Log("PlayerAnimator: Land trigger enviado");
             }
         }
         

@@ -202,7 +202,7 @@ namespace RobotGame.Combat
                 {
                     if (logDamage)
                     {
-                        Debug.Log($"[PartHealth] {gameObject.name} - Sin daño restante del ataque #{attackId}");
+                        // Debug.Log($"[PartHealth] {gameObject.name} - Sin daño restante del ataque #{attackId}");
                     }
                     return false;
                 }
@@ -227,8 +227,8 @@ namespace RobotGame.Combat
                 string attackerName = attacker != null ? attacker.name : "Unknown";
                 string criticalTag = IsCriticalPart ? " [CRÍTICA]" : "";
                 string robotName = parentRobot != null ? parentRobot.RobotName : "SIN ROBOT";
-                Debug.Log($"[PartHealth] {gameObject.name}{criticalTag} de '{robotName}' recibió {availableDamage:F1} daño (absorbió {damageAbsorbed:F1}). " +
-                         $"Salud: {previousHealth:F1} → {currentHealth:F1}");
+                // Debug.Log($"[PartHealth] {gameObject.name}{criticalTag} de '{robotName}' recibió {availableDamage:F1} daño (absorbió {damageAbsorbed:F1}). " +
+                         // $"Salud: {previousHealth:F1} → {currentHealth:F1}");
             }
             
             // Efecto visual de flash rojo
@@ -310,7 +310,7 @@ namespace RobotGame.Combat
             if (logDamage)
             {
                 string criticalTag = IsCriticalPart ? " [PARTE CRÍTICA]" : "";
-                Debug.Log($"[PartHealth] {gameObject.name}{criticalTag} ha sido DESTRUIDA!");
+                // Debug.Log($"[PartHealth] {gameObject.name}{criticalTag} ha sido DESTRUIDA!");
             }
             
             // Notificar al robot antes de destruir

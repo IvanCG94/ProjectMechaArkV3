@@ -172,7 +172,7 @@ namespace RobotGame.Assembly
             // No permitir si ya hay un robot del jugador
             if (HasPlayerRobot)
             {
-                Debug.LogWarning("AssemblyPlatform: La plataforma tiene al jugador");
+                // Debug.LogWarning("AssemblyPlatform: La plataforma tiene al jugador");
                 return false;
             }
             
@@ -184,7 +184,7 @@ namespace RobotGame.Assembly
             robot.transform.localPosition = Vector3.zero;
             robot.transform.localRotation = Quaternion.identity;
             
-            Debug.Log($"AssemblyPlatform: Robot colocado en {gameObject.name}");
+            // Debug.Log($"AssemblyPlatform: Robot colocado en {gameObject.name}");
             return true;
         }
         
@@ -209,7 +209,7 @@ namespace RobotGame.Assembly
             // Limpiar cache
             cachedShellRobot = null;
             
-            Debug.Log($"AssemblyPlatform: Cascarón removido de {gameObject.name}");
+            // Debug.Log($"AssemblyPlatform: Cascarón removido de {gameObject.name}");
             return shell;
         }
         
@@ -227,7 +227,7 @@ namespace RobotGame.Assembly
             // Parentear al anchor para que permanezca en la plataforma
             robot.transform.SetParent(robotAnchor);
             
-            Debug.Log($"AssemblyPlatform: Robot anclado como cascarón en {gameObject.name}");
+            // Debug.Log($"AssemblyPlatform: Robot anclado como cascarón en {gameObject.name}");
         }
         
         /// <summary>
@@ -247,7 +247,7 @@ namespace RobotGame.Assembly
                 cachedShellRobot = null;
             }
             
-            Debug.Log($"AssemblyPlatform: Robot liberado en {gameObject.name}");
+            // Debug.Log($"AssemblyPlatform: Robot liberado en {gameObject.name}");
         }
         
         /// <summary>

@@ -48,14 +48,14 @@ namespace RobotGame.Combat
             if (col != null && !col.isTrigger)
             {
                 col.isTrigger = true;
-                Debug.LogWarning($"[WeaponHitbox] {gameObject.name}: Collider cambiado a isTrigger=true");
+                // Debug.LogWarning($"[WeaponHitbox] {gameObject.name}: Collider cambiado a isTrigger=true");
             }
             
             // Buscar CombatPart en padres
             ownerPart = GetComponentInParent<CombatPart>();
             if (ownerPart == null)
             {
-                Debug.LogError($"[WeaponHitbox] {gameObject.name}: No se encontró CombatPart en padres!");
+                // Debug.LogError($"[WeaponHitbox] {gameObject.name}: No se encontró CombatPart en padres!");
             }
         }
         
@@ -101,7 +101,7 @@ namespace RobotGame.Combat
             
             if (showDebugLogs)
             {
-                Debug.Log($"[WeaponHitbox] {gameObject.name} ACTIVADO - Daño: {damage}, AttackId: {attackId}");
+                // Debug.Log($"[WeaponHitbox] {gameObject.name} ACTIVADO - Daño: {damage}, AttackId: {attackId}");
             }
         }
         
@@ -115,7 +115,7 @@ namespace RobotGame.Combat
             
             if (showDebugLogs)
             {
-                Debug.Log($"[WeaponHitbox] {gameObject.name} DESACTIVADO");
+                // Debug.Log($"[WeaponHitbox] {gameObject.name} DESACTIVADO");
             }
         }
         
@@ -142,7 +142,7 @@ namespace RobotGame.Combat
                     
                     if (showDebugLogs)
                     {
-                        Debug.Log($"[WeaponHitbox] HIT PartHealth: {target.name} por {currentDamage} daño");
+                        // Debug.Log($"[WeaponHitbox] HIT PartHealth: {target.name} por {currentDamage} daño");
                     }
                 }
                 
@@ -160,7 +160,7 @@ namespace RobotGame.Combat
                 
                 if (showDebugLogs)
                 {
-                    Debug.Log($"[WeaponHitbox] HIT Damageable: {target.name} por {currentDamage} daño");
+                    // Debug.Log($"[WeaponHitbox] HIT Damageable: {target.name} por {currentDamage} daño");
                 }
                 
                 return hitSomething;

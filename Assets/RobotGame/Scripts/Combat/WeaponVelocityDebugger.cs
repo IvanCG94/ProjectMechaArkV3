@@ -110,12 +110,12 @@ namespace RobotGame.Combat
             {
                 if (isAboveThreshold)
                 {
-                    Debug.Log($"[VelocityDebug] ══════ MOVIMIENTO INICIADO ══════");
+                    // Debug.Log($"[VelocityDebug] ══════ MOVIMIENTO INICIADO ══════");
                 }
                 else
                 {
-                    Debug.Log($"[VelocityDebug] ══════ MOVIMIENTO TERMINADO ══════");
-                    Debug.Log($"[VelocityDebug] Velocidad máxima alcanzada: {maxSpeedRecorded:F2} m/s");
+                    // Debug.Log($"[VelocityDebug] ══════ MOVIMIENTO TERMINADO ══════");
+                    // Debug.Log($"[VelocityDebug] Velocidad máxima alcanzada: {maxSpeedRecorded:F2} m/s");
                     maxSpeedRecorded = 0f; // Reset para siguiente ataque
                 }
                 
@@ -126,7 +126,7 @@ namespace RobotGame.Combat
             else if (isAboveThreshold && timeSinceLastLog >= logInterval)
             {
                 string damageStatus = GetDamageStatus();
-                Debug.Log($"[VelocityDebug] Velocidad: {currentSpeed:F2} m/s | Daño: {currentDamagePercent:F0}% | {damageStatus}");
+                // Debug.Log($"[VelocityDebug] Velocidad: {currentSpeed:F2} m/s | Daño: {currentDamagePercent:F0}% | {damageStatus}");
                 lastLogTime = Time.time;
             }
         }

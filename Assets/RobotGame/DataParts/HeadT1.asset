@@ -28,6 +28,8 @@ MonoBehaviour:
   partType: 2
   canBeRoot: 0
   structuralSockets: []
-  armorGrids: []
   animatorController: {fileID: 0}
   animatorAvatar: {fileID: 0}
+  combatReach: 0
+  strength: 0
+  isLocomotionPart: 0

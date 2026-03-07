@@ -59,14 +59,14 @@ namespace RobotGame.Testing
         {
             if (wildRobotData == null)
             {
-                Debug.LogError("WildRobotTester: No hay WildRobotData asignado!");
+                // Debug.LogError("WildRobotTester: No hay WildRobotData asignado!");
                 return;
             }
             
             // Validar configuración
             if (!wildRobotData.ValidateConfiguration(out var errors))
             {
-                Debug.LogError($"WildRobotTester: Configuración inválida:\n{string.Join("\n", errors)}");
+                // Debug.LogError($"WildRobotTester: Configuración inválida:\n{string.Join("\n", errors)}");
                 return;
             }
             
@@ -79,7 +79,7 @@ namespace RobotGame.Testing
             if (robot != null)
             {
                 lastSpawnedRobot = robot;
-                Debug.Log($"WildRobotTester: Robot '{wildRobotData.speciesName}' spawneado en {spawnPos}");
+                // Debug.Log($"WildRobotTester: Robot '{wildRobotData.speciesName}' spawneado en {spawnPos}");
             }
         }
         
@@ -127,7 +127,7 @@ namespace RobotGame.Testing
             // Crear Hips
             if (data.hips == null || data.hips.prefab == null)
             {
-                Debug.LogError("WildRobotTester: Hips no tiene prefab asignado");
+                // Debug.LogError("WildRobotTester: Hips no tiene prefab asignado");
                 return false;
             }
             
@@ -173,7 +173,7 @@ namespace RobotGame.Testing
                 var socket = parent.GetSocket(piece.attachedToSocket);
                 if (socket == null)
                 {
-                    Debug.LogWarning($"Socket {piece.attachedToSocket} no encontrado en {parent.PartData.displayName}");
+                    // Debug.LogWarning($"Socket {piece.attachedToSocket} no encontrado en {parent.PartData.displayName}");
                     continue;
                 }
                 
@@ -182,7 +182,7 @@ namespace RobotGame.Testing
                 
                 if (!socket.TryAttach(part))
                 {
-                    Debug.LogWarning($"No se pudo conectar {piece.partData.displayName} a {piece.attachedToSocket}");
+                    // Debug.LogWarning($"No se pudo conectar {piece.partData.displayName} a {piece.attachedToSocket}");
                     Destroy(part.gameObject);
                     continue;
                 }
@@ -203,7 +203,7 @@ namespace RobotGame.Testing
                 var grid = part.GetArmorGrid(armor.targetGridName);
                 if (grid == null)
                 {
-                    Debug.LogWarning($"Grilla '{armor.targetGridName}' no encontrada en {part.PartData.displayName}");
+                    // Debug.LogWarning($"Grilla '{armor.targetGridName}' no encontrada en {part.PartData.displayName}");
                     continue;
                 }
                 
@@ -220,7 +220,7 @@ namespace RobotGame.Testing
                 
                 if (!grid.TryPlace(armorPart, armor.gridPositionX, armor.gridPositionY))
                 {
-                    Debug.LogWarning($"No se pudo colocar {armor.armorData.displayName} en grilla {armor.targetGridName}");
+                    // Debug.LogWarning($"No se pudo colocar {armor.armorData.displayName} en grilla {armor.targetGridName}");
                     Destroy(armorGO);
                 }
             }

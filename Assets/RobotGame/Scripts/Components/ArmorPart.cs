@@ -118,11 +118,11 @@ namespace RobotGame.Components
             
             if (tailGrid.StudCount > 0)
             {
-                Debug.Log($"ArmorPart: Detectados {tailGrid.StudCount} studs Tail en {armorData?.displayName ?? gameObject.name}");
+                // Debug.Log($"ArmorPart: Detectados {tailGrid.StudCount} studs Tail en {armorData?.displayName ?? gameObject.name}");
             }
             else
             {
-                Debug.LogWarning($"ArmorPart: No se encontraron studs Tail_ en {armorData?.displayName ?? gameObject.name}");
+                // Debug.LogWarning($"ArmorPart: No se encontraron studs Tail_ en {armorData?.displayName ?? gameObject.name}");
             }
         }
         

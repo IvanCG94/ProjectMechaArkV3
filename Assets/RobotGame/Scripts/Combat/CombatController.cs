@@ -280,7 +280,7 @@ namespace RobotGame.Combat
                 
                 if (logStateChanges)
                 {
-                    Debug.Log($"[CombatController] Cooldown terminado: {attack.attackName}");
+                    // Debug.Log($"[CombatController] Cooldown terminado: {attack.attackName}");
                 }
             }
         }
@@ -324,7 +324,7 @@ namespace RobotGame.Combat
             // Refrescar partes de combate cuando termina la edición
             Invoke(nameof(RefreshCombatParts), 0.1f);
             
-            Debug.Log("[CombatController] Modo edición terminado - Refrescando partes de combate...");
+            // Debug.Log("[CombatController] Modo edición terminado - Refrescando partes de combate...");
         }
         
         #endregion
@@ -362,7 +362,7 @@ namespace RobotGame.Combat
                 }
             }
             
-            Debug.Log($"[CombatController] Refresh: Encontradas {combatParts.Count} partes de combate");
+            // Debug.Log($"[CombatController] Refresh: Encontradas {combatParts.Count} partes de combate");
         }
         
         /// <summary>
@@ -372,25 +372,25 @@ namespace RobotGame.Combat
         {
             if (!CanAttack)
             {
-                Debug.LogWarning($"[CombatController] No puede atacar - Estado actual: {currentState}");
+                // Debug.LogWarning($"[CombatController] No puede atacar - Estado actual: {currentState}");
                 return false;
             }
             
             if (part == null || attack == null)
             {
-                Debug.LogWarning("[CombatController] Parte o ataque null");
+                // Debug.LogWarning("[CombatController] Parte o ataque null");
                 return false;
             }
             
             if (!part.CanExecuteAttack(attack))
             {
-                Debug.LogWarning($"[CombatController] La parte {part.name} no puede ejecutar {attack.attackName}");
+                // Debug.LogWarning($"[CombatController] La parte {part.name} no puede ejecutar {attack.attackName}");
                 return false;
             }
             
             if (!part.HasHitboxes)
             {
-                Debug.LogWarning($"[CombatController] La parte {part.name} no tiene hitboxes configurados");
+                // Debug.LogWarning($"[CombatController] La parte {part.name} no tiene hitboxes configurados");
                 return false;
             }
             
@@ -398,7 +398,7 @@ namespace RobotGame.Combat
             if (!IsAttackReady(attack))
             {
                 float remaining = GetCooldownRemaining(attack);
-                Debug.LogWarning($"[CombatController] Ataque '{attack.attackName}' en cooldown. Faltan {remaining:F1}s");
+                // Debug.LogWarning($"[CombatController] Ataque. Faltan {remaining:F1}s");
                 return false;
             }
             
@@ -430,7 +430,7 @@ namespace RobotGame.Combat
                 }
             }
             
-            Debug.LogWarning("[CombatController] No hay partes de combate con hitboxes disponibles");
+            // Debug.LogWarning("[CombatController] No hay partes de combate con hitboxes disponibles");
             return false;
         }
         
@@ -443,7 +443,7 @@ namespace RobotGame.Combat
             
             if (logStateChanges)
             {
-                Debug.Log("[CombatController] Ataque cancelado");
+                // Debug.Log("[CombatController] Ataque cancelado");
             }
             
             EndAttack();
@@ -548,7 +548,7 @@ namespace RobotGame.Combat
             
             if (logStateChanges)
             {
-                Debug.Log($"[CombatController] Cooldown iniciado: {attack.attackName} ({attack.cooldownTime}s)");
+                // Debug.Log($"[CombatController] Cooldown iniciado: {attack.attackName} ({attack.cooldownTime}s)");
             }
         }
         
@@ -561,7 +561,7 @@ namespace RobotGame.Combat
             
             if (logStateChanges)
             {
-                Debug.Log("[CombatController] Todos los cooldowns reseteados");
+                // Debug.Log("[CombatController] Todos los cooldowns reseteados");
             }
         }
         
@@ -605,8 +605,8 @@ namespace RobotGame.Combat
                 float damage = part.CalculateDamage(attack);
                 string modeStr = useAnimationEvents ? "Animation Events" : "Porcentual";
                 
-                Debug.Log($"[CombatController] Ataque iniciado: {attack.attackName} con {part.name} " +
-                         $"(Daño: {damage:F1}, Duración: {currentAnimationDuration:F2}s, Modo: {modeStr}, AttackId: {currentAttackId})");
+                // Debug.Log($"[CombatController] Ataque iniciado: {attack.attackName} con {part.name} " +
+                         // $"(Daño: {damage:F1}, Duración: {currentAnimationDuration:F2}s, Modo: {modeStr}, AttackId: {currentAttackId})");
                 
                 if (!useAnimationEvents)
                 {
@@ -614,9 +614,9 @@ namespace RobotGame.Combat
                     float activeTime = currentAnimationDuration * attack.activePercent;
                     float recoveryTime = currentAnimationDuration * attack.RecoveryPercent;
                     
-                    Debug.Log($"[CombatController] Timings: WindUp={windupTime:F2}s ({attack.windupPercent*100:F0}%), " +
-                             $"Active={activeTime:F2}s ({attack.activePercent*100:F0}%), " +
-                             $"Recovery={recoveryTime:F2}s ({attack.RecoveryPercent*100:F0}%)");
+                    // Debug.Log($"[CombatController] Timings: WindUp={windupTime:F2}s ({attack.windupPercent*100:F0}%), " +
+                             // $"Active={activeTime:F2}s ({attack.activePercent*100:F0}%), " +
+                             // $"Recovery={recoveryTime:F2}s ({attack.RecoveryPercent*100:F0}%)");
                 }
             }
         }
@@ -641,7 +641,7 @@ namespace RobotGame.Combat
             
             if (animator == null || animator.runtimeAnimatorController == null)
             {
-                Debug.LogWarning($"[CombatController] No se encontró Animator, usando duración fallback: {attack.animationDuration}s");
+                // Debug.LogWarning($"[CombatController] No se encontró Animator, usando duración fallback: {attack.animationDuration}s");
                 return attack.animationDuration;
             }
             
@@ -655,7 +655,7 @@ namespace RobotGame.Combat
                     attack.mainAnimationTrigger.Contains(clip.name) ||
                     clip.name.ToLower().Contains("attack"))
                 {
-                    Debug.Log($"[CombatController] Duración detectada del clip '{clip.name}': {clip.length}s");
+                    // Debug.Log($"[CombatController] Duración detectada del clip '{clip.name}': {clip.length}s");
                     return clip.length;
                 }
             }
@@ -665,12 +665,12 @@ namespace RobotGame.Combat
             {
                 if (clip.name.ToLower().Contains("attack"))
                 {
-                    Debug.Log($"[CombatController] Duración detectada (fallback) del clip '{clip.name}': {clip.length}s");
+                    // Debug.Log($"[CombatController] Duración detectada (fallback) del clip '{clip.name}': {clip.length}s");
                     return clip.length;
                 }
             }
             
-            Debug.LogWarning($"[CombatController] No se encontró clip de ataque, usando duración fallback: {attack.animationDuration}s");
+            // Debug.LogWarning($"[CombatController] No se encontró clip de ataque, usando duración fallback: {attack.animationDuration}s");
             return attack.animationDuration;
         }
         
@@ -691,7 +691,7 @@ namespace RobotGame.Combat
             
             if (animator == null)
             {
-                Debug.LogWarning($"[CombatController] NO SE ENCONTRÓ ANIMATOR para {part.name}");
+                // Debug.LogWarning($"[CombatController] NO SE ENCONTRÓ ANIMATOR para {part.name}");
                 return;
             }
             
@@ -712,7 +712,7 @@ namespace RobotGame.Combat
                 
                 if (logStateChanges)
                 {
-                    Debug.Log($"[CombatController] Animación forzada (CrossFade): {animationName}");
+                    // Debug.Log($"[CombatController] Animación forzada (CrossFade): {animationName}");
                 }
             }
             else
@@ -723,7 +723,7 @@ namespace RobotGame.Combat
                 
                 if (logStateChanges)
                 {
-                    Debug.Log($"[CombatController] Animación disparada (Trigger): {animationName}");
+                    // Debug.Log($"[CombatController] Animación disparada (Trigger): {animationName}");
                 }
             }
         }
@@ -742,7 +742,7 @@ namespace RobotGame.Combat
                 // Timeout de seguridad por si el evento no llega
                 if (stateTimer >= animationEventTimeout)
                 {
-                    Debug.LogWarning($"[CombatController] Timeout esperando HitboxStart event. Usando fallback.");
+                    // Debug.LogWarning($"[CombatController] Timeout esperando HitboxStart event. Usando fallback.");
                     waitingForHitboxStart = false;
                     ActivateHitboxes();
                     ChangeState(CombatState.Active);
@@ -777,7 +777,7 @@ namespace RobotGame.Combat
                 // Timeout de seguridad
                 if (stateTimer >= animationEventTimeout)
                 {
-                    Debug.LogWarning($"[CombatController] Timeout esperando HitboxEnd event. Usando fallback.");
+                    // Debug.LogWarning($"[CombatController] Timeout esperando HitboxEnd event. Usando fallback.");
                     waitingForHitboxEnd = false;
                     DeactivateHitboxes();
                     ChangeState(CombatState.Recovery);
@@ -821,7 +821,7 @@ namespace RobotGame.Combat
                 {
                     if (logStateChanges)
                     {
-                        Debug.Log($"[CombatController] Animación completada (duración: {currentAnimationDuration}s). Finalizando ataque.");
+                        // Debug.Log($"[CombatController] Animación completada (duración: {currentAnimationDuration}s). Finalizando ataque.");
                     }
                     EndAttack();
                 }
@@ -844,7 +844,7 @@ namespace RobotGame.Combat
             // Log de distancia máxima alcanzada
             if (trackReachDistance && endedAttack != null)
             {
-                Debug.Log($"<color=cyan>[REACH TRACKING] Ataque '{endedAttack.attackName}' → Distancia máxima: {maxReachThisAttack:F2}m</color>");
+                // Debug.Log($"<color=cyan>[REACH TRACKING] Ataque '{endedAttack.attackName}' → Distancia máxima: {maxReachThisAttack:F2}m</color>");
             }
             
             // Iniciar cooldown del ataque
@@ -894,7 +894,7 @@ namespace RobotGame.Combat
             {
                 if (logStateChanges)
                 {
-                    Debug.LogWarning($"[CombatController] OnAnimationHitboxStart ignorado - Estado actual: {currentState}");
+                    // Debug.LogWarning($"[CombatController] OnAnimationHitboxStart ignorado - Estado actual: {currentState}");
                 }
                 return;
             }
@@ -903,14 +903,14 @@ namespace RobotGame.Combat
             {
                 if (logStateChanges)
                 {
-                    Debug.LogWarning("[CombatController] OnAnimationHitboxStart ignorado - No hay ataque en curso");
+                    // Debug.LogWarning("[CombatController] OnAnimationHitboxStart ignorado - No hay ataque en curso");
                 }
                 return;
             }
             
             if (logStateChanges)
             {
-                Debug.Log("<color=green>[CombatController] Animation Event: HitboxStart recibido</color>");
+                // Debug.Log("<color=green>[CombatController] Animation Event: HitboxStart recibido</color>");
             }
             
             waitingForHitboxStart = false;
@@ -930,14 +930,14 @@ namespace RobotGame.Combat
             {
                 if (logStateChanges)
                 {
-                    Debug.LogWarning($"[CombatController] OnAnimationHitboxEnd ignorado - Estado actual: {currentState}");
+                    // Debug.LogWarning($"[CombatController] OnAnimationHitboxEnd ignorado - Estado actual: {currentState}");
                 }
                 return;
             }
             
             if (logStateChanges)
             {
-                Debug.Log("<color=yellow>[CombatController] Animation Event: HitboxEnd recibido</color>");
+                // Debug.Log("<color=yellow>[CombatController] Animation Event: HitboxEnd recibido</color>");
             }
             
             waitingForHitboxEnd = false;
@@ -958,7 +958,7 @@ namespace RobotGame.Combat
             
             if (logStateChanges)
             {
-                Debug.Log("<color=red>[CombatController] Animation Event: AttackEnd recibido</color>");
+                // Debug.Log("<color=red>[CombatController] Animation Event: AttackEnd recibido</color>");
             }
             
             attackEndedByEvent = true;
@@ -973,7 +973,7 @@ namespace RobotGame.Combat
         {
             if (logStateChanges && currentState != newState)
             {
-                Debug.Log($"[CombatController] Estado: {currentState} → {newState}");
+                // Debug.Log($"[CombatController] Estado: {currentState} → {newState}");
             }
             
             currentState = newState;
@@ -1021,7 +1021,7 @@ namespace RobotGame.Combat
         {
             if (currentAttackingPart == null || currentAttack == null)
             {
-                Debug.LogError("[CombatController] ActivateHitboxes: currentAttackingPart o currentAttack es null!");
+                // Debug.LogError("[CombatController] ActivateHitboxes: currentAttackingPart o currentAttack es null!");
                 return;
             }
             
@@ -1033,7 +1033,7 @@ namespace RobotGame.Combat
             
             if (logStateChanges)
             {
-                Debug.Log($"[CombatController] Hitboxes ACTIVADOS - Daño: {damage}, AttackId: {currentAttackId}");
+                // Debug.Log($"[CombatController] Hitboxes ACTIVADOS - Daño: {damage}, AttackId: {currentAttackId}");
             }
         }
         
@@ -1045,7 +1045,7 @@ namespace RobotGame.Combat
                 
                 if (logStateChanges)
                 {
-                    Debug.Log("[CombatController] Hitboxes DESACTIVADOS");
+                    // Debug.Log("[CombatController] Hitboxes DESACTIVADOS");
                 }
             }
         }
@@ -1060,7 +1060,7 @@ namespace RobotGame.Combat
             
             if (logStateChanges)
             {
-                Debug.Log($"[CombatController] HIT: {part.gameObject.name} por {damage:F1} daño");
+                // Debug.Log($"[CombatController] HIT: {part.gameObject.name} por {damage:F1} daño");
             }
         }
         
@@ -1070,7 +1070,7 @@ namespace RobotGame.Combat
             
             if (logStateChanges)
             {
-                Debug.Log($"[CombatController] HIT: {target.gameObject.name} por {damage:F1} daño");
+                // Debug.Log($"[CombatController] HIT: {target.gameObject.name} por {damage:F1} daño");
             }
         }
         

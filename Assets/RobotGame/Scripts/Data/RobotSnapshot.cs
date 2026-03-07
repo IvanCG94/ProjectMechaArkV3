@@ -136,7 +136,7 @@ namespace RobotGame.Data
         {
             if (hipsData == null)
             {
-                Debug.LogWarning("RobotSnapshot: No hay datos de Hips para restaurar.");
+                // Debug.LogWarning("RobotSnapshot: No hay datos de Hips para restaurar.");
                 return null;
             }
             
@@ -191,17 +191,17 @@ namespace RobotGame.Data
         {
             if (robot == null)
             {
-                Debug.LogWarning("RobotSnapshot: Robot es null, no se puede restaurar in-place.");
+                // Debug.LogWarning("RobotSnapshot: Robot es null, no se puede restaurar in-place.");
                 return false;
             }
             
             if (hipsData == null)
             {
-                Debug.LogWarning("RobotSnapshot: No hay datos de Hips para restaurar.");
+                // Debug.LogWarning("RobotSnapshot: No hay datos de Hips para restaurar.");
                 return false;
             }
             
-            Debug.Log($"RobotSnapshot: Restaurando in-place robot '{robot.name}'");
+            // Debug.Log($"RobotSnapshot: Restaurando in-place robot '{robot.name}'");
             
             RobotFactory factory = RobotFactory.Instance;
             
@@ -220,7 +220,7 @@ namespace RobotGame.Data
             StructuralPart newHips = factory.CreateStructuralPart(hipsData);
             if (newHips == null)
             {
-                Debug.LogError("RobotSnapshot: No se pudo crear las Hips desde el snapshot.");
+                // Debug.LogError("RobotSnapshot: No se pudo crear las Hips desde el snapshot.");
                 return false;
             }
             
@@ -238,7 +238,7 @@ namespace RobotGame.Data
                 playerCore.InsertInto(robot);
             }
             
-            Debug.Log($"RobotSnapshot: Robot '{robot.name}' restaurado in-place exitosamente.");
+            // Debug.Log($"RobotSnapshot: Robot '{robot.name}' restaurado in-place exitosamente.");
             return true;
         }
         
@@ -254,7 +254,7 @@ namespace RobotGame.Data
             {
                 if (core != null && core.IsActive)
                 {
-                    Debug.Log($"RobotSnapshot.ClearRobotParts: Extrayendo Core '{core.name}' antes de limpiar");
+                    // Debug.Log($"RobotSnapshot.ClearRobotParts: Extrayendo Core '{core.name}' antes de limpiar");
                     core.Extract();
                 }
             }

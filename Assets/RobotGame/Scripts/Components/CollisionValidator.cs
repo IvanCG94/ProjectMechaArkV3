@@ -88,7 +88,7 @@ namespace RobotGame.Components
                         
                         if (showDebugInfo)
                         {
-                            Debug.Log($"CollisionValidator: Activado BoxCollider en {t.name} (size={t.lossyScale})");
+                            // Debug.Log($"CollisionValidator: Activado BoxCollider en {t.name} (size={t.lossyScale})");
                         }
                     }
                 }
@@ -96,7 +96,7 @@ namespace RobotGame.Components
             
             if (showDebugInfo)
             {
-                Debug.Log($"CollisionValidator: Modo edición activado. {activatedColliders.Count} BoxColliders activos.");
+                // Debug.Log($"CollisionValidator: Modo edición activado. {activatedColliders.Count} BoxColliders activos.");
             }
         }
         
@@ -118,7 +118,7 @@ namespace RobotGame.Components
             
             if (showDebugInfo)
             {
-                Debug.Log("CollisionValidator: Modo edición desactivado.");
+                // Debug.Log("CollisionValidator: Modo edición desactivado.");
             }
         }
         
@@ -144,7 +144,7 @@ namespace RobotGame.Components
             
             if (showDebugInfo)
             {
-                Debug.Log($"CollisionValidator: Pieza seleccionada tiene {boxCount} Box_");
+                // Debug.Log($"CollisionValidator: Pieza seleccionada tiene {boxCount} Box_");
             }
         }
         
@@ -188,7 +188,7 @@ namespace RobotGame.Components
                         {
                             if (showDebugInfo)
                             {
-                                Debug.Log($"CollisionValidator: ¡COLISIÓN! {t.name} con {col.gameObject.name}");
+                                // Debug.Log($"CollisionValidator: ¡COLISIÓN! {t.name} con {col.gameObject.name}");
                             }
                             return true;
                         }
@@ -220,7 +220,7 @@ namespace RobotGame.Components
                         
                         if (showDebugInfo)
                         {
-                            Debug.Log($"CollisionValidator: Registrado BoxCollider de pieza colocada: {t.name}");
+                            // Debug.Log($"CollisionValidator: Registrado BoxCollider de pieza colocada: {t.name}");
                         }
                     }
                 }

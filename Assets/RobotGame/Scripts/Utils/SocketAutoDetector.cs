@@ -29,6 +29,7 @@ namespace RobotGame.Utils
         /// <summary>
         /// Intenta parsear un nombre de transform para extraer información de socket.
         /// Formato: Socket_TipoSocket (ej: Socket_Torso, Socket_ArmLeft, Socket_Core)
+        /// Los sockets no reconocidos se marcan como Custom.
         /// </summary>
         public static bool TryParse(string transformName, out SocketInfo socketInfo)
         {
@@ -47,7 +48,9 @@ namespace RobotGame.Utils
             // Extraer el tipo de socket
             string typePart = transformName.Substring(SOCKET_PREFIX.Length);
             
-            // Intentar parsear como enum
+            if (string.IsNullOrEmpty(typePart)) return false;
+            
+            // Intentar parsear como enum directamente
             if (Enum.TryParse<StructuralSocketType>(typePart, true, out StructuralSocketType socketType))
             {
                 socketInfo.socketType = socketType;
@@ -55,16 +58,11 @@ namespace RobotGame.Utils
                 return true;
             }
             
-            // Si no se pudo parsear, intentar con variantes comunes
+            // Intentar con variantes comunes
             socketType = TryMatchSocketType(typePart);
-            if (socketType != StructuralSocketType.Custom || typePart.Equals("Custom", StringComparison.OrdinalIgnoreCase))
-            {
-                socketInfo.socketType = socketType;
-                socketInfo.isValid = true;
-                return true;
-            }
-            
-            return false;
+            socketInfo.socketType = socketType;
+            socketInfo.isValid = true; // Siempre válido si tiene prefijo Socket_
+            return true;
         }
         
         /// <summary>
@@ -218,7 +216,7 @@ namespace RobotGame.Utils
         {
             if (partData == null || partData.prefab == null)
             {
-                Debug.LogWarning("SocketAutoDetector: PartData o prefab es null.");
+                // Debug.LogWarning("SocketAutoDetector: PartData o prefab es null.");
                 return;
             }
             
@@ -235,11 +233,11 @@ namespace RobotGame.Utils
                 {
                     socketList += $"\n  - {socket.socketType} ({socket.transformName})";
                 }
-                Debug.Log($"SocketAutoDetector: Configurados {detectedSockets.Count} sockets en '{partData.displayName}':{socketList}");
+                // Debug.Log($"SocketAutoDetector: Configurados {detectedSockets.Count} sockets en '{partData.displayName}':{socketList}");
             }
             else
             {
-                Debug.Log($"SocketAutoDetector: No se encontraron sockets Socket_* en '{partData.displayName}'");
+                // Debug.Log($"SocketAutoDetector: No se encontraron sockets Socket_* en '{partData.displayName}'");
             }
         }
         

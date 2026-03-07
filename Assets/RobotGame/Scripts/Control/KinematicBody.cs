@@ -205,7 +205,7 @@ namespace RobotGame.Control
             
             RecalculateBounds();
             
-            Debug.Log($"KinematicBody [{gameObject.name}]: Inicializado - Layer={selfLayer}, CollisionLayers={collisionLayers.value}, EffectiveLayers={effectiveCollisionLayers.value}, BodyRadius={bodyRadius:F2}, BodyHeight={bodyHeight:F2}");
+            // Debug.Log($"KinematicBody [{gameObject.name}]: Inicializado - Layer={selfLayer}, CollisionLayers={collisionLayers.value}, EffectiveLayers={effectiveCollisionLayers.value}, BodyRadius={bodyRadius:F2}, BodyHeight={bodyHeight:F2}");
         }
         
         private void FixedUpdate()
@@ -266,7 +266,7 @@ namespace RobotGame.Control
                 bodyCollider.enabled = enabled;
             }
             
-            Debug.Log($"KinematicBody [{gameObject.name}]: {(enabled ? "HABILITADO" : "DESHABILITADO")}");
+            // Debug.Log($"KinematicBody [{gameObject.name}]: {(enabled ? "HABILITADO" : "DESHABILITADO")}");
         }
         
         /// <summary>
@@ -329,8 +329,8 @@ namespace RobotGame.Control
             // Generar puntos de check
             GenerateCheckPoints();
             
-            Debug.Log($"KinematicBody [{gameObject.name}]: Bounds recalculados - " +
-                     $"Center: {bodyCenter}, Size: {bodyBounds.size}, Radius: {bodyRadius:F2}, Height: {bodyHeight:F2}");
+            // Debug.Log($"KinematicBody [{gameObject.name}]: Bounds recalculados - " +
+                     // $"Center: {bodyCenter}, Size: {bodyBounds.size}, Radius: {bodyRadius:F2}, Height: {bodyHeight:F2}");
         }
         
         /// <summary>
@@ -402,7 +402,7 @@ namespace RobotGame.Control
                 capsule.center = new Vector3(0f, 1f, 0f);
                 bodyCollider = capsule;
                 
-                Debug.Log($"KinematicBody [{gameObject.name}]: CapsuleCollider creado automáticamente");
+                // Debug.Log($"KinematicBody [{gameObject.name}]: CapsuleCollider creado automáticamente");
             }
         }
         
@@ -534,7 +534,7 @@ namespace RobotGame.Control
             
             if (groundCheckPoints == null || groundCheckPoints.Length == 0)
             {
-                Debug.LogError($"KinematicBody [{gameObject.name}]: groundCheckPoints es null o vacío!");
+                // Debug.LogError($"KinematicBody [{gameObject.name}]: groundCheckPoints es null o vacío!");
                 return;
             }
             
@@ -543,7 +543,7 @@ namespace RobotGame.Control
             
             if (logCollisions)
             {
-                Debug.Log($"KinematicBody [{gameObject.name}]: CheckGround - radius={checkRadius:F2}, distance={checkDistance:F2}, points={groundCheckPoints.Length}, layers={effectiveCollisionLayers.value}");
+                // Debug.Log($"KinematicBody [{gameObject.name}]: CheckGround - radius={checkRadius:F2}, distance={checkDistance:F2}, points={groundCheckPoints.Length}, layers={effectiveCollisionLayers.value}");
             }
             
             // Verificar múltiples puntos para robots grandes
@@ -609,7 +609,7 @@ namespace RobotGame.Control
             
             if (logCollisions)
             {
-                Debug.Log($"KinematicBody [{gameObject.name}]: Landed");
+                // Debug.Log($"KinematicBody [{gameObject.name}]: Landed");
             }
         }
         
@@ -715,7 +715,7 @@ namespace RobotGame.Control
                                 
                                 if (logCollisions)
                                 {
-                                    Debug.Log($"KinematicBody [{gameObject.name}]: Wall collision, sliding");
+                                    // Debug.Log($"KinematicBody [{gameObject.name}]: Wall collision, sliding");
                                 }
                                 
                                 break;
@@ -802,7 +802,7 @@ namespace RobotGame.Control
                         
                         if (logCollisions)
                         {
-                            Debug.Log($"KinematicBody [{gameObject.name}]: Depenetration from {other.name}, dist: {distance:F3}");
+                            // Debug.Log($"KinematicBody [{gameObject.name}]: Depenetration from {other.name}, dist: {distance:F3}");
                         }
                     }
                 }
@@ -892,7 +892,7 @@ namespace RobotGame.Control
                     
                     if (logCollisions)
                     {
-                        Debug.Log($"KinematicBody [{gameObject.name}]: Now on platform '{currentPlatform.name}'");
+                        // Debug.Log($"KinematicBody [{gameObject.name}]: Now on platform '{currentPlatform.name}'");
                     }
                 }
             }
@@ -915,7 +915,7 @@ namespace RobotGame.Control
                 effectiveCollisionLayers = collisionLayers;
             }
             
-            Debug.Log($"KinematicBody [{gameObject.name}]: Layers - self={selfLayer}, collision={collisionLayers.value}, effective={effectiveCollisionLayers.value}");
+            // Debug.Log($"KinematicBody [{gameObject.name}]: Layers - self={selfLayer}, collision={collisionLayers.value}, effective={effectiveCollisionLayers.value}");
         }
         
         /// <summary>

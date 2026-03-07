@@ -63,12 +63,12 @@ namespace RobotGame.Utils
     {
         public static void AutoConfigureStructuralPart(RobotGame.Data.StructuralPartData partData)
         {
-            Debug.Log($"GridAutoDetector: Las grillas ahora se detectan automáticamente para {partData?.displayName}");
+            // Debug.Log($"GridAutoDetector: Las grillas ahora se detectan automáticamente para {partData?.displayName}");
         }
         
         public static void AutoConfigureArmorPart(RobotGame.Data.ArmorPartData armorData)
         {
-            Debug.Log($"GridAutoDetector: Los studs ahora se detectan automáticamente para {armorData?.displayName}");
+            // Debug.Log($"GridAutoDetector: Los studs ahora se detectan automáticamente para {armorData?.displayName}");
         }
     }
 }

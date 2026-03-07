@@ -75,20 +75,20 @@ namespace RobotGame.Components
         {
             if (isOccupied)
             {
-                Debug.LogWarning($"Socket {socketType} ya está ocupado.");
+                // Debug.LogWarning($"Socket {socketType} ya está ocupado.");
                 return false;
             }
             
             if (part == null)
             {
-                Debug.LogWarning("Intentando conectar una pieza null.");
+                // Debug.LogWarning("Intentando conectar una pieza null.");
                 return false;
             }
             
             // Verificar que el tipo de pieza coincida con el socket
             if (part.PartData.partType != socketType)
             {
-                Debug.LogWarning($"Tipo de pieza {part.PartData.partType} no coincide con socket {socketType}.");
+                // Debug.LogWarning($"Tipo de pieza {part.PartData.partType} no coincide con socket {socketType}.");
                 return false;
             }
             

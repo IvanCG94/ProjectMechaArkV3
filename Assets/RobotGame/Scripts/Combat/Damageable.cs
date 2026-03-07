@@ -87,8 +87,8 @@ namespace RobotGame.Combat
             if (logDamage)
             {
                 string attackerName = attacker != null ? attacker.name : "Unknown";
-                Debug.Log($"[Damageable] {gameObject.name} recibió {damage:F1} daño de {attackerName}. " +
-                         $"Salud: {previousHealth:F1} → {currentHealth:F1}");
+                // Debug.Log($"[Damageable] {gameObject.name} recibió {damage:F1} daño de {attackerName}. " +
+                         // $"Salud: {previousHealth:F1} → {currentHealth:F1}");
             }
             
             OnDamageReceived?.Invoke(damage, currentHealth, attacker);
@@ -170,7 +170,7 @@ namespace RobotGame.Combat
             
             if (logDamage)
             {
-                Debug.Log($"[Damageable] {gameObject.name} ha muerto!");
+                // Debug.Log($"[Damageable] {gameObject.name} ha muerto!");
             }
             
             OnDeath?.Invoke();

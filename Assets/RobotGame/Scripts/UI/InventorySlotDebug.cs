@@ -37,7 +37,7 @@ namespace RobotGame.UI
             var slot = GetComponent<InventorySlotUI>();
             if (slot == null)
             {
-                Debug.LogWarning("InventorySlotDebug: No hay InventorySlotUI en este GameObject");
+                // Debug.LogWarning("InventorySlotDebug: No hay InventorySlotUI en este GameObject");
                 return;
             }
             
@@ -72,7 +72,7 @@ namespace RobotGame.UI
                 {
                     var iconField = type.GetField("iconImage", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
                     iconField?.SetValue(slot, iconImg);
-                    Debug.Log("InventorySlotDebug: Icon asignado");
+                    // Debug.Log("InventorySlotDebug: Icon asignado");
                 }
             }
             
@@ -85,7 +85,7 @@ namespace RobotGame.UI
                 {
                     var borderField = type.GetField("borderImage", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
                     borderField?.SetValue(slot, borderImg);
-                    Debug.Log("InventorySlotDebug: Border asignado");
+                    // Debug.Log("InventorySlotDebug: Border asignado");
                 }
             }
             
@@ -95,7 +95,7 @@ namespace RobotGame.UI
             {
                 var bgField = type.GetField("backgroundImage", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
                 bgField?.SetValue(slot, bgImg);
-                Debug.Log("InventorySlotDebug: Background asignado");
+                // Debug.Log("InventorySlotDebug: Background asignado");
             }
             
             // Buscar Quantity
@@ -107,7 +107,7 @@ namespace RobotGame.UI
                 {
                     var qtyField = type.GetField("quantityText", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
                     qtyField?.SetValue(slot, qtyText);
-                    Debug.Log("InventorySlotDebug: Quantity asignado");
+                    // Debug.Log("InventorySlotDebug: Quantity asignado");
                 }
             }
             
@@ -117,7 +117,7 @@ namespace RobotGame.UI
             {
                 var selField = type.GetField("selectedIndicator", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
                 selField?.SetValue(slot, selTrans.gameObject);
-                Debug.Log("InventorySlotDebug: Selected asignado");
+                // Debug.Log("InventorySlotDebug: Selected asignado");
             }
             
             CheckReferences();

@@ -16,7 +16,7 @@ MonoBehaviour:
   displayName: Raptor hips V3
   description: 
   icon: {fileID: 21300000, guid: 7730590ca1b35fe4c9792bbd4d1f75ef, type: 3}
-  prefab: {fileID: 8903793449733398100, guid: 7f92332c2ec10374687302cb73543872, type: 3}
+  prefab: {fileID: 5609034278058392648, guid: 3704b11627a9ad64198a175fe994c539, type: 3}
   category: 0
   tier:
     tier: 2
@@ -29,89 +29,14 @@ MonoBehaviour:
   canBeRoot: 0
   structuralSockets:
   - socketType: 1
-    transformName: Socket_torsoV2
+    transformName: Socket_torso
     isRequired: 0
     localPosition: {x: 2.7576621e-14, y: 2.7894297, z: 0.57818}
     localRotation: {x: -0.000014570996, y: 4.1983273e-13, z: 3.651277e-12}
-  armorGrids:
-  - gridInfo:
-      isHead: 1
-      tierInfo:
-        tier: 2
-        subTier: 1
-      sizeX: 1
-      sizeY: 1
-      surrounding:
-        level: 1
-        edges: 15
-        fullType: 0
-      gridName: PlacaV3L
-    transformName: Head_T2_1x1_S1_TBLR_PlacaV3L
-  - gridInfo:
-      isHead: 1
-      tierInfo:
-        tier: 2
-        subTier: 1
-      sizeX: 1
-      sizeY: 2
-      surrounding:
-        level: 1
-        edges: 12
-        fullType: 0
-      gridName: RaptorHipsAccesoryL
-    transformName: Head_T2_1x2_S1_TB_RaptorHipsAccesoryL
-  - gridInfo:
-      isHead: 1
-      tierInfo:
-        tier: 2
-        subTier: 1
-      sizeX: 1
-      sizeY: 4
-      surrounding:
-        level: 2
-        edges: 0
-        fullType: 1
-      gridName: PlacaRaptorV3L
-    transformName: Head_T2_1x4_S2FH_PlacaRaptorV3L
-  - gridInfo:
-      isHead: 1
-      tierInfo:
-        tier: 2
-        subTier: 1
-      sizeX: 1
-      sizeY: 1
-      surrounding:
-        level: 1
-        edges: 15
-        fullType: 0
-      gridName: PlacaV3R
-    transformName: Head_T2_1x1_S1_TBLR_PlacaV3R
-  - gridInfo:
-      isHead: 1
-      tierInfo:
-        tier: 2
-        subTier: 1
-      sizeX: 1
-      sizeY: 2
-      surrounding:
-        level: 1
-        edges: 12
-        fullType: 0
-      gridName: RaptorHipsAccesoryR
-    transformName: Head_T2_1x2_S1_TB_RaptorHipsAccesoryR
-  - gridInfo:
-      isHead: 1
-      tierInfo:
-        tier: 2
-        subTier: 1
-      sizeX: 1
-      sizeY: 4
-      surrounding:
-        level: 2
-        edges: 0
-        fullType: 1
-      gridName: PlacaRaptorV3R
-    transformName: Head_T2_1x4_S2FH_PlacaRaptorV3R
-  animatorController: {fileID: 0}
+  animatorController: {fileID: 9100000, guid: 817ea601ab4b62a4d8e9afa3f717b91a, type: 2}
   animatorAvatar: {fileID: 0}
   combatReach: 0
+  strength: 0
+  isLocomotionPart: 0
+  baseMovementSpeed: 5
+  baseSprintSpeed: 9

@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using RobotGame;
 using RobotGame.Components;
 using RobotGame.Control;
 using RobotGame.Data;
@@ -240,12 +241,12 @@ namespace RobotGame.Assembly
             if (useSnapshot)
             {
                 editSnapshot = RobotSnapshot.Capture(targetRobot);
-                Debug.Log($"RobotAssemblyController: Snapshot capturado para '{targetRobot.name}'");
+                // Debug.Log($"RobotAssemblyController: Snapshot capturado para '{targetRobot.name}'");
             }
             else
             {
                 editSnapshot = null;
-                Debug.Log($"RobotAssemblyController: Sin snapshot (modo cascarón)");
+                // Debug.Log($"RobotAssemblyController: Sin snapshot (modo cascarón)");
             }
             
             ActivateController();
@@ -284,7 +285,7 @@ namespace RobotGame.Assembly
             
             if (targetRobot == null)
             {
-                Debug.LogWarning("RobotAssemblyController: No hay robot. Restaurando desde snapshot...");
+                // Debug.LogWarning("RobotAssemblyController: No hay robot. Restaurando desde snapshot...");
                 RestoreFromSnapshot();
                 return true;
             }
@@ -296,13 +297,13 @@ namespace RobotGame.Assembly
             List<string> errors;
             if (!currentState.IsValid(out errors))
             {
-                Debug.LogWarning($"RobotAssemblyController: Configuración inválida ({string.Join(", ", errors)}). Restaurando desde snapshot...");
+                // Debug.LogWarning($"RobotAssemblyController: Configuración inválida ({string.Join(", ", errors)}). Restaurando desde snapshot...");
                 RestoreFromSnapshot();
                 return true;
             }
             
             // Configuración válida, limpiar snapshot
-            Debug.Log("RobotAssemblyController: Configuración válida. Guardando cambios.");
+            // Debug.Log("RobotAssemblyController: Configuración válida. Guardando cambios.");
             editSnapshot = null;
             return true;
         }
@@ -315,7 +316,7 @@ namespace RobotGame.Assembly
         {
             if (editSnapshot == null)
             {
-                Debug.LogWarning("RobotAssemblyController: No hay snapshot para restaurar.");
+                // Debug.LogWarning("RobotAssemblyController: No hay snapshot para restaurar.");
                 return;
             }
             
@@ -334,11 +335,11 @@ namespace RobotGame.Assembly
             if (isMecha)
             {
                 // Para mechas: restaurar in-place para preservar WildRobot y otros componentes
-                Debug.Log("RobotAssemblyController: Restaurando mecha in-place...");
+                // Debug.Log("RobotAssemblyController: Restaurando mecha in-place...");
                 
                 if (editSnapshot.RestoreInPlace(targetRobot, playerCore))
                 {
-                    Debug.Log("RobotAssemblyController: Mecha restaurado in-place exitosamente.");
+                    // Debug.Log("RobotAssemblyController: Mecha restaurado in-place exitosamente.");
                     
                     // Restaurar inventario si está activo
                     if (useInventory && currentState != null)
@@ -348,7 +349,7 @@ namespace RobotGame.Assembly
                 }
                 else
                 {
-                    Debug.LogError("RobotAssemblyController: Error al restaurar mecha in-place.");
+                    // Debug.LogError("RobotAssemblyController: Error al restaurar mecha in-place.");
                 }
             }
             else
@@ -359,7 +360,7 @@ namespace RobotGame.Assembly
                 if (restoredRobot != null)
                 {
                     targetRobot = restoredRobot;
-                    Debug.Log("RobotAssemblyController: Configuración restaurada desde snapshot.");
+                    // Debug.Log("RobotAssemblyController: Configuración restaurada desde snapshot.");
                     
                     // Restaurar inventario si está activo
                     if (useInventory && currentState != null)
@@ -369,7 +370,7 @@ namespace RobotGame.Assembly
                 }
                 else
                 {
-                    Debug.LogError("RobotAssemblyController: Error al restaurar desde snapshot.");
+                    // Debug.LogError("RobotAssemblyController: Error al restaurar desde snapshot.");
                 }
             }
             
@@ -383,13 +384,13 @@ namespace RobotGame.Assembly
         {
             if (!useInventory || PlayerInventory.Instance == null)
             {
-                Debug.Log("RobotAssemblyController: No hay inventario activo, no se restauran piezas");
+                // Debug.Log("RobotAssemblyController: No hay inventario activo, no se restauran piezas");
                 return;
             }
             
             if (currentSnapshot == null)
             {
-                Debug.LogWarning("RobotAssemblyController: No hay snapshot actual para comparar");
+                // Debug.LogWarning("RobotAssemblyController: No hay snapshot actual para comparar");
                 return;
             }
             
@@ -437,7 +438,7 @@ namespace RobotGame.Assembly
                 }
             }
             
-            Debug.Log($"RobotAssemblyController: Inventario restaurado - {armorCount} armaduras, {structuralCount} estructurales devueltas al inventario");
+            // Debug.Log($"RobotAssemblyController: Inventario restaurado - {armorCount} armaduras, {structuralCount} estructurales devueltas al inventario");
         }
         
         /// <summary>
@@ -507,7 +508,7 @@ namespace RobotGame.Assembly
                     SetMode(AssemblyMode.Armor);
                 }
                 
-                Debug.Log($"RobotAssemblyController: Armadura seleccionada - {armorData.displayName}");
+                // Debug.Log($"RobotAssemblyController: Armadura seleccionada - {armorData.displayName}");
             }
             else if (item is StructuralPartData structuralData)
             {
@@ -519,7 +520,7 @@ namespace RobotGame.Assembly
                     SetMode(AssemblyMode.Structural);
                 }
                 
-                Debug.Log($"RobotAssemblyController: Estructural seleccionada - {structuralData.displayName}");
+                // Debug.Log($"RobotAssemblyController: Estructural seleccionada - {structuralData.displayName}");
             }
         }
         
@@ -544,7 +545,7 @@ namespace RobotGame.Assembly
         {
             if (targetRobot == null)
             {
-                Debug.LogError("RobotAssemblyController: No hay robot objetivo");
+                // Debug.LogError("RobotAssemblyController: No hay robot objetivo");
                 return;
             }
             
@@ -565,14 +566,14 @@ namespace RobotGame.Assembly
                 bool isControllingTarget = playerController.Target != null && 
                                            playerController.Target.gameObject == targetRobot.gameObject;
                 
-                Debug.Log($"RobotAssemblyController: PlayerController.Target={playerController.Target?.name}, " +
-                          $"targetRobot={targetRobot.name}, isControllingTarget={isControllingTarget}");
+                // Debug.Log($"RobotAssemblyController: PlayerController.Target={playerController.Target?.name}, " +
+                          // $"targetRobot={targetRobot.name}, isControllingTarget={isControllingTarget}");
                 
                 if (isControllingTarget)
                 {
                     playerController.EnterEditModeState();
                     playerControllerWasInEditMode = true;
-                    Debug.Log("RobotAssemblyController: PlayerController puesto en modo edición");
+                    // Debug.Log("RobotAssemblyController: PlayerController puesto en modo edición");
                 }
             }
             
@@ -586,7 +587,7 @@ namespace RobotGame.Assembly
                 targetRb.linearVelocity = Vector3.zero;
                 targetRb.isKinematic = true;
                 manuallySetKinematicRb = targetRb;
-                Debug.Log($"RobotAssemblyController: Rigidbody puesto en kinematic manualmente (era kinematic={wasKinematicBeforeEdit})");
+                // Debug.Log($"RobotAssemblyController: Rigidbody puesto en kinematic manualmente (era kinematic={wasKinematicBeforeEdit})");
             }
             
             // Desactivar colliders principales del robot
@@ -604,6 +605,9 @@ namespace RobotGame.Assembly
             CollectAvailableGrids();
             CollectAvailableSockets();
             
+            // Activar Box_ colliders DESPUÉS de recolectar grillas
+            EnableBoxCollidersForGridDetection();
+            
             // Abrir panel de inventario con el tier de la estación
             if (inventoryPanel != null)
             {
@@ -611,7 +615,10 @@ namespace RobotGame.Assembly
                 inventoryPanel.EnterEditMode(currentMode, stationTier);
             }
             
-            Debug.Log($"RobotAssemblyController: Activado para '{targetRobot.name}'");
+            // Poner el robot en T-Pose para edición
+            targetRobot.SetEditPose(true);
+            
+            // Debug.Log($"RobotAssemblyController: Activado para '{targetRobot.name}'");
         }
         
         private void DeactivateController()
@@ -619,14 +626,14 @@ namespace RobotGame.Assembly
             isActive = false;
             currentEditMode = AssemblyEditMode.None;
             
-            // Restaurar colliders
+            // Restaurar colliders (también desactiva los Box_ de detección)
             RestoreRobotMainColliders();
             
             // Restaurar Rigidbody si lo modificamos manualmente
             if (manuallySetKinematicRb != null)
             {
                 manuallySetKinematicRb.isKinematic = wasKinematicBeforeEdit;
-                Debug.Log($"RobotAssemblyController: Rigidbody restaurado a kinematic={wasKinematicBeforeEdit}");
+                // Debug.Log($"RobotAssemblyController: Rigidbody restaurado a kinematic={wasKinematicBeforeEdit}");
                 manuallySetKinematicRb = null;
             }
             
@@ -635,7 +642,7 @@ namespace RobotGame.Assembly
             {
                 playerController.ExitEditModeState();
                 playerController.RecalculateCollider();
-                Debug.Log("RobotAssemblyController: PlayerController restaurado de modo edición");
+                // Debug.Log("RobotAssemblyController: PlayerController restaurado de modo edición");
             }
             playerControllerWasInEditMode = false;
             
@@ -670,6 +677,27 @@ namespace RobotGame.Assembly
                 }
             }
             
+            // Restaurar pose normal del robot (salir de T-Pose)
+            if (targetRobot != null)
+            {
+                Debug.Log("[RobotAssemblyController] Saliendo de edición - Actualizando movilidad...");
+                targetRobot.SetEditPose(false);
+                
+                // Aplicar multiplicador de movilidad actualizado
+                targetRobot.ApplyMobilityToAnimators();
+                
+                // Actualizar PlayerController si controla este robot
+                if (playerController != null && playerController.Target == targetRobot.transform)
+                {
+                    Debug.Log("[RobotAssemblyController] Actualizando PlayerController mobility (mismo target)...");
+                    playerController.UpdateMobilityMultiplier();
+                }
+            }
+            else
+            {
+                Debug.Log("[RobotAssemblyController] targetRobot es NULL al salir!");
+            }
+            
             // Limpiar referencias
             targetRobot = null;
             editSnapshot = null;
@@ -678,7 +706,7 @@ namespace RobotGame.Assembly
             selectedArmorData = null;
             selectedStructuralData = null;
             
-            Debug.Log("RobotAssemblyController: Desactivado");
+            // Debug.Log("RobotAssemblyController: Desactivado");
         }
         
         private RobotCore FindPlayerCore()
@@ -734,7 +762,7 @@ namespace RobotGame.Assembly
                 inventoryPanel.SelectCategory(targetCategory);
             }
             
-            Debug.Log($"RobotAssemblyController: Modo cambiado a {mode}");
+            // Debug.Log($"RobotAssemblyController: Modo cambiado a {mode}");
         }
         
         #endregion
@@ -751,16 +779,18 @@ namespace RobotGame.Assembly
             
             foreach (var col in allColliders)
             {
+                // No desactivar: triggers, StudGridHead, StructuralSocket, ni Box_ (usados para detección)
                 if (!col.isTrigger && 
                     col.GetComponent<StudGridHead>() == null && 
-                    col.GetComponent<StructuralSocket>() == null)
+                    col.GetComponent<StructuralSocket>() == null &&
+                    !col.gameObject.name.StartsWith("Box_"))
                 {
                     col.enabled = false;
                     disabledColliders.Add(col);
                 }
             }
             
-            Debug.Log($"RobotAssemblyController: {disabledColliders.Count} colliders desactivados");
+            // Debug.Log($"RobotAssemblyController: {disabledColliders.Count} colliders desactivados");
         }
         
         private void RestoreRobotMainColliders()
@@ -774,6 +804,63 @@ namespace RobotGame.Assembly
             }
             
             disabledColliders.Clear();
+            
+            // Desactivar los Box_ colliders que activamos para detección
+            DisableBoxCollidersForGridDetection();
+        }
+        
+        // Lista de Box_ colliders activados para detección de grillas
+        private List<BoxCollider> activatedBoxColliders = new List<BoxCollider>();
+        
+        /// <summary>
+        /// Activa los BoxColliders de los Box_ que están en partes con StudGridHead.
+        /// </summary>
+        private void EnableBoxCollidersForGridDetection()
+        {
+            activatedBoxColliders.Clear();
+            
+            if (targetRobot == null) return;
+            
+            // Buscar TODOS los Box_ en el robot y activarlos como triggers
+            var allTransforms = targetRobot.GetComponentsInChildren<Transform>(true);
+            
+            foreach (var t in allTransforms)
+            {
+                if (t.name.StartsWith("Box_"))
+                {
+                    BoxCollider bc = t.GetComponent<BoxCollider>();
+                    if (bc == null)
+                    {
+                        // Crear collider basado en la escala del Empty
+                        bc = t.gameObject.AddComponent<BoxCollider>();
+                        bc.size = Vector3.one;
+                        bc.center = Vector3.zero;
+                    }
+                    
+                    bc.isTrigger = true;
+                    bc.enabled = true;
+                    activatedBoxColliders.Add(bc);
+                }
+            }
+            
+            // Debug.Log($"[GRID] {activatedBoxColliders.Count} Box_ colliders activados para detección");
+        }
+        
+        /// <summary>
+        /// Desactiva los BoxColliders de Box_ que activamos.
+        /// </summary>
+        private void DisableBoxCollidersForGridDetection()
+        {
+            foreach (var bc in activatedBoxColliders)
+            {
+                if (bc != null)
+                {
+                    bc.isTrigger = false; // Restaurar a no-trigger para validación de colisión
+                    bc.enabled = false;
+                }
+            }
+            
+            activatedBoxColliders.Clear();
         }
         
         #endregion
@@ -798,13 +885,13 @@ namespace RobotGame.Assembly
                 {
                     // Shift+R: Rotar 90° en X
                     armorRotation3D = Quaternion.Euler(90, 0, 0) * armorRotation3D;
-                    Debug.Log($"Armadura rotada en X. Rotación actual: {armorRotation3D.eulerAngles}");
+                    // Debug.Log($"Armadura rotada en X. Rotación actual: {armorRotation3D.eulerAngles}");
                 }
                 else
                 {
                     // R: Rotar 90° en Y
                     armorRotation3D = Quaternion.Euler(0, 90, 0) * armorRotation3D;
-                    Debug.Log($"Armadura rotada en Y. Rotación actual: {armorRotation3D.eulerAngles}");
+                    // Debug.Log($"Armadura rotada en Y. Rotación actual: {armorRotation3D.eulerAngles}");
                 }
             }
             
@@ -830,21 +917,41 @@ namespace RobotGame.Assembly
             
             StudGridHead newHoveredGrid = null;
             
-            bool debugMode = Input.GetKey(debugKey);
+            // Máscara que excluye hitboxes de combate (Layer 11) para no interferir con detección de studs
+            int editModeMask = ~RobotLayers.RobotHitboxMask;
             
-            if (Physics.Raycast(ray, out hit, 100f, ~0, QueryTriggerInteraction.Collide))
+            // Raycast buscando triggers (los Box_ son triggers para no interferir con validación)
+            if (Physics.Raycast(ray, out hit, 100f, editModeMask, QueryTriggerInteraction.Collide))
             {
-                if (debugMode)
+                // Verificar si golpeamos un Box_ (collider de parte estructural)
+                if (hit.collider.gameObject.name.StartsWith("Box_"))
                 {
-                    Debug.Log($"=== RAYCAST HIT: {hit.collider.gameObject.name} ===");
+                    // Subir en la jerarquía hasta encontrar un StudGridHead
+                    Transform current = hit.collider.transform.parent;
+                    int depth = 0;
+                    while (current != null && depth < 20)
+                    {
+                        StudGridHead grid = current.GetComponent<StudGridHead>();
+                        if (grid != null && availableGrids.Contains(grid))
+                        {
+                            newHoveredGrid = grid;
+                            CalculateGridPosition(grid, hit.point);
+                            break;
+                        }
+                        current = current.parent;
+                        depth++;
+                    }
                 }
-                
-                StudGridHead grid = hit.collider.GetComponent<StudGridHead>();
-                
-                if (grid != null && availableGrids.Contains(grid))
+                else
                 {
-                    newHoveredGrid = grid;
-                    CalculateGridPosition(grid, hit.point);
+                    // Fallback: buscar StudGridHead directamente en el collider (BoxCollider automático)
+                    StudGridHead grid = hit.collider.GetComponent<StudGridHead>();
+                    
+                    if (grid != null && availableGrids.Contains(grid))
+                    {
+                        newHoveredGrid = grid;
+                        CalculateGridPosition(grid, hit.point);
+                    }
                 }
             }
             
@@ -950,27 +1057,20 @@ namespace RobotGame.Assembly
         
         private void TryPlaceArmor()
         {
-            Debug.Log("=== TryPlaceArmor INICIADO ===");
-            
-            if (hoveredGrid == null)
-            {
-                Debug.LogWarning("FALLO: hoveredGrid es null");
-                return;
-            }
+            if (hoveredGrid == null) return;
             
             ArmorPartData armorData = GetCurrentArmorData();
-            if (armorData == null) 
-            {
-                Debug.LogWarning("FALLO: No hay armadura seleccionada");
-                return;
-            }
+            if (armorData == null) return;
             
-            Debug.Log($"Intentando colocar: '{armorData.displayName}'");
+            // Info básica para logs
+            int anchorIndex = hoveredGrid.CurrentHoveredStudIndex;
+            Transform boneTransform = hoveredGrid.GetCurrentStudParentTransform();
+            string boneName = boneTransform != null ? boneTransform.name : "null";
             
             // Verificar inventario
             if (useInventory && !PlayerInventory.Instance.HasItem(armorData, 1))
             {
-                Debug.LogWarning($"FALLO: No tienes {armorData.displayName} en el inventario");
+                // Debug.LogWarning($"[COLOCAR] FALLO: '{armorData.displayName}' - No tienes en inventario");
                 return;
             }
             
@@ -978,76 +1078,58 @@ namespace RobotGame.Assembly
             ArmorPart armorPart = RobotFactory.Instance.CreateArmorPart(armorData);
             if (armorPart == null)
             {
-                Debug.LogError("FALLO: Error al crear la pieza de armadura");
+                // Debug.LogError($"[COLOCAR] FALLO: '{armorData.displayName}' - Error al crear pieza");
                 return;
             }
             
             var tailGrid = armorPart.TailGrid;
             if (tailGrid == null || tailGrid.StudCount == 0)
             {
-                Debug.LogError("FALLO: La pieza de armadura no tiene TailGrid configurado");
+                // Debug.LogError($"[COLOCAR] FALLO: '{armorData.displayName}' - No tiene TailGrid");
                 Destroy(armorPart.gameObject);
                 return;
             }
-            
-            Debug.Log($"TailGrid tiene {tailGrid.StudCount} Tails");
-            
-            int anchorIndex = hoveredGrid.CurrentHoveredStudIndex;
-            Debug.Log($"Anchor Head index: {anchorIndex}");
             
             // Obtener rotación del hueso y combinar con rotación del usuario
             Quaternion boneRotation = hoveredGrid.GetCurrentStudRotation();
             Quaternion finalRotation = boneRotation * armorRotation3D;
             
-            Debug.Log($"Rotación hueso: {boneRotation.eulerAngles}, Usuario: {armorRotation3D.eulerAngles}, Final: {finalRotation.eulerAngles}");
-            
             // Validar que TODOS los Tails puedan colocarse CON LA ROTACIÓN FINAL
             if (!hoveredGrid.CanPlaceAllTails(tailGrid, anchorIndex, finalRotation))
             {
-                Debug.LogWarning("FALLO: Validación de STUDS falló - No todos los Tails pueden colocarse");
+                string occupiedInfo = GetOccupiedStudsInfo(hoveredGrid, tailGrid, anchorIndex, finalRotation);
+                // Debug.LogWarning($"[COLOCAR] FALLO STUDS: '{armorData.displayName}' en '{boneName}' (stud {anchorIndex})\n  → {occupiedInfo}");
                 Destroy(armorPart.gameObject);
                 return;
             }
             
-            Debug.Log("OK: Validación de studs pasó");
-            
-            // Calcular la posición correcta (considerando el offset del primer Tail Y la rotación)
+            // Calcular la posición correcta
             Vector3 armorPosition = hoveredGrid.CalculateArmorPosition(tailGrid, anchorIndex, finalRotation);
             armorPart.transform.position = armorPosition;
             armorPart.transform.rotation = finalRotation;
-            
-            Debug.Log($"Posición calculada: {armorPosition}, Rotación final: {finalRotation.eulerAngles}");
-            
-            // Obtener el hueso/transform del Head para hacer parent correcto
-            Transform boneTransform = hoveredGrid.GetCurrentStudParentTransform();
             armorPart.transform.SetParent(boneTransform, worldPositionStays: true);
             
-            Debug.Log($"Parent asignado: '{boneTransform.name}'");
-            
-            // VALIDACIÓN DE COLISIÓN: Verificar que no colisione con otras piezas
-            if (CheckArmorCollision(armorPart))
+            // VALIDACIÓN DE COLISIÓN
+            string collisionWith = GetCollisionInfo(armorPart);
+            if (collisionWith != null)
             {
-                Debug.LogWarning("FALLO: Validación de COLISIÓN falló - La pieza colisiona con Box_ existente");
+                // Debug.LogWarning($"[COLOCAR] FALLO COLISIÓN: '{armorData.displayName}' en '{boneName}'\n  → Colisiona con: {collisionWith}");
                 Destroy(armorPart.gameObject);
                 return;
             }
-            
-            Debug.Log("OK: Validación de colisión pasó");
             
             // Colocar y marcar TODOS los studs como ocupados
             if (hoveredGrid.PlaceArmorWithAllTails(armorPart, anchorIndex, finalRotation))
             {
-                // Restar del inventario
                 if (useInventory)
                 {
                     PlayerInventory.Instance.RemoveItem(armorData, 1);
                 }
                 
-                // Invalidar cache de validación (cambió el estado del robot)
                 lastValidatedStudIndex = -1;
                 lastValidatedGrid = null;
                 
-                Debug.Log($"=== ÉXITO: Armadura '{armorData.displayName}' colocada en '{boneTransform.name}' ===");
+                // Debug.Log($"[COLOCAR] ÉXITO: '{armorData.displayName}' en '{boneName}' (stud {anchorIndex})");
                 
                 if (armorPart.AdditionalGrids != null && armorPart.AdditionalGrids.Count > 0)
                 {
@@ -1056,9 +1138,82 @@ namespace RobotGame.Assembly
             }
             else
             {
-                Debug.LogError("FALLO: PlaceArmorWithAllTails retornó false");
+                // Debug.LogError($"[COLOCAR] FALLO: '{armorData.displayName}' - PlaceArmorWithAllTails retornó false");
                 Destroy(armorPart.gameObject);
             }
+        }
+        
+        /// <summary>
+        /// Obtiene información de qué studs están ocupados o no encontrados.
+        /// </summary>
+        private string GetOccupiedStudsInfo(StudGridHead grid, StudGridTail tailGrid, int anchorIndex, Quaternion rotation)
+        {
+            if (grid == null || tailGrid == null) return "Grid o TailGrid null";
+            
+            var tails = tailGrid.Studs;
+            if (tails == null || tails.Count == 0) return "Sin Tails";
+            
+            var problems = new System.Collections.Generic.List<string>();
+            Vector3 anchorHeadPos = grid.GetStudWorldPosition(anchorIndex);
+            Vector3 firstTailLocal = tails[0].localPosition;
+            
+            for (int i = 0; i < tails.Count; i++)
+            {
+                Vector3 tailOffset = tails[i].localPosition - firstTailLocal;
+                Vector3 rotatedOffset = rotation * tailOffset;
+                Vector3 targetPos = anchorHeadPos + rotatedOffset;
+                
+                int headIndex = grid.FindClosestStudIndex(targetPos, 0.01f);
+                
+                if (headIndex < 0)
+                {
+                    problems.Add($"Tail[{i}] '{tails[i].name}': No encontró Head cercano");
+                }
+                else if (grid.IsStudOccupied(headIndex))
+                {
+                    string occupant = grid.GetOccupantName(headIndex);
+                    problems.Add($"Tail[{i}] '{tails[i].name}': Head[{headIndex}] OCUPADO por '{occupant}'");
+                }
+            }
+            
+            return problems.Count > 0 ? string.Join(", ", problems) : "Razón desconocida";
+        }
+        
+        /// <summary>
+        /// Obtiene información de con qué colisiona la pieza, o null si no colisiona.
+        /// </summary>
+        private string GetCollisionInfo(ArmorPart newPart)
+        {
+            if (newPart == null) return null;
+            
+            Physics.SyncTransforms();
+            
+            var newBoxColliders = GetBoxColliders(newPart.gameObject);
+            if (newBoxColliders.Count == 0) return null;
+            
+            foreach (var newCol in newBoxColliders)
+            {
+                if (newCol == null) continue;
+                
+                Collider[] overlaps = Physics.OverlapBox(
+                    newCol.bounds.center,
+                    newCol.bounds.extents * 0.95f,
+                    newCol.transform.rotation,
+                    ~0,
+                    QueryTriggerInteraction.Ignore
+                );
+                
+                foreach (var overlap in overlaps)
+                {
+                    if (overlap == null || overlap == newCol) continue;
+                    if (overlap.transform.IsChildOf(newPart.transform)) continue;
+                    if (!overlap.gameObject.name.StartsWith("Box_")) continue;
+                    
+                    return $"'{newCol.gameObject.name}' con '{overlap.gameObject.name}' (parte: {overlap.transform.parent?.name ?? "?"})";
+                }
+            }
+            
+            return null;
         }
         
         /// <summary>
@@ -1095,7 +1250,7 @@ namespace RobotGame.Assembly
                 }
             }
             
-            // 2. Box_ de partes estructurales (excluyendo los de newPart)
+            // 2. Box_ de partes estructurales (excluyendo los de newPart y los de grillas con studs)
             if (targetRobot != null)
             {
                 var allBoxes = GetBoxColliders(targetRobot.gameObject);
@@ -1103,6 +1258,19 @@ namespace RobotGame.Assembly
                 {
                     // Excluir si es hijo de la nueva pieza
                     if (box.transform.IsChildOf(newPart.transform))
+                        continue;
+                    
+                    // Excluir si es hijo de una grilla disponible (parte estructural donde se colocan armaduras)
+                    bool isPartOfGrid = false;
+                    foreach (var grid in availableGrids)
+                    {
+                        if (grid != null && box.transform.IsChildOf(grid.transform))
+                        {
+                            isPartOfGrid = true;
+                            break;
+                        }
+                    }
+                    if (isPartOfGrid)
                         continue;
                     
                     existingBoxColliders.Add(box);
@@ -1130,7 +1298,7 @@ namespace RobotGame.Assembly
                     
                     if (newBounds.Intersects(existingBounds))
                     {
-                        Debug.Log($"¡COLISIÓN DETECTADA! '{newCol.gameObject.name}' con '{existingCol.gameObject.name}'");
+                        // Debug.Log($"¡COLISIÓN DETECTADA! '{newCol.gameObject.name}' con '{existingCol.gameObject.name}'");
                         return true;
                     }
                 }
@@ -1209,14 +1377,14 @@ namespace RobotGame.Assembly
             
             if (part == null)
             {
-                Debug.Log("TryRemoveArmor: No hay pieza en el stud actual");
+                // Debug.Log("TryRemoveArmor: No hay pieza en el stud actual");
                 return;
             }
             
             ArmorPartData partData = part.ArmorData;
             bool hadAdditionalGrids = part.AdditionalGrids != null && part.AdditionalGrids.Count > 0;
             
-            Debug.Log($"TryRemoveArmor: Intentando remover '{part.gameObject.name}'");
+            // Debug.Log($"TryRemoveArmor: Intentando remover '{part.gameObject.name}'");
             
             if (hoveredGrid.RemovePart(part))
             {
@@ -1232,7 +1400,7 @@ namespace RobotGame.Assembly
                 lastValidatedStudIndex = -1;
                 lastValidatedGrid = null;
                 
-                Debug.Log($"Armadura '{part.gameObject.name}' removida{(useInventory ? " y devuelta al inventario" : "")}");
+                // Debug.Log($"Armadura '{part.gameObject.name}' removida{(useInventory ? " y devuelta al inventario" : "")}");
                 
                 if (hadAdditionalGrids)
                 {
@@ -1241,7 +1409,7 @@ namespace RobotGame.Assembly
             }
             else
             {
-                Debug.LogWarning($"TryRemoveArmor: No se pudo remover '{part.gameObject.name}'");
+                // Debug.LogWarning($"TryRemoveArmor: No se pudo remover '{part.gameObject.name}'");
             }
         }
         
@@ -1282,7 +1450,10 @@ namespace RobotGame.Assembly
             
             StructuralSocket newHoveredSocket = null;
             
-            if (Physics.Raycast(ray, out hit, 100f, ~0, QueryTriggerInteraction.Collide))
+            // Máscara que excluye hitboxes de combate (Layer 11)
+            int editModeMask = ~RobotLayers.RobotHitboxMask;
+            
+            if (Physics.Raycast(ray, out hit, 100f, editModeMask, QueryTriggerInteraction.Collide))
             {
                 StructuralSocket socket = hit.collider.GetComponent<StructuralSocket>();
                 if (socket != null && availableSockets.Contains(socket))
@@ -1333,28 +1504,28 @@ namespace RobotGame.Assembly
             StructuralPartData partData = GetCurrentStructuralData();
             if (partData == null)
             {
-                Debug.LogWarning("RobotAssemblyController: No hay pieza estructural seleccionada");
+                // Debug.LogWarning("RobotAssemblyController: No hay pieza estructural seleccionada");
                 return;
             }
             
             // Verificar inventario
             if (useInventory && !PlayerInventory.Instance.HasItem(partData, 1))
             {
-                Debug.LogWarning($"RobotAssemblyController: No tienes {partData.displayName} en el inventario");
+                // Debug.LogWarning($"RobotAssemblyController: No tienes {partData.displayName} en el inventario");
                 return;
             }
             
             // Validar tipo de socket
             if (partData.partType != hoveredSocket.SocketType)
             {
-                Debug.LogWarning("Tipo de pieza no coincide con socket");
+                // Debug.LogWarning("Tipo de pieza no coincide con socket");
                 return;
             }
             
             // Validar tier
             if (!partData.IsCompatibleWith(targetRobot.CurrentTier))
             {
-                Debug.LogWarning($"Pieza no compatible con robot Tier {targetRobot.CurrentTier}");
+                // Debug.LogWarning($"Pieza no compatible con robot Tier {targetRobot.CurrentTier}");
                 return;
             }
             
@@ -1362,7 +1533,7 @@ namespace RobotGame.Assembly
             StructuralPart part = RobotFactory.Instance.CreateStructuralPart(partData, hoveredSocket.transform);
             if (part == null)
             {
-                Debug.LogError("Error al crear pieza estructural");
+                // Debug.LogError("Error al crear pieza estructural");
                 return;
             }
             
@@ -1386,14 +1557,14 @@ namespace RobotGame.Assembly
                     PlayerInventory.Instance.RemoveItem(partData, 1);
                 }
                 
-                Debug.Log($"Pieza '{partData.displayName}' colocada");
+                // Debug.Log($"Pieza '{partData.displayName}' colocada");
                 Physics.SyncTransforms();
                 CollectAvailableSockets();
                 CollectAvailableGrids();
             }
             else
             {
-                Debug.LogError("Error al conectar la pieza");
+                // Debug.LogError("Error al conectar la pieza");
                 Destroy(part.gameObject);
             }
         }
@@ -1410,7 +1581,7 @@ namespace RobotGame.Assembly
             {
                 if (childSocket.IsOccupied)
                 {
-                    Debug.LogWarning("No se puede remover: tiene piezas hijas conectadas");
+                    // Debug.LogWarning("No se puede remover: tiene piezas hijas conectadas");
                     return;
                 }
             }
@@ -1429,7 +1600,7 @@ namespace RobotGame.Assembly
             }
             
             Destroy(part.gameObject);
-            Debug.Log($"Pieza estructural removida{(useInventory ? " y devuelta al inventario" : "")}");
+            // Debug.Log($"Pieza estructural removida{(useInventory ? " y devuelta al inventario" : "")}");
             
             CollectAvailableSockets();
             CollectAvailableGrids();
@@ -1450,7 +1621,7 @@ namespace RobotGame.Assembly
             {
                 if (core != null && core.IsActive)
                 {
-                    Debug.Log($"RobotAssemblyController: Extrayendo Core '{core.name}' antes de destruir la pieza");
+                    // Debug.Log($"RobotAssemblyController: Extrayendo Core '{core.name}' antes de destruir la pieza");
                     core.Extract();
                 }
             }
@@ -1479,7 +1650,7 @@ namespace RobotGame.Assembly
                 CollectArmorPartGrids(part.ArmorGrids);
             }
             
-            Debug.Log($"RobotAssemblyController: {availableGrids.Count} grillas disponibles");
+            // Debug.Log($"RobotAssemblyController: {availableGrids.Count} grillas disponibles");
         }
         
         private void CollectArmorPartGrids(IReadOnlyList<StudGridHead> grids)
@@ -1526,7 +1697,7 @@ namespace RobotGame.Assembly
                 }
             }
             
-            Debug.Log($"RobotAssemblyController: {availableSockets.Count} sockets disponibles");
+            // Debug.Log($"RobotAssemblyController: {availableSockets.Count} sockets disponibles");
         }
         
         #endregion
@@ -1591,7 +1762,7 @@ namespace RobotGame.Assembly
             }
             else
             {
-                Debug.LogError("RobotAssemblyController: No se encontró ningún shader válido para preview");
+                // Debug.LogError("RobotAssemblyController: No se encontró ningún shader válido para preview");
             }
             
             // Preview de estructural
@@ -1722,13 +1893,13 @@ namespace RobotGame.Assembly
                     return false;
                 }
                 
-                // Validar studs
+                // Validar studs (misma lógica que TryPlaceArmor)
                 if (!hoveredGrid.CanPlaceAllTails(tailGrid, anchorIndex, finalRotation))
                 {
                     return false;
                 }
                 
-                // Posicionar para validar colisión
+                // Posicionar para validar colisión (misma lógica que TryPlaceArmor)
                 Vector3 armorPosition = hoveredGrid.CalculateArmorPosition(tailGrid, anchorIndex, finalRotation);
                 tempArmor.transform.position = armorPosition;
                 tempArmor.transform.rotation = finalRotation;
@@ -1736,8 +1907,8 @@ namespace RobotGame.Assembly
                 Transform boneTransform = hoveredGrid.GetCurrentStudParentTransform();
                 tempArmor.transform.SetParent(boneTransform, worldPositionStays: true);
                 
-                // Validar colisión
-                if (CheckArmorCollision(tempArmor))
+                // Validar colisión - usar GetCollisionInfo como TryPlaceArmor
+                if (GetCollisionInfo(tempArmor) != null)
                 {
                     return false;
                 }
@@ -1804,10 +1975,27 @@ namespace RobotGame.Assembly
                 }
             }
             
-            // 2. Box_ de partes estructurales
+            // 2. Box_ de partes estructurales (excluyendo los de grillas con studs)
             if (targetRobot != null)
             {
-                existingBoxColliders.AddRange(GetBoxColliders(targetRobot.gameObject));
+                var allBoxes = GetBoxColliders(targetRobot.gameObject);
+                foreach (var box in allBoxes)
+                {
+                    // Excluir si es hijo de una grilla disponible
+                    bool isPartOfGrid = false;
+                    foreach (var grid in availableGrids)
+                    {
+                        if (grid != null && box.transform.IsChildOf(grid.transform))
+                        {
+                            isPartOfGrid = true;
+                            break;
+                        }
+                    }
+                    if (!isPartOfGrid)
+                    {
+                        existingBoxColliders.Add(box);
+                    }
+                }
             }
             
             // Verificar intersección usando GetBoxColliderBounds (funciona con colliders deshabilitados)

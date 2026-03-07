@@ -99,7 +99,7 @@ namespace RobotGame.AI
             
             if (selectedData == null)
             {
-                Debug.LogWarning("WildRobotSpawner: No se pudo seleccionar un robot para spawnear");
+                // Debug.LogWarning("WildRobotSpawner: No se pudo seleccionar un robot para spawnear");
                 return null;
             }
             
@@ -113,7 +113,7 @@ namespace RobotGame.AI
         {
             if (data == null)
             {
-                Debug.LogError("WildRobotSpawner: WildRobotData es null");
+                // Debug.LogError("WildRobotSpawner: WildRobotData es null");
                 return null;
             }
             
@@ -121,7 +121,7 @@ namespace RobotGame.AI
             List<string> errors;
             if (!data.ValidateConfiguration(out errors))
             {
-                Debug.LogError($"WildRobotSpawner: Configuración inválida para '{data.speciesName}':\n{string.Join("\n", errors)}");
+                // Debug.LogError($"WildRobotSpawner: Configuración inválida para '{data.speciesName}':\n{string.Join("\n", errors)}");
                 return null;
             }
             
@@ -133,7 +133,7 @@ namespace RobotGame.AI
             
             if (robot == null)
             {
-                Debug.LogError($"WildRobotSpawner: Error al crear robot '{data.speciesName}'");
+                // Debug.LogError($"WildRobotSpawner: Error al crear robot '{data.speciesName}'");
                 return null;
             }
             
@@ -145,7 +145,7 @@ namespace RobotGame.AI
             activeRobots.Add(wildRobot);
             lastSpawnTime = Time.time;
             
-            Debug.Log($"WildRobotSpawner: Spawneado '{data.speciesName}' en {spawnPos}");
+            // Debug.Log($"WildRobotSpawner: Spawneado '{data.speciesName}' en {spawnPos}");
             
             return wildRobot;
         }
@@ -167,7 +167,7 @@ namespace RobotGame.AI
             // Crear las Hips
             if (data.hips == null)
             {
-                Debug.LogError("WildRobotSpawner: WildRobotData no tiene Hips asignadas");
+                // Debug.LogError("WildRobotSpawner: WildRobotData no tiene Hips asignadas");
                 Destroy(robotGO);
                 return null;
             }
@@ -194,12 +194,12 @@ namespace RobotGame.AI
                 if (core != null)
                 {
                     core.InsertInto(robot);
-                    Debug.Log($"WildRobotSpawner: Core '{data.coreData.displayName}' insertado en '{data.speciesName}'");
+                    // Debug.Log($"WildRobotSpawner: Core '{data.coreData.displayName}' insertado en '{data.speciesName}'");
                 }
             }
             else
             {
-                Debug.LogWarning($"WildRobotSpawner: '{data.speciesName}' no tiene Core asignado");
+                // Debug.LogWarning($"WildRobotSpawner: '{data.speciesName}' no tiene Core asignado");
             }
             
             return robot;
@@ -274,7 +274,7 @@ namespace RobotGame.AI
                 
                 if (socket == null)
                 {
-                    Debug.LogWarning($"WildRobotSpawner: Socket {attachedPiece.attachedToSocket} no encontrado");
+                    // Debug.LogWarning($"WildRobotSpawner: Socket {attachedPiece.attachedToSocket} no encontrado");
                     continue;
                 }
                 
@@ -284,7 +284,7 @@ namespace RobotGame.AI
                 
                 if (!socket.TryAttach(part))
                 {
-                    Debug.LogWarning($"WildRobotSpawner: No se pudo conectar {part.PartData.displayName}");
+                    // Debug.LogWarning($"WildRobotSpawner: No se pudo conectar {part.PartData.displayName}");
                     Destroy(part.gameObject);
                     continue;
                 }
@@ -309,7 +309,7 @@ namespace RobotGame.AI
                 
                 if (grid == null)
                 {
-                    Debug.LogWarning($"WildRobotSpawner: Grilla '{placedArmor.targetGridName}' no encontrada");
+                    // Debug.LogWarning($"WildRobotSpawner: Grilla '{placedArmor.targetGridName}' no encontrada");
                     continue;
                 }
                 
@@ -319,7 +319,7 @@ namespace RobotGame.AI
                 
                 if (!grid.TryPlace(armor, placedArmor.gridPositionX, placedArmor.gridPositionY))
                 {
-                    Debug.LogWarning($"WildRobotSpawner: No se pudo colocar armadura");
+                    // Debug.LogWarning($"WildRobotSpawner: No se pudo colocar armadura");
                     Destroy(armor.gameObject);
                 }
             }
