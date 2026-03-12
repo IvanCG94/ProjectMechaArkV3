@@ -2743,6 +2743,16 @@ MonoBehaviour:
     quantity: 4
   - item: {fileID: 11400000, guid: e74e1d0bbfccb174f831250cd4a4005f, type: 2}
     quantity: 4
+  - item: {fileID: 11400000, guid: 5e90c52ec73c1104e99414200eeb6ff4, type: 2}
+    quantity: 4
+  - item: {fileID: 11400000, guid: 35fc5f8d8a46c6548a52952eb27f6e18, type: 2}
+    quantity: 4
+  - item: {fileID: 11400000, guid: e9a90ac74fb1e0f47adfb2dde86ccb4f, type: 2}
+    quantity: 4
+  - item: {fileID: 11400000, guid: 0ed7d1afee5f8e248a48a015d0639895, type: 2}
+    quantity: 1
+  - item: {fileID: 11400000, guid: 8c29da02c9b70084da2f0a4ed7b41662, type: 2}
+    quantity: 1
   allItems: []
 --- !u!1 &1624930344
 GameObject:

@@ -156,6 +156,7 @@ namespace RobotGame.Control
             {
                 playerController.OnJump += HandleJump;
                 playerController.OnLand += HandleLand;
+                playerController.OnTargetChanged += HandleTargetChanged;
             }
         }
         
@@ -165,6 +166,27 @@ namespace RobotGame.Control
             {
                 playerController.OnJump -= HandleJump;
                 playerController.OnLand -= HandleLand;
+                playerController.OnTargetChanged -= HandleTargetChanged;
+            }
+        }
+        
+        private void HandleTargetChanged(Transform newTarget)
+        {
+            if (newTarget == null)
+            {
+                currentRobot = null;
+                partAnimators.Clear();
+                return;
+            }
+            
+            Robot robot = newTarget.GetComponent<Robot>();
+            
+            if (robot != null)
+            {
+                currentRobot = robot;
+                CollectAnimators(robot);
+                robot.ApplyMobilityToAnimators();
+                currentAnimSpeed = 0f;
             }
         }
         
@@ -214,17 +236,7 @@ namespace RobotGame.Control
                 if (part.Animator != null && part.Animator.runtimeAnimatorController != null)
                 {
                     partAnimators.Add(part.Animator);
-                    
-                    if (showDebugInfo)
-                    {
-                        // Debug.Log($"  - Animator encontrado en: {part.name}");
-                    }
                 }
-            }
-            
-            if (showDebugInfo)
-            {
-                // Debug.Log($"PlayerAnimator: Total {partAnimators.Count} Animators recolectados");
             }
         }
         

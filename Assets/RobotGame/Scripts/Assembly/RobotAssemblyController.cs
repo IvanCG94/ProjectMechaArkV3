@@ -290,14 +290,11 @@ namespace RobotGame.Assembly
                 return true;
             }
             
-            // Capturar estado actual
-            RobotSnapshot currentState = RobotSnapshot.Capture(targetRobot);
-            
-            // Validar que la configuración sea válida
+            // Validar la configuración actual del robot
             List<string> errors;
-            if (!currentState.IsValid(out errors))
+            if (!targetRobot.IsValidConfiguration(out errors))
             {
-                // Debug.LogWarning($"RobotAssemblyController: Configuración inválida ({string.Join(", ", errors)}). Restaurando desde snapshot...");
+                Debug.LogWarning($"RobotAssemblyController: Configuración inválida ({string.Join(", ", errors)}). Restaurando desde snapshot...");
                 RestoreFromSnapshot();
                 return true;
             }

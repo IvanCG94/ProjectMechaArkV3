@@ -335,57 +335,24 @@ namespace RobotGame.Data
         /// Valida si el snapshot representa una configuración válida.
         /// Requiere: Hips, Torso, Head, Core insertado.
         /// </summary>
+        /// <summary>
+        /// Validación básica del snapshot.
+        /// Nota: La validación completa de sockets requeridos se hace en Robot.IsValidConfiguration()
+        /// </summary>
         public bool IsValid(out List<string> errors)
         {
             errors = new List<string>();
             
-            // Verificar Core
+            // Verificar Core (siempre requerido)
             if (coreData == null || !coreWasInserted)
             {
                 errors.Add("El robot necesita un Core insertado");
             }
             
-            // Verificar Hips
+            // Verificar Hips (siempre requerido)
             if (hipsData == null)
             {
                 errors.Add("El robot necesita Hips");
-            }
-            
-            // Verificar Torso
-            bool hasTorso = false;
-            StructuralSnapshot torsoSnapshot = null;
-            foreach (var part in attachedParts)
-            {
-                if (part.socketType == StructuralSocketType.Torso && part.partData != null)
-                {
-                    hasTorso = true;
-                    torsoSnapshot = part;
-                    break;
-                }
-            }
-            
-            if (!hasTorso)
-            {
-                errors.Add("El robot necesita un Torso");
-            }
-            
-            // Verificar Head (debe estar conectado al Torso)
-            bool hasHead = false;
-            if (torsoSnapshot != null)
-            {
-                foreach (var child in torsoSnapshot.children)
-                {
-                    if (child.socketType == StructuralSocketType.Head && child.partData != null)
-                    {
-                        hasHead = true;
-                        break;
-                    }
-                }
-            }
-            
-            if (!hasHead)
-            {
-                errors.Add("El robot necesita una Cabeza (Head)");
             }
             
             return errors.Count == 0;

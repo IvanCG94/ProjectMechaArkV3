@@ -120,6 +120,10 @@ namespace RobotGame.AI
         private float targetWaitTime = 0f;
         private bool isWaitingToAttack = false;
         
+        // Timeout para forzar ataque cuando target está en zona
+        private float timeWithTargetInZone = 0f;
+        private const float maxTimeWithTargetInZone = 2f; // Máximo 2 segundos sin atacar
+        
         // Feedback del ataque
         private bool lastAttackHit = false;
         private AttackData lastExecutedAttack;
@@ -317,6 +321,9 @@ namespace RobotGame.AI
         /// </summary>
         private void UpdateAnimatorSpeed()
         {
+            // No actualizar si está siendo controlado - PlayerAnimator se encarga
+            if (isBeingControlled) return;
+            
             if (partAnimators.Count == 0 || movement == null) return;
             
             // Calcular velocidad normalizada (0-1) basada en la velocidad actual vs máxima
@@ -832,88 +839,31 @@ namespace RobotGame.AI
                 return;
             }
             
-            // Si no hay ataque seleccionado o ya no es válido, re-seleccionar
-            if (selectedAttack == null || !IsAttackStillValid(selectedAttackPart, selectedAttack))
+            // LÓGICA SIMPLE: Si target en zona + ataque listo → ATACAR
+            var readyAttack = GetReadyAttackWithTargetInZone();
+            
+            // DEBUG: Log del estado
+            Debug.Log($"[WildRobot] UpdatePositioning - Distancia: {distanceToPlayer:F1}, " +
+                      $"ReadyAttack: {(readyAttack.attack != null ? readyAttack.attack.attackName : "NINGUNO")}, " +
+                      $"ZoneHasTarget: {(readyAttack.zone != null ? readyAttack.zone.IsTargetInZone.ToString() : "NO ZONE")}");
+            
+            if (readyAttack.part != null && readyAttack.attack != null)
             {
-                SelectAttackForPositioning();
+                Debug.Log($"[WildRobot] ¡ATACANDO! Ataque: {readyAttack.attack.attackName}");
                 
-                if (selectedAttack == null)
-                {
-                    ChangeState(WildRobotState.Chase);
-                    return;
-                }
-            }
-            
-            // PRIMERO: Verificar si ya estamos en posición para atacar
-            // Esto evita que el approach behavior gire al robot justo antes de atacar
-            bool inPosition = IsInAttackPosition(distanceToPlayer);
-            
-            if (inPosition)
-            {
-                // ¡Ya estamos en posición! No ejecutar approach, ir directo a atacar
-                StopMoving(); // Detener movimiento
+                // ¡Atacar inmediatamente!
+                selectedAttackPart = readyAttack.part;
+                selectedAttack = readyAttack.attack;
+                selectedZone = readyAttack.zone;
                 
-                // Si el ataque tiene tiempo de espera, esperar
-                if (selectedAttack.HasWaitTime && !isWaitingToAttack)
-                {
-                    isWaitingToAttack = true;
-                    targetWaitTime = selectedAttack.GetRandomWaitTime();
-                    waitBeforeAttackTimer = 0f;
-                }
-                
-                if (isWaitingToAttack)
-                {
-                    waitBeforeAttackTimer += Time.deltaTime;
-                    
-                    if (waitBeforeAttackTimer >= targetWaitTime)
-                    {
-                        ChangeState(WildRobotState.Attack);
-                    }
-                }
-                else
-                {
-                    // Sin tiempo de espera, atacar inmediatamente
-                    ChangeState(WildRobotState.Attack);
-                }
-                return; // No ejecutar approach behavior
+                StopMoving();
+                ChangeState(WildRobotState.Attack);
+                return;
             }
             
-            // NO estamos en posición, ejecutar approach behavior para posicionarse
-            
-            // Verificar timeout de posicionamiento
-            positioningTimer += Time.deltaTime;
-            if (positioningTimer > positioningTimeout)
-            {
-                strafeDirection *= -1;
-                positioningTimer = 0f;
-                SelectAttackForPositioning();
-            }
-            
-            // El ataque seleccionado dicta el comportamiento de aproximación
-            switch (selectedAttack.approachBehavior)
-            {
-                case AttackApproachBehavior.Direct:
-                    PerformDirectApproach(distanceToPlayer);
-                    break;
-                case AttackApproachBehavior.Strafe:
-                    PerformStrafeApproach(distanceToPlayer);
-                    break;
-                case AttackApproachBehavior.Stalk:
-                    PerformStalkApproach(distanceToPlayer);
-                    break;
-                case AttackApproachBehavior.Circle:
-                    PerformCircleApproach(distanceToPlayer);
-                    break;
-                case AttackApproachBehavior.Ambush:
-                    PerformAmbushApproach(distanceToPlayer);
-                    break;
-                case AttackApproachBehavior.Rush:
-                    PerformRushApproach(distanceToPlayer);
-                    break;
-                case AttackApproachBehavior.Retreat:
-                    PerformRetreatApproach(distanceToPlayer);
-                    break;
-            }
+            // No hay ataque listo con target en zona, acercarse al jugador
+            MoveTowards(targetPlayer.position);
+            LookAtTarget(targetPlayer.position);
         }
         
         /// <summary>
@@ -1002,16 +952,10 @@ namespace RobotGame.AI
             // Verificar si el ataque seleccionado sigue siendo válido
             if (selectedAttack != null && IsAttackStillValid(selectedAttackPart, selectedAttack))
             {
-                // Verificar condiciones para ejecutar
-                bool zoneReady = selectedZone == null || selectedZone.IsTargetInZone;
-                
-                if (zoneReady)
-                {
-                    ExecuteSelectedAttack();
-                    // Después de iniciar el ataque, pasar a Recovery para evaluar
-                    ChangeState(WildRobotState.Recovery);
-                    return;
-                }
+                // Ejecutar el ataque - ya decidimos atacar en Positioning
+                ExecuteSelectedAttack();
+                ChangeState(WildRobotState.Recovery);
+                return;
             }
             
             // Si no se pudo atacar, volver a posicionamiento
@@ -1033,26 +977,13 @@ namespace RobotGame.AI
             // Esperar a que termine la animación del ataque
             if (combatController != null && combatController.IsAttacking)
             {
-                // SIEMPRE detener movimiento mientras ataca
-                StopMoving();
-                
-                // Rotación lenta hacia el objetivo (ya controlada por LookAtTarget)
-                LookAtTarget(targetPlayer.position);
-                return;
-            }
-            
-            // Ataque terminó, aplicar pausa post-ataque
-            float pauseTime = lastExecutedAttack?.postAttackPause ?? 0.5f;
-            
-            if (stateTimer < pauseTime)
-            {
                 StopMoving();
                 LookAtTarget(targetPlayer.position);
                 return;
             }
             
-            // Decidir siguiente acción basándose en el resultado y el comportamiento configurado
-            DecidePostAttackBehavior();
+            // Ataque terminó, volver a Positioning inmediatamente
+            ChangeState(WildRobotState.Positioning);
         }
         
         /// <summary>
@@ -1479,7 +1410,16 @@ namespace RobotGame.AI
             StopMoving();
             ChangeState(WildRobotState.Idle);
             
-            // Debug.Log($"WildRobot '{wildData?.speciesName}': Control tomado por jugador");
+            // Resetear parámetros de animación para evitar que queden pegados
+            currentAnimSpeed = 0f;
+            foreach (var anim in partAnimators)
+            {
+                if (anim == null) continue;
+                if (HasParameter(anim, speedHash))
+                {
+                    anim.SetFloat(speedHash, 0f);
+                }
+            }
         }
         
         /// <summary>
@@ -1843,6 +1783,172 @@ namespace RobotGame.AI
         {
             // Dirección aleatoria: 1 = derecha (horario), -1 = izquierda (antihorario)
             strafeDirection = Random.value > 0.5f ? 1 : -1;
+        }
+        
+        /// <summary>
+        /// Verifica si el target está dentro de alguna AttackZone.
+        /// </summary>
+        private bool IsTargetInAnyAttackZone()
+        {
+            if (combatController == null) return false;
+            
+            foreach (var part in combatController.CombatParts)
+            {
+                if (part == null || part.LinkedAttackZones == null) continue;
+                
+                foreach (var zone in part.LinkedAttackZones)
+                {
+                    if (zone != null && zone.IsTargetInZone)
+                    {
+                        return true;
+                    }
+                }
+            }
+            
+            return false;
+        }
+        
+        /// <summary>
+        /// Busca un ataque que esté listo (sin cooldown) y cuya zona tenga al target.
+        /// Retorna el ataque más prioritario.
+        /// </summary>
+        private (CombatPart part, AttackData attack, AttackZone zone) GetReadyAttackWithTargetInZone()
+        {
+            if (combatController == null)
+            {
+                Debug.LogWarning("[WildRobot] GetReadyAttack: combatController es NULL");
+                return (null, null, null);
+            }
+            
+            CombatPart bestPart = null;
+            AttackData bestAttack = null;
+            AttackZone bestZone = null;
+            float bestScore = float.MinValue;
+            
+            float distance = targetPlayer != null ? Vector3.Distance(transform.position, targetPlayer.position) : 0f;
+            
+            Debug.Log($"[WildRobot] GetReadyAttack: Buscando en {combatController.CombatParts.Count} partes de combate");
+            
+            foreach (var part in combatController.CombatParts)
+            {
+                if (part == null) continue;
+                
+                Debug.Log($"[WildRobot]   Parte: {part.name}, CanAttack: {part.CanAttack}, Ataques: {part.AvailableAttacks?.Count ?? 0}, Zonas: {part.LinkedAttackZones?.Count ?? 0}");
+                
+                if (!part.CanAttack) continue;
+                
+                foreach (var attack in part.AvailableAttacks)
+                {
+                    if (attack == null) continue;
+                    
+                    bool isReady = combatController.IsAttackReady(attack);
+                    Debug.Log($"[WildRobot]     Ataque: {attack.attackName}, Listo: {isReady}");
+                    
+                    // Verificar que el ataque esté listo (sin cooldown)
+                    if (!isReady) continue;
+                    
+                    // Buscar la zona del ataque
+                    AttackZone zone = null;
+                    if (part.LinkedAttackZones != null && part.LinkedAttackZones.Count > 0)
+                    {
+                        if (attack.RequiresZone)
+                        {
+                            zone = part.GetAttackZone(attack.zoneId);
+                        }
+                        
+                        if (zone == null)
+                        {
+                            zone = part.LinkedAttackZones[0];
+                        }
+                    }
+                    
+                    if (zone != null)
+                    {
+                        Debug.Log($"[WildRobot]       Zona: {zone.ZoneId}, TargetEnZona: {zone.IsTargetInZone}, Target: {(zone.CurrentTarget != null ? zone.CurrentTarget.name : "NULL")}");
+                    }
+                    else
+                    {
+                        Debug.Log($"[WildRobot]       Zona: NULL - No hay zona vinculada");
+                    }
+                    
+                    // Solo considerar si la zona tiene al target
+                    if (zone == null || !zone.IsTargetInZone) continue;
+                    
+                    // Evaluar el ataque
+                    float score = EvaluateAttack(part, attack, distance);
+                    
+                    if (score > bestScore)
+                    {
+                        bestScore = score;
+                        bestPart = part;
+                        bestAttack = attack;
+                        bestZone = zone;
+                    }
+                }
+            }
+            
+            return (bestPart, bestAttack, bestZone);
+        }
+        
+        /// <summary>
+        /// Selecciona cualquier ataque cuya zona tenga al target (usado para el timeout).
+        /// No verifica cooldown - es un fallback de emergencia.
+        /// </summary>
+        private void SelectAttackWithTargetInZone()
+        {
+            if (combatController == null) return;
+            
+            float bestScore = float.MinValue;
+            float distance = targetPlayer != null ? Vector3.Distance(transform.position, targetPlayer.position) : 0f;
+            
+            selectedAttackPart = null;
+            selectedAttack = null;
+            selectedZone = null;
+            
+            foreach (var part in combatController.CombatParts)
+            {
+                if (part == null || !part.CanAttack) continue;
+                
+                foreach (var attack in part.AvailableAttacks)
+                {
+                    if (attack == null) continue;
+                    
+                    // Buscar la zona del ataque
+                    AttackZone zone = null;
+                    if (part.LinkedAttackZones != null && part.LinkedAttackZones.Count > 0)
+                    {
+                        if (attack.RequiresZone)
+                        {
+                            zone = part.GetAttackZone(attack.zoneId);
+                        }
+                        
+                        if (zone == null)
+                        {
+                            zone = part.LinkedAttackZones[0];
+                        }
+                    }
+                    
+                    // Solo considerar si la zona tiene al target
+                    if (zone == null || !zone.IsTargetInZone) continue;
+                    
+                    // Evaluar el ataque
+                    float score = EvaluateAttack(part, attack, distance);
+                    
+                    // Bonus si está listo (sin cooldown)
+                    if (combatController.IsAttackReady(attack))
+                    {
+                        score += 50f;
+                    }
+                    
+                    if (score > bestScore)
+                    {
+                        bestScore = score;
+                        selectedAttackPart = part;
+                        selectedAttack = attack;
+                        selectedZone = zone;
+                    }
+                }
+            }
         }
         
         /// <summary>

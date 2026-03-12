@@ -12,8 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0b980c5627308d5458fee39217d364a3, type: 3}
   m_Name: ArmorTest
   m_EditorClassIdentifier: Assembly-CSharp::RobotGame.Data.ArmorPartData
-  partId: ArmorTest
-  displayName: Armor test
+  partId: ArmorTest1
+  displayName: Armor test1
   description: 
   icon: {fileID: 21300000, guid: 0a590626c8c32b346a42a8405e24be93, type: 3}
   prefab: {fileID: 8798680000935663622, guid: cb28075f28a2f0c4cbcd9a6e0432f1d6, type: 3}

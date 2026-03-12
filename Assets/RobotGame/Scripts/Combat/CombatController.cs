@@ -676,55 +676,84 @@ namespace RobotGame.Combat
         
         private void TriggerAttackAnimation(CombatPart part, AttackData attack)
         {
-            Animator animator = null;
+            Animator attackingAnimator = null;
             
-            // Intentar obtener Animator de la StructuralPart
+            // Intentar obtener Animator de la StructuralPart que ataca
             if (part.StructuralPart != null && part.StructuralPart.Animator != null)
             {
-                animator = part.StructuralPart.Animator;
+                attackingAnimator = part.StructuralPart.Animator;
             }
             else
             {
                 // Buscar Animator en los padres
-                animator = part.GetComponentInParent<Animator>();
+                attackingAnimator = part.GetComponentInParent<Animator>();
             }
             
-            if (animator == null)
+            if (attackingAnimator == null)
             {
                 // Debug.LogWarning($"[CombatController] NO SE ENCONTRÓ ANIMATOR para {part.name}");
                 return;
             }
             
-            string animationName = attack.mainAnimationTrigger;
+            string mainAnimation = attack.mainAnimationTrigger;
+            string accompAnimation = attack.accompanimentAnimation;
+            
+            // Disparar animación principal en la parte que ataca
+            TriggerAnimationOnAnimator(attackingAnimator, mainAnimation);
+            
+            // Disparar animación de acompañamiento en todas las demás partes
+            if (robot != null && !string.IsNullOrEmpty(accompAnimation))
+            {
+                TriggerAccompanimentAnimations(attackingAnimator, accompAnimation);
+            }
+        }
+        
+        /// <summary>
+        /// Dispara una animación en un Animator específico.
+        /// </summary>
+        private void TriggerAnimationOnAnimator(Animator animator, string animationName)
+        {
+            if (animator == null || string.IsNullOrEmpty(animationName)) return;
             
             // Primero, resetear cualquier trigger pendiente para evitar conflictos
             animator.ResetTrigger(animationName);
             
-            // Intentar usar CrossFade (funciona si mainAnimationTrigger es el nombre del ESTADO)
-            // CrossFadeInFixedTime interrumpe transiciones y fuerza la animación inmediatamente
-            // 0.05f = 50ms de transición, suficiente para que no se vea un corte brusco
+            // Intentar usar CrossFade (funciona si animationName es el nombre del ESTADO)
             int stateHash = Animator.StringToHash(animationName);
             
             if (animator.HasState(0, stateHash))
             {
                 // El estado existe, usar CrossFade
                 animator.CrossFadeInFixedTime(stateHash, 0.05f);
-                
-                if (logStateChanges)
-                {
-                    // Debug.Log($"[CombatController] Animación forzada (CrossFade): {animationName}");
-                }
             }
             else
             {
                 // El estado no existe con ese nombre, usar SetTrigger como fallback
-                // Esto funciona si mainAnimationTrigger es un trigger, no un estado
                 animator.SetTrigger(animationName);
+            }
+        }
+        
+        /// <summary>
+        /// Dispara la animación de acompañamiento en todas las partes excepto la que ataca.
+        /// </summary>
+        private void TriggerAccompanimentAnimations(Animator excludeAnimator, string animationName)
+        {
+            if (robot == null) return;
+            
+            List<StructuralPart> allParts = robot.GetAllStructuralParts();
+            
+            foreach (var structPart in allParts)
+            {
+                if (structPart == null) continue;
                 
-                if (logStateChanges)
-                {
-                    // Debug.Log($"[CombatController] Animación disparada (Trigger): {animationName}");
-                }
+                Animator animator = structPart.Animator;
+                
+                // Saltar si no tiene animator o es el animator de la parte que ataca
+                if (animator == null || animator == excludeAnimator) continue;
+                if (animator.runtimeAnimatorController == null) continue;
+                
+                // Intentar disparar la animación de acompañamiento
+                TriggerAnimationOnAnimator(animator, animationName);
             }
         }
         

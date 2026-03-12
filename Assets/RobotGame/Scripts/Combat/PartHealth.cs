@@ -337,6 +337,12 @@ namespace RobotGame.Combat
         /// </summary>
         private void TriggerDamageFlash()
         {
+            // No iniciar coroutine si el objeto está inactivo o destruido
+            if (!gameObject.activeInHierarchy || isDestroyed)
+            {
+                return;
+            }
+            
             // Si ya hay un flash activo, reiniciarlo
             if (flashCoroutine != null)
             {

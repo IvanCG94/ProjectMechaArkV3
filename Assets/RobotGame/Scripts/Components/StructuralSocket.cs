@@ -137,6 +137,15 @@ namespace RobotGame.Components
             isOccupied = false;
         }
         
+        /// <summary>
+        /// Marca el socket como ocupado por el Core (sin StructuralPart).
+        /// </summary>
+        public void SetOccupiedByCore(bool occupied)
+        {
+            isOccupied = occupied;
+            // attachedPart queda null porque el Core no es StructuralPart
+        }
+        
         private void OnDrawGizmos()
         {
             // Visualizar el socket en el editor

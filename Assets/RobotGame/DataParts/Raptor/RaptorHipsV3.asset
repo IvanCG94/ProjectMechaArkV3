@@ -16,7 +16,7 @@ MonoBehaviour:
   displayName: Raptor hips V3
   description: 
   icon: {fileID: 21300000, guid: 7730590ca1b35fe4c9792bbd4d1f75ef, type: 3}
-  prefab: {fileID: 5609034278058392648, guid: 3704b11627a9ad64198a175fe994c539, type: 3}
+  prefab: {fileID: 7754333853476986952, guid: 873c5252f8e65ee408fccb719bbfd639, type: 3}
   category: 0
   tier:
     tier: 2
@@ -30,7 +30,7 @@ MonoBehaviour:
   structuralSockets:
   - socketType: 1
     transformName: Socket_torso
-    isRequired: 0
+    isRequired: 1
     localPosition: {x: 2.7576621e-14, y: 2.7894297, z: 0.57818}
     localRotation: {x: -0.000014570996, y: 4.1983273e-13, z: 3.651277e-12}
   animatorController: {fileID: 9100000, guid: 817ea601ab4b62a4d8e9afa3f717b91a, type: 2}

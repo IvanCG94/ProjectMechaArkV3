@@ -17,11 +17,11 @@ MonoBehaviour:
   damageMultiplier: 1
   isAreaDamage: 0
   cooldownTime: 0
-  animationDuration: 3
+  animationDuration: 1
   windupPercent: 0
   activePercent: 1
   mainAnimationTrigger: Attack1
-  accompanimentAnimation: Attack
+  accompanimentAnimation: Attack1
   zoneId: vertical
   allowMovement: 0
   allowRotation: 0

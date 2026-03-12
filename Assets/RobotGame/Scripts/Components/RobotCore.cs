@@ -122,13 +122,13 @@ namespace RobotGame.Components
         {
             if (robot == null)
             {
-                // Debug.LogWarning("RobotCore: Intentando insertar en un robot null.");
+                Debug.LogWarning("RobotCore: Intentando insertar en un robot null.");
                 return false;
             }
             
             if (isActive && currentRobot != null)
             {
-                // Debug.LogWarning("RobotCore: Ya está insertado en otro robot. Extráelo primero.");
+                Debug.LogWarning("RobotCore: Ya está insertado en otro robot. Extráelo primero.");
                 return false;
             }
             
@@ -137,7 +137,7 @@ namespace RobotGame.Components
             
             if (coreSocketTransform == null)
             {
-                // Debug.LogWarning("RobotCore: El robot no tiene CoreSocket disponible.");
+                Debug.LogWarning($"RobotCore: El robot '{robot.name}' no tiene CoreSocket disponible.");
                 return false;
             }
             
@@ -148,6 +148,13 @@ namespace RobotGame.Components
             transform.SetParent(coreSocketTransform);
             transform.localPosition = Vector3.zero;
             transform.localRotation = Quaternion.identity;
+            
+            // Marcar el socket como ocupado
+            StructuralSocket coreSocket = coreSocketTransform.GetComponent<StructuralSocket>();
+            if (coreSocket != null)
+            {
+                coreSocket.SetOccupiedByCore(true);
+            }
             
             // Mostrar el Core (por si estaba oculto)
             SetCoreVisible(true);
@@ -160,6 +167,7 @@ namespace RobotGame.Components
                 OnPlayerRobotChanged?.Invoke(this, robot);
             }
             
+            Debug.Log($"RobotCore: Core insertado correctamente en '{robot.name}'");
             return true;
         }
         
@@ -174,6 +182,14 @@ namespace RobotGame.Components
             }
             
             Robot previousRobot = currentRobot;
+            
+            // Liberar el socket del Core
+            StructuralSocket coreSocket = transform.parent?.GetComponent<StructuralSocket>();
+            if (coreSocket != null)
+            {
+                coreSocket.SetOccupiedByCore(false);
+            }
+            
             previousRobot.OnCoreExtracted(this);
             
             transform.SetParent(null);

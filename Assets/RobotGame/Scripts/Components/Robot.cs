@@ -245,17 +245,33 @@ namespace RobotGame.Components
             // Buscar el socket de core en el torso
             StructuralSocket torsoSocket = hips?.GetSocket(StructuralSocketType.Torso);
             
-            if (torsoSocket != null && torsoSocket.IsOccupied)
+            if (torsoSocket == null)
             {
-                StructuralPart torso = torsoSocket.AttachedPart;
-                StructuralSocket coreSocketComponent = torso?.GetSocket(StructuralSocketType.Core);
-                
-                if (coreSocketComponent != null)
-                {
-                    return coreSocketComponent.transform;
-                }
+                Debug.LogWarning($"[FindCoreSocket] {name}: Hips no tiene socket Torso");
+                return null;
             }
             
+            if (!torsoSocket.IsOccupied)
+            {
+                Debug.LogWarning($"[FindCoreSocket] {name}: Socket Torso no está ocupado");
+                return null;
+            }
+            
+            StructuralPart torso = torsoSocket.AttachedPart;
+            if (torso == null)
+            {
+                Debug.LogWarning($"[FindCoreSocket] {name}: AttachedPart del Torso es null");
+                return null;
+            }
+            
+            StructuralSocket coreSocketComponent = torso.GetSocket(StructuralSocketType.Core);
+            
+            if (coreSocketComponent != null)
+            {
+                return coreSocketComponent.transform;
+            }
+            
+            Debug.LogWarning($"[FindCoreSocket] {name}: Torso '{torso.name}' no tiene socket Core");
             return null;
         }
         
@@ -394,6 +410,58 @@ namespace RobotGame.Components
             }
             
             return armorParts;
+        }
+        
+        /// <summary>
+        /// Valida si la configuración actual del robot es válida.
+        /// Verifica que todos los sockets marcados como IsRequired estén ocupados.
+        /// </summary>
+        /// <param name="errors">Lista de errores encontrados.</param>
+        /// <returns>True si la configuración es válida.</returns>
+        public bool IsValidConfiguration(out List<string> errors)
+        {
+            errors = new List<string>();
+            
+            // Verificar Core (siempre requerido)
+            if (core == null || !core.IsActive)
+            {
+                errors.Add("El robot necesita un Core insertado");
+            }
+            
+            // Verificar Hips (siempre requerido)
+            if (hips == null)
+            {
+                errors.Add("El robot necesita Hips");
+                return errors.Count == 0;
+            }
+            
+            // Verificar todos los sockets requeridos recursivamente
+            ValidateRequiredSockets(hips, errors);
+            
+            return errors.Count == 0;
+        }
+        
+        /// <summary>
+        /// Verifica recursivamente que todos los sockets requeridos estén ocupados.
+        /// </summary>
+        private void ValidateRequiredSockets(StructuralPart part, List<string> errors)
+        {
+            if (part == null) return;
+            
+            foreach (var socket in part.ChildSockets)
+            {
+                if (socket.IsRequired && !socket.IsOccupied)
+                {
+                    string partName = part.PartData != null ? part.PartData.displayName : part.name;
+                    errors.Add($"{partName} requiere una pieza en socket {socket.SocketType}");
+                }
+                
+                // Verificar recursivamente las partes hijas
+                if (socket.IsOccupied && socket.AttachedPart != null)
+                {
+                    ValidateRequiredSockets(socket.AttachedPart, errors);
+                }
+            }
         }
         
         /// <summary>

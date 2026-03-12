@@ -16,7 +16,7 @@ MonoBehaviour:
   displayName: Raptor Arm V3
   description: 
   icon: {fileID: 21300000, guid: 85adc868c9d574f4c8aeaf300095ed52, type: 3}
-  prefab: {fileID: 6108919608982643663, guid: a2582a41d6b53704490b6fae91d4d3ad, type: 3}
+  prefab: {fileID: 9005102304893912874, guid: 1d63fdd5e2c54eb46a4498a72ff7f1c9, type: 3}
   category: 0
   tier:
     tier: 2
@@ -33,7 +33,10 @@ MonoBehaviour:
     isRequired: 0
     localPosition: {x: 0, y: 0, z: 0}
     localRotation: {x: 0, y: 0, z: 0}
-  armorGrids: []
-  animatorController: {fileID: 9100000, guid: fb1591df04f574547b17815fc1d61483, type: 2}
+  animatorController: {fileID: 9100000, guid: b3f7ae44025b79140a685c7b0cd596a1, type: 2}
   animatorAvatar: {fileID: 0}
-  combatReach: 4.5
+  combatReach: 5
+  strength: 0
+  isLocomotionPart: 0
+  baseMovementSpeed: 5
+  baseSprintSpeed: 9

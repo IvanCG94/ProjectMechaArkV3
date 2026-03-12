@@ -62,6 +62,7 @@ namespace RobotGame.Control
         public event Action OnJump;
         public event Action OnLand;
         public event Action<ControlState> OnStateChanged;
+        public event Action<Transform> OnTargetChanged;
         
         #endregion
         
@@ -160,6 +161,7 @@ namespace RobotGame.Control
                 combatController = null;
                 currentRobot = null;
                 mobilityMultiplier = 1f;
+                OnTargetChanged?.Invoke(null);
                 return;
             }
             
@@ -180,7 +182,8 @@ namespace RobotGame.Control
                 cameraTransform = Camera.main.transform;
             }
             
-            // Debug.Log($"PlayerController: Target -> {targetTransform.name}");
+            // Notificar cambio de target
+            OnTargetChanged?.Invoke(targetTransform);
         }
         
         /// <summary>

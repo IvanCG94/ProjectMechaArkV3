@@ -193,13 +193,16 @@ namespace RobotGame.AI
                 RobotCore core = CreateCore(data.coreData, robot);
                 if (core != null)
                 {
-                    core.InsertInto(robot);
-                    // Debug.Log($"WildRobotSpawner: Core '{data.coreData.displayName}' insertado en '{data.speciesName}'");
+                    // InsertInto ahora hace fallback a ForceInsert si no hay CoreSocket
+                    if (!core.InsertInto(robot))
+                    {
+                        Debug.LogError($"WildRobotSpawner: No se pudo insertar Core en '{data.speciesName}'");
+                    }
                 }
             }
             else
             {
-                // Debug.LogWarning($"WildRobotSpawner: '{data.speciesName}' no tiene Core asignado");
+                Debug.LogWarning($"WildRobotSpawner: '{data.speciesName}' no tiene Core asignado en WildRobotData");
             }
             
             return robot;

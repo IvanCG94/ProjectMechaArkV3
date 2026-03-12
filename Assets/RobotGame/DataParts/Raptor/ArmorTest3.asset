@@ -1,0 +1,36 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0b980c5627308d5458fee39217d364a3, type: 3}
+  m_Name: ArmorTest3
+  m_EditorClassIdentifier: Assembly-CSharp::RobotGame.Data.ArmorPartData
+  partId: ArmorTest3
+  displayName: Armor test3
+  description: 
+  icon: {fileID: 21300000, guid: 24dcef5cde23aaa44a57447dddd45f24, type: 3}
+  prefab: {fileID: 8525920177275258594, guid: c42bab29c8c44054bb2d74a17ea8a3d1, type: 3}
+  category: 1
+  tier:
+    tier: 2
+    subTier: 1
+  rarity: 0
+  maxStackSize: 99
+  weight: 1
+  durability: 100
+  tierInfo:
+    tier: 1
+    subTier: 1
+  armor: 0
+  physicalResistance: 0
+  energyResistance: 0
+  explosiveResistance: 0
+  damagedMaterial: {fileID: 0}
+  hitEffectPrefab: {fileID: 0}

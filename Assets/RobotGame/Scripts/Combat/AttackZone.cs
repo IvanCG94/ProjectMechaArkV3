@@ -119,11 +119,11 @@ namespace RobotGame.Combat
             if (currentTarget != null && BelongsToTarget(other, currentTarget))
             {
                 isTargetInZone = true;
-                if (showDebugLogs) Debug.Log($"[AttackZone] '{zoneId}' TARGET DETECTADO: {other.name}");
+                Debug.Log($"[AttackZone] '{zoneId}' >>> TARGET ENTRÓ EN ZONA: {other.name}");
             }
-            else if (showDebugLogs)
+            else
             {
-                // Debug.Log($"[AttackZone] '{zoneId}' Collider entró: {other.name} (NO es target. Target: {(currentTarget != null ? currentTarget.name : "NULL")})");
+                Debug.Log($"[AttackZone] '{zoneId}' Collider entró (no es target): {other.name}");
             }
         }
         
@@ -160,7 +160,7 @@ namespace RobotGame.Combat
                 if (!stillInZone)
                 {
                     isTargetInZone = false;
-                    if (showDebugLogs) Debug.Log($"[AttackZone] '{zoneId}' Target SALIÓ de la zona");
+                    Debug.Log($"[AttackZone] '{zoneId}' <<< TARGET SALIÓ DE ZONA");
                 }
             }
         }
@@ -205,15 +205,9 @@ namespace RobotGame.Combat
             if (target != null && collidersInZone.Count > 0)
             {
                 isTargetInZone = CheckTargetStillInZone();
-                if (showDebugLogs)
-                {
-                    // Debug.Log($"[AttackZone] '{zoneId}' Nuevo target: {target.name}. Ya en zona: {isTargetInZone}");
-                }
             }
-            else if (showDebugLogs && target == null)
-            {
-                // Debug.Log($"[AttackZone] '{zoneId}' Target removido");
-            }
+            
+            Debug.Log($"[AttackZone] '{zoneId}' SetTarget: {(target != null ? target.name : "NULL")}, CollidersEnZona: {collidersInZone.Count}, YaEnZona: {isTargetInZone}");
         }
         
         /// <summary>
