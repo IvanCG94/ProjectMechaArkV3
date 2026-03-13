@@ -842,16 +842,8 @@ namespace RobotGame.AI
             // LÓGICA SIMPLE: Si target en zona + ataque listo → ATACAR
             var readyAttack = GetReadyAttackWithTargetInZone();
             
-            // DEBUG: Log del estado
-            Debug.Log($"[WildRobot] UpdatePositioning - Distancia: {distanceToPlayer:F1}, " +
-                      $"ReadyAttack: {(readyAttack.attack != null ? readyAttack.attack.attackName : "NINGUNO")}, " +
-                      $"ZoneHasTarget: {(readyAttack.zone != null ? readyAttack.zone.IsTargetInZone.ToString() : "NO ZONE")}");
-            
             if (readyAttack.part != null && readyAttack.attack != null)
             {
-                Debug.Log($"[WildRobot] ¡ATACANDO! Ataque: {readyAttack.attack.attackName}");
-                
-                // ¡Atacar inmediatamente!
                 selectedAttackPart = readyAttack.part;
                 selectedAttack = readyAttack.attack;
                 selectedZone = readyAttack.zone;
@@ -1814,11 +1806,7 @@ namespace RobotGame.AI
         /// </summary>
         private (CombatPart part, AttackData attack, AttackZone zone) GetReadyAttackWithTargetInZone()
         {
-            if (combatController == null)
-            {
-                Debug.LogWarning("[WildRobot] GetReadyAttack: combatController es NULL");
-                return (null, null, null);
-            }
+            if (combatController == null) return (null, null, null);
             
             CombatPart bestPart = null;
             AttackData bestAttack = null;
@@ -1827,25 +1815,16 @@ namespace RobotGame.AI
             
             float distance = targetPlayer != null ? Vector3.Distance(transform.position, targetPlayer.position) : 0f;
             
-            Debug.Log($"[WildRobot] GetReadyAttack: Buscando en {combatController.CombatParts.Count} partes de combate");
-            
             foreach (var part in combatController.CombatParts)
             {
-                if (part == null) continue;
-                
-                Debug.Log($"[WildRobot]   Parte: {part.name}, CanAttack: {part.CanAttack}, Ataques: {part.AvailableAttacks?.Count ?? 0}, Zonas: {part.LinkedAttackZones?.Count ?? 0}");
-                
-                if (!part.CanAttack) continue;
+                if (part == null || !part.CanAttack) continue;
                 
                 foreach (var attack in part.AvailableAttacks)
                 {
                     if (attack == null) continue;
                     
-                    bool isReady = combatController.IsAttackReady(attack);
-                    Debug.Log($"[WildRobot]     Ataque: {attack.attackName}, Listo: {isReady}");
-                    
                     // Verificar que el ataque esté listo (sin cooldown)
-                    if (!isReady) continue;
+                    if (!combatController.IsAttackReady(attack)) continue;
                     
                     // Buscar la zona del ataque
                     AttackZone zone = null;
@@ -1860,15 +1839,6 @@ namespace RobotGame.AI
                         {
                             zone = part.LinkedAttackZones[0];
                         }
-                    }
-                    
-                    if (zone != null)
-                    {
-                        Debug.Log($"[WildRobot]       Zona: {zone.ZoneId}, TargetEnZona: {zone.IsTargetInZone}, Target: {(zone.CurrentTarget != null ? zone.CurrentTarget.name : "NULL")}");
-                    }
-                    else
-                    {
-                        Debug.Log($"[WildRobot]       Zona: NULL - No hay zona vinculada");
                     }
                     
                     // Solo considerar si la zona tiene al target

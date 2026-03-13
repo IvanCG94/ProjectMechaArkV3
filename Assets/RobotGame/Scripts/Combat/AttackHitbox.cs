@@ -117,11 +117,8 @@ namespace RobotGame.Combat
         
         private bool TryHitAsPart(Collider col, ref int newHits)
         {
-            PartHealth partHealth = col.GetComponent<PartHealth>();
-            if (partHealth == null)
-            {
-                partHealth = col.GetComponentInParent<PartHealth>();
-            }
+            // Buscar PartHealth subiendo manualmente por la jerarquía
+            PartHealth partHealth = FindPartHealthInHierarchy(col.transform);
             
             if (partHealth == null || !partHealth.IsAlive)
             {
@@ -148,20 +145,35 @@ namespace RobotGame.Combat
             return true;
         }
         
+        /// <summary>
+        /// Busca PartHealth subiendo manualmente por toda la jerarquía de transforms.
+        /// </summary>
+        private PartHealth FindPartHealthInHierarchy(Transform start)
+        {
+            Transform current = start;
+            while (current != null)
+            {
+                PartHealth ph = current.GetComponent<PartHealth>();
+                if (ph != null)
+                {
+                    return ph;
+                }
+                current = current.parent;
+            }
+            return null;
+        }
+        
         private bool TryHitAsDamageable(Collider col, ref int newHits)
         {
-            Damageable damageable = col.GetComponent<Damageable>();
-            if (damageable == null)
-            {
-                damageable = col.GetComponentInParent<Damageable>();
-            }
+            // Buscar Damageable subiendo manualmente por la jerarquía
+            Damageable damageable = FindDamageableInHierarchy(col.transform);
             
             if (damageable == null || !damageable.IsAlive)
             {
                 return false;
             }
             
-            // No procesar si es parte de robot
+            // No procesar si es parte de robot (ya se procesó en TryHitAsPart)
             if (damageable.GetComponent<PartHealth>() != null)
             {
                 return false;
@@ -180,6 +192,24 @@ namespace RobotGame.Combat
             }
             
             return true;
+        }
+        
+        /// <summary>
+        /// Busca Damageable subiendo manualmente por toda la jerarquía de transforms.
+        /// </summary>
+        private Damageable FindDamageableInHierarchy(Transform start)
+        {
+            Transform current = start;
+            while (current != null)
+            {
+                Damageable d = current.GetComponent<Damageable>();
+                if (d != null)
+                {
+                    return d;
+                }
+                current = current.parent;
+            }
+            return null;
         }
         
         #endregion

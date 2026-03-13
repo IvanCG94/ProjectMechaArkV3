@@ -127,8 +127,8 @@ namespace RobotGame.Combat
         {
             bool hitSomething = false;
             
-            // Intentar PartHealth (partes de robot)
-            PartHealth partHealth = target.GetComponent<PartHealth>();
+            // Intentar PartHealth (partes de robot) - buscar subiendo por la jerarquía
+            PartHealth partHealth = FindPartHealthInHierarchy(target.transform);
             if (partHealth != null)
             {
                 // PartHealth maneja internamente la verificación de attackId
@@ -142,15 +142,15 @@ namespace RobotGame.Combat
                     
                     if (showDebugLogs)
                     {
-                        // Debug.Log($"[WeaponHitbox] HIT PartHealth: {target.name} por {currentDamage} daño");
+                        Debug.Log($"[WeaponHitbox] HIT PartHealth: {partHealth.gameObject.name} (desde collider {target.name}) por {currentDamage} daño");
                     }
                 }
                 
                 return hitSomething;
             }
             
-            // Intentar Damageable (objetos genéricos como DummyTarget)
-            Damageable damageable = target.GetComponent<Damageable>();
+            // Intentar Damageable (objetos genéricos como DummyTarget) - también buscar en jerarquía
+            Damageable damageable = FindDamageableInHierarchy(target.transform);
             if (damageable != null)
             {
                 damageable.TakeDamage(currentDamage);
@@ -160,13 +160,49 @@ namespace RobotGame.Combat
                 
                 if (showDebugLogs)
                 {
-                    // Debug.Log($"[WeaponHitbox] HIT Damageable: {target.name} por {currentDamage} daño");
+                    Debug.Log($"[WeaponHitbox] HIT Damageable: {damageable.gameObject.name} por {currentDamage} daño");
                 }
                 
                 return hitSomething;
             }
             
             return hitSomething;
+        }
+        
+        /// <summary>
+        /// Busca PartHealth subiendo manualmente por toda la jerarquía de transforms.
+        /// </summary>
+        private PartHealth FindPartHealthInHierarchy(Transform start)
+        {
+            Transform current = start;
+            while (current != null)
+            {
+                PartHealth ph = current.GetComponent<PartHealth>();
+                if (ph != null)
+                {
+                    return ph;
+                }
+                current = current.parent;
+            }
+            return null;
+        }
+        
+        /// <summary>
+        /// Busca Damageable subiendo manualmente por toda la jerarquía de transforms.
+        /// </summary>
+        private Damageable FindDamageableInHierarchy(Transform start)
+        {
+            Transform current = start;
+            while (current != null)
+            {
+                Damageable d = current.GetComponent<Damageable>();
+                if (d != null)
+                {
+                    return d;
+                }
+                current = current.parent;
+            }
+            return null;
         }
         
         #endregion

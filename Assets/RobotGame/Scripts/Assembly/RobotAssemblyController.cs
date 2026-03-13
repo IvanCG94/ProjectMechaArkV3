@@ -910,16 +910,23 @@ namespace RobotGame.Assembly
         private void DetectGridUnderMouse()
         {
             Ray ray = mainCamera.ScreenPointToRay(Input.mousePosition);
-            RaycastHit hit;
             
             StudGridHead newHoveredGrid = null;
             
-            // Máscara que excluye hitboxes de combate (Layer 11) para no interferir con detección de studs
-            int editModeMask = ~RobotLayers.RobotHitboxMask;
+            // Usar RaycastAll para poder filtrar AttackZones
+            RaycastHit[] hits = Physics.RaycastAll(ray, 100f);
             
-            // Raycast buscando triggers (los Box_ son triggers para no interferir con validación)
-            if (Physics.Raycast(ray, out hit, 100f, editModeMask, QueryTriggerInteraction.Collide))
+            // Ordenar por distancia
+            System.Array.Sort(hits, (a, b) => a.distance.CompareTo(b.distance));
+            
+            foreach (var hit in hits)
             {
+                // Ignorar AttackZones (triggers de combate)
+                if (hit.collider.GetComponent<Combat.AttackZone>() != null)
+                {
+                    continue;
+                }
+                
                 // Verificar si golpeamos un Box_ (collider de parte estructural)
                 if (hit.collider.gameObject.name.StartsWith("Box_"))
                 {
@@ -938,6 +945,8 @@ namespace RobotGame.Assembly
                         current = current.parent;
                         depth++;
                     }
+                    
+                    if (newHoveredGrid != null) break;
                 }
                 else
                 {
@@ -948,6 +957,7 @@ namespace RobotGame.Assembly
                     {
                         newHoveredGrid = grid;
                         CalculateGridPosition(grid, hit.point);
+                        break;
                     }
                 }
             }
@@ -1188,25 +1198,73 @@ namespace RobotGame.Assembly
             var newBoxColliders = GetBoxColliders(newPart.gameObject);
             if (newBoxColliders.Count == 0) return null;
             
+            // Recopilar Box_ existentes para comparar por bounds
+            List<Collider> existingBoxColliders = new List<Collider>();
+            
+            // 1. Box_ de armaduras colocadas
+            foreach (var grid in availableGrids)
+            {
+                if (grid == null) continue;
+                foreach (var placed in grid.PlacedParts)
+                {
+                    if (placed != null && placed != newPart)
+                    {
+                        existingBoxColliders.AddRange(GetBoxColliders(placed.gameObject));
+                    }
+                }
+            }
+            
+            // 2. Box_ de partes estructurales
+            if (targetRobot != null)
+            {
+                var allBoxes = GetBoxColliders(targetRobot.gameObject);
+                
+                foreach (var box in allBoxes)
+                {
+                    // Excluir si es de la nueva pieza
+                    if (box.transform.IsChildOf(newPart.transform))
+                        continue;
+                    
+                    // Excluir si es de una armadura ya contada
+                    bool isFromArmor = false;
+                    foreach (var grid in availableGrids)
+                    {
+                        if (grid == null) continue;
+                        foreach (var placed in grid.PlacedParts)
+                        {
+                            if (placed != null && box.transform.IsChildOf(placed.transform))
+                            {
+                                isFromArmor = true;
+                                break;
+                            }
+                        }
+                        if (isFromArmor) break;
+                    }
+                    
+                    if (isFromArmor)
+                        continue;
+                    
+                    // Este es un Box_ de parte estructural
+                    existingBoxColliders.Add(box);
+                }
+            }
+            
+            // Verificar intersección por bounds
             foreach (var newCol in newBoxColliders)
             {
                 if (newCol == null) continue;
+                Bounds newBounds = GetBoxColliderBounds(newCol);
+                newBounds.extents *= 0.95f;
                 
-                Collider[] overlaps = Physics.OverlapBox(
-                    newCol.bounds.center,
-                    newCol.bounds.extents * 0.95f,
-                    newCol.transform.rotation,
-                    ~0,
-                    QueryTriggerInteraction.Ignore
-                );
-                
-                foreach (var overlap in overlaps)
+                foreach (var existingCol in existingBoxColliders)
                 {
-                    if (overlap == null || overlap == newCol) continue;
-                    if (overlap.transform.IsChildOf(newPart.transform)) continue;
-                    if (!overlap.gameObject.name.StartsWith("Box_")) continue;
+                    if (existingCol == null) continue;
+                    Bounds existingBounds = GetBoxColliderBounds(existingCol);
                     
-                    return $"'{newCol.gameObject.name}' con '{overlap.gameObject.name}' (parte: {overlap.transform.parent?.name ?? "?"})";
+                    if (newBounds.Intersects(existingBounds))
+                    {
+                        return $"'{newCol.gameObject.name}' con '{existingCol.gameObject.name}' (parte: {existingCol.transform.parent?.name ?? "?"})";
+                    }
                 }
             }
             
@@ -1247,7 +1305,8 @@ namespace RobotGame.Assembly
                 }
             }
             
-            // 2. Box_ de partes estructurales (excluyendo los de newPart y los de grillas con studs)
+            // 2. Box_ de partes estructurales
+            // Solo excluir los Box_ de la grilla DONDE se está colocando (hoveredGrid)
             if (targetRobot != null)
             {
                 var allBoxes = GetBoxColliders(targetRobot.gameObject);
@@ -1257,18 +1316,11 @@ namespace RobotGame.Assembly
                     if (box.transform.IsChildOf(newPart.transform))
                         continue;
                     
-                    // Excluir si es hijo de una grilla disponible (parte estructural donde se colocan armaduras)
-                    bool isPartOfGrid = false;
-                    foreach (var grid in availableGrids)
+                    // Solo excluir si es hijo de la grilla actual (donde estamos colocando)
+                    if (hoveredGrid != null && box.transform.IsChildOf(hoveredGrid.transform))
                     {
-                        if (grid != null && box.transform.IsChildOf(grid.transform))
-                        {
-                            isPartOfGrid = true;
-                            break;
-                        }
-                    }
-                    if (isPartOfGrid)
                         continue;
+                    }
                     
                     existingBoxColliders.Add(box);
                 }
@@ -1972,26 +2024,20 @@ namespace RobotGame.Assembly
                 }
             }
             
-            // 2. Box_ de partes estructurales (excluyendo los de grillas con studs)
+            // 2. Box_ de partes estructurales
+            // Solo excluir los Box_ de la grilla DONDE se está colocando (hoveredGrid)
             if (targetRobot != null)
             {
                 var allBoxes = GetBoxColliders(targetRobot.gameObject);
                 foreach (var box in allBoxes)
                 {
-                    // Excluir si es hijo de una grilla disponible
-                    bool isPartOfGrid = false;
-                    foreach (var grid in availableGrids)
+                    // Solo excluir si es hijo de la grilla actual (donde estamos colocando)
+                    if (hoveredGrid != null && box.transform.IsChildOf(hoveredGrid.transform))
                     {
-                        if (grid != null && box.transform.IsChildOf(grid.transform))
-                        {
-                            isPartOfGrid = true;
-                            break;
-                        }
+                        continue;
                     }
-                    if (!isPartOfGrid)
-                    {
-                        existingBoxColliders.Add(box);
-                    }
+                    
+                    existingBoxColliders.Add(box);
                 }
             }
             
