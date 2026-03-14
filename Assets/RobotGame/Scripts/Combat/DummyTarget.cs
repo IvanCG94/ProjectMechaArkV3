@@ -62,7 +62,7 @@ namespace RobotGame.Combat
             {
                 // Crear instancia del material para no afectar otros objetos
                 material = meshRenderer.material;
-                material.color = normalColor;
+                SetMaterialColor(normalColor);
             }
         }
         
@@ -103,7 +103,7 @@ namespace RobotGame.Combat
                     isFlashing = false;
                     if (material != null && damageable.IsAlive)
                     {
-                        material.color = normalColor;
+                        SetMaterialColor(normalColor);
                     }
                 }
             }
@@ -120,7 +120,7 @@ namespace RobotGame.Combat
             // Flash visual
             if (material != null)
             {
-                material.color = hitColor;
+                SetMaterialColor(hitColor);
                 isFlashing = true;
                 hitFlashTimer = hitFlashDuration;
             }
@@ -135,7 +135,7 @@ namespace RobotGame.Combat
         {
             if (material != null)
             {
-                material.color = deadColor;
+                SetMaterialColor(deadColor);
             }
             
             isFlashing = false;
@@ -156,7 +156,7 @@ namespace RobotGame.Combat
             
             if (material != null)
             {
-                material.color = normalColor;
+                SetMaterialColor(normalColor);
             }
             
             isFlashing = false;
@@ -177,6 +177,23 @@ namespace RobotGame.Combat
             transform.localScale = hitScale;
             yield return new WaitForSeconds(0.05f);
             transform.localScale = originalScale;
+        }
+        
+        /// <summary>
+        /// Asigna color al material, compatible con URP (_BaseColor) y Built-in (_Color).
+        /// </summary>
+        private void SetMaterialColor(Color color)
+        {
+            if (material == null) return;
+            
+            if (material.HasProperty("_BaseColor"))
+            {
+                material.SetColor("_BaseColor", color);
+            }
+            else if (material.HasProperty("_Color"))
+            {
+                material.color = color;
+            }
         }
         
         #endregion

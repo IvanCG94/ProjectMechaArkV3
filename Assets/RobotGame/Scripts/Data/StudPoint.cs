@@ -17,6 +17,7 @@ namespace RobotGame.Data
         public string transformName; // Nombre completo del transform (ej: "Head_T1-2_Front1")
         public TierInfo tierInfo;
         public Vector3 localPosition;
+        public Quaternion localRotation; // Rotación local del stud
         public bool isHead; // true = Head (receptor), false = Tail (ocupador)
         
         /// <summary>
@@ -35,6 +36,7 @@ namespace RobotGame.Data
             this.transformName = source?.name ?? name;
             this.tierInfo = tierInfo;
             this.localPosition = localPosition;
+            this.localRotation = source != null ? source.localRotation : Quaternion.identity;
             this.isHead = isHead;
             this.sourceTransform = source;
             
@@ -58,6 +60,22 @@ namespace RobotGame.Data
             this.transformName = source?.name ?? name;
             this.tierInfo = tierInfo;
             this.localPosition = localPosition;
+            this.localRotation = source != null ? source.localRotation : Quaternion.identity;
+            this.isHead = isHead;
+            this.groupId = groupId;
+            this.sourceTransform = source;
+        }
+        
+        /// <summary>
+        /// Constructor completo con rotación explícita.
+        /// </summary>
+        public StudPoint(string name, TierInfo tierInfo, Vector3 localPosition, Quaternion localRotation, bool isHead, string groupId, Transform source = null)
+        {
+            this.name = name;
+            this.transformName = source?.name ?? name;
+            this.tierInfo = tierInfo;
+            this.localPosition = localPosition;
+            this.localRotation = localRotation;
             this.isHead = isHead;
             this.groupId = groupId;
             this.sourceTransform = source;

@@ -565,14 +565,46 @@ namespace RobotGame.Components
             return GetStudParentTransform(CurrentHoveredStudIndex);
         }
         
+        // Offset de rotación para alinear correctamente las piezas con los studs
+        private static readonly Quaternion StudRotationOffset = Quaternion.Euler(0f, 90f, 0f);
+        
         /// <summary>
-        /// Obtiene la rotación del hueso donde está el stud actual.
-        /// Esta rotación debe usarse como "base" para colocar armaduras.
+        /// Obtiene la rotación mundial del stud actual con offset aplicado.
+        /// Esta es la orientación base que tendrá la armadura al hacer snap.
         /// </summary>
         public Quaternion GetCurrentStudRotation()
         {
-            Transform parent = GetCurrentStudParentTransform();
-            return parent != null ? parent.rotation : Quaternion.identity;
+            if (CurrentHoveredStudIndex < 0 || CurrentHoveredStudIndex >= headStuds.Count)
+                return transform.rotation * StudRotationOffset;
+            
+            StudPoint stud = headStuds[CurrentHoveredStudIndex];
+            
+            // Usar la rotación mundial del Empty del stud + offset
+            if (stud.sourceTransform != null)
+            {
+                return stud.sourceTransform.rotation * StudRotationOffset;
+            }
+            
+            // Fallback: usar rotación del grid * rotación local del stud + offset
+            return transform.rotation * stud.localRotation * StudRotationOffset;
+        }
+        
+        /// <summary>
+        /// Obtiene la rotación mundial de un stud específico por índice con offset aplicado.
+        /// </summary>
+        public Quaternion GetStudRotation(int index)
+        {
+            if (index < 0 || index >= headStuds.Count)
+                return transform.rotation * StudRotationOffset;
+            
+            StudPoint stud = headStuds[index];
+            
+            if (stud.sourceTransform != null)
+            {
+                return stud.sourceTransform.rotation * StudRotationOffset;
+            }
+            
+            return transform.rotation * stud.localRotation * StudRotationOffset;
         }
         
         /// <summary>

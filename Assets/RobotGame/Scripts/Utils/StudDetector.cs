@@ -199,7 +199,10 @@ namespace RobotGame.Utils
                 // Calcular posición local relativa al root
                 Vector3 localPos = root.InverseTransformPoint(current.position);
                 
-                studs.Add(new StudPoint(studName, tierInfo, localPos, isHead, current));
+                // Calcular rotación local relativa al root
+                Quaternion localRot = Quaternion.Inverse(root.rotation) * current.rotation;
+                
+                studs.Add(new StudPoint(studName, tierInfo, localPos, localRot, isHead, current.parent?.name ?? "default", current));
             }
             
             // Buscar en hijos

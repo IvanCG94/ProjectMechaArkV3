@@ -16,7 +16,7 @@ MonoBehaviour:
   displayName: New Hips
   description: 
   icon: {fileID: 21300000, guid: b2539fda7296dda45bc3a5d586e53262, type: 3}
-  prefab: {fileID: 7410692846874625324, guid: 3219d01a3950afd41b90a52d094ae88e, type: 3}
+  prefab: {fileID: 6250170187968674406, guid: 8f49a4cbb0878384b9b3cd3e8a7df0d5, type: 3}
   category: 0
   tier:
     tier: 1
@@ -31,20 +31,12 @@ MonoBehaviour:
   - socketType: 1
     transformName: Socket_torso
     isRequired: 0
-    localPosition: {x: 0, y: 1.1664124, z: -0.107525885}
+    localPosition: {x: 0, y: 0.11817932, z: 0}
     localRotation: {x: 0, y: 0, z: -2.7805295e-22}
-  - socketType: 11
-    transformName: Socket_addon_L
-    isRequired: 0
-    localPosition: {x: 0, y: 1.1664124, z: -0.107525885}
-    localRotation: {x: 0, y: 0, z: -2.7805295e-22}
-  - socketType: 11
-    transformName: Socket_addon_R
-    isRequired: 0
-    localPosition: {x: 0, y: 1.1664124, z: -0.107525885}
-    localRotation: {x: 0, y: 0, z: -2.7805295e-22}
-  animatorController: {fileID: 9100000, guid: 34d661efc465b4c42827ad231b4aff1a, type: 2}
+  animatorController: {fileID: 0}
   animatorAvatar: {fileID: 0}
   combatReach: 0
   strength: 20
   isLocomotionPart: 1
+  baseMovementSpeed: 5
+  baseSprintSpeed: 9

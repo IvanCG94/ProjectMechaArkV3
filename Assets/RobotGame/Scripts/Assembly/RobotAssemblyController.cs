@@ -1097,9 +1097,9 @@ namespace RobotGame.Assembly
                 return;
             }
             
-            // Obtener rotación del hueso y combinar con rotación del usuario
-            Quaternion boneRotation = hoveredGrid.GetCurrentStudRotation();
-            Quaternion finalRotation = boneRotation * armorRotation3D;
+            // Obtener rotación del stud y combinar con rotación del usuario
+            Quaternion studRotation = hoveredGrid.GetCurrentStudRotation();
+            Quaternion finalRotation = studRotation * armorRotation3D;
             
             // Validar que TODOS los Tails puedan colocarse CON LA ROTACIÓN FINAL
             if (!hoveredGrid.CanPlaceAllTails(tailGrid, anchorIndex, finalRotation))
@@ -1766,7 +1766,7 @@ namespace RobotGame.Assembly
             modelContainer = new GameObject("ModelContainer");
             modelContainer.transform.SetParent(pivotContainer.transform);
             
-            // Material de preview - Compatible con URP
+            // Material de preview - Compatible con URP (Unity 6)
             Shader previewShader = Shader.Find("Universal Render Pipeline/Lit");
             if (previewShader == null)
             {
@@ -1786,7 +1786,7 @@ namespace RobotGame.Assembly
                 // Configurar transparencia para URP
                 if (previewShader.name.Contains("Universal"))
                 {
-                    // URP Lit shader transparency settings
+                    // URP Lit shader transparency settings (Unity 6)
                     previewMaterial.SetFloat("_Surface", 1); // 0 = Opaque, 1 = Transparent
                     previewMaterial.SetFloat("_Blend", 0);   // 0 = Alpha, 1 = Premultiply, 2 = Additive, 3 = Multiply
                     previewMaterial.SetFloat("_AlphaClip", 0);
@@ -1795,6 +1795,9 @@ namespace RobotGame.Assembly
                     previewMaterial.SetFloat("_ZWrite", 0);
                     previewMaterial.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
                     previewMaterial.renderQueue = 3000;
+                    
+                    // En URP el color se llama _BaseColor, no _Color
+                    previewMaterial.SetColor("_BaseColor", Color.white);
                 }
                 else
                 {
@@ -1811,7 +1814,7 @@ namespace RobotGame.Assembly
             }
             else
             {
-                // Debug.LogError("RobotAssemblyController: No se encontró ningún shader válido para preview");
+                Debug.LogError("RobotAssemblyController: No se encontró ningún shader válido para preview");
             }
             
             // Preview de estructural
@@ -1872,9 +1875,9 @@ namespace RobotGame.Assembly
             }
             else
             {
-                // Con grilla: obtener rotación del hueso y combinar con rotación del usuario
-                Quaternion boneRotation = hoveredGrid.GetCurrentStudRotation();
-                Quaternion finalRotation = boneRotation * armorRotation3D;
+                // Con grilla: obtener rotación del stud y combinar con rotación del usuario
+                Quaternion studRotation = hoveredGrid.GetCurrentStudRotation();
+                Quaternion finalRotation = studRotation * armorRotation3D;
                 
                 // Obtener posición del stud seleccionado
                 Vector3 studPos = hoveredGrid.GetCurrentHoveredStudPosition();
@@ -1910,7 +1913,15 @@ namespace RobotGame.Assembly
             
             if (previewMaterial != null)
             {
-                previewMaterial.color = previewColor;
+                // URP usa _BaseColor, Built-in usa _Color
+                if (previewMaterial.HasProperty("_BaseColor"))
+                {
+                    previewMaterial.SetColor("_BaseColor", previewColor);
+                }
+                else
+                {
+                    previewMaterial.color = previewColor;
+                }
             }
         }
         
@@ -2177,7 +2188,15 @@ namespace RobotGame.Assembly
             {
                 foreach (var mat in renderer.materials)
                 {
-                    mat.color = previewColor;
+                    // URP usa _BaseColor, Built-in usa _Color
+                    if (mat.HasProperty("_BaseColor"))
+                    {
+                        mat.SetColor("_BaseColor", previewColor);
+                    }
+                    else
+                    {
+                        mat.color = previewColor;
+                    }
                 }
             }
         }

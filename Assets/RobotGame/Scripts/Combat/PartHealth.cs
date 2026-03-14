@@ -129,11 +129,15 @@ namespace RobotGame.Combat
                 
                 partRenderers.Add(renderer);
                 
-                // Guardar colores originales
+                // Guardar colores originales (soporta URP _BaseColor y Built-in _Color)
                 Color[] colors = new Color[renderer.materials.Length];
                 for (int i = 0; i < renderer.materials.Length; i++)
                 {
-                    if (renderer.materials[i].HasProperty("_Color"))
+                    if (renderer.materials[i].HasProperty("_BaseColor"))
+                    {
+                        colors[i] = renderer.materials[i].GetColor("_BaseColor");
+                    }
+                    else if (renderer.materials[i].HasProperty("_Color"))
                     {
                         colors[i] = renderer.materials[i].color;
                     }
@@ -380,7 +384,14 @@ namespace RobotGame.Combat
                 
                 foreach (var material in renderer.materials)
                 {
-                    if (material != null && material.HasProperty("_Color"))
+                    if (material == null) continue;
+                    
+                    // URP usa _BaseColor, Built-in usa _Color
+                    if (material.HasProperty("_BaseColor"))
+                    {
+                        material.SetColor("_BaseColor", color);
+                    }
+                    else if (material.HasProperty("_Color"))
                     {
                         material.color = color;
                     }
@@ -401,7 +412,14 @@ namespace RobotGame.Combat
                 {
                     for (int i = 0; i < renderer.materials.Length && i < colors.Length; i++)
                     {
-                        if (renderer.materials[i] != null && renderer.materials[i].HasProperty("_Color"))
+                        if (renderer.materials[i] == null) continue;
+                        
+                        // URP usa _BaseColor, Built-in usa _Color
+                        if (renderer.materials[i].HasProperty("_BaseColor"))
+                        {
+                            renderer.materials[i].SetColor("_BaseColor", colors[i]);
+                        }
+                        else if (renderer.materials[i].HasProperty("_Color"))
                         {
                             renderer.materials[i].color = colors[i];
                         }
