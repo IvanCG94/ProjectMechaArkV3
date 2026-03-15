@@ -11,10 +11,14 @@ namespace RobotGame.Control
     /// - Mantener Alt para liberar el cursor temporalmente
     /// - Zoom con rueda
     /// 
-    /// MODO EDICIÓN:
-    /// - Cursor libre (visible)
-    /// - Click derecho sostenido para rotar la cámara
-    /// - Zoom con rueda
+    /// MODO EDICIÓN (ensamblaje):
+    /// - Cursor libre (visible) para seleccionar partes
+    /// - WASD mueve el punto focal en el plano horizontal (Shift para rápido)
+    /// - Q/E o Ctrl/Space sube/baja el punto focal
+    /// - Click medio + arrastrar para orbitar alrededor del punto focal
+    /// - Rueda del mouse para zoom
+    /// - Click derecho reservado para remover piezas
+    /// - El punto focal no puede bajar del suelo
     /// </summary>
     public class PlayerCamera : MonoBehaviour
     {
@@ -58,6 +62,12 @@ namespace RobotGame.Control
         [Header("Estado")]
         [SerializeField] private bool isInEditMode = false;
         
+        [Header("Modo Edición - Cámara Libre")]
+        [SerializeField] private float editMoveSpeed = 10f;
+        [SerializeField] private float editFastMultiplier = 2f;
+        [SerializeField] private float editMinHeight = 0.5f;
+        [SerializeField] private float editOrbitSensitivity = 3f;
+        
         [Header("Debug")]
         [SerializeField] private bool showDebugUI = false;
         
@@ -83,6 +93,10 @@ namespace RobotGame.Control
         
         // Auto-recentrado
         private float timeSinceLastInput;
+        
+        // Modo edición - punto de enfoque libre
+        private Vector3 editFocusPoint;
+        private bool editModeInitialized = false;
         
         // Referencias
         private PlayerController playerController;
@@ -118,11 +132,16 @@ namespace RobotGame.Control
             isInEditMode = true;
             Cursor.lockState = CursorLockMode.None;
             Cursor.visible = true;
+            
+            // Guardar el punto de enfoque actual para el modo libre
+            editFocusPoint = currentFocusPoint;
+            editModeInitialized = true;
         }
         
         public void ExitEditMode()
         {
             isInEditMode = false;
+            editModeInitialized = false;
             Cursor.lockState = CursorLockMode.Locked;
             Cursor.visible = false;
         }
@@ -246,21 +265,62 @@ namespace RobotGame.Control
         
         private void HandleEditModeInput()
         {
-            // Click derecho para rotar
-            if (Input.GetMouseButton(1))
+            // === ÓRBITA: Click medio + arrastrar para orbitar alrededor del punto focal ===
+            if (Input.GetMouseButton(2))
             {
                 float mouseX = Input.GetAxis("Mouse X");
                 float mouseY = Input.GetAxis("Mouse Y");
                 
-                horizontalAngle -= mouseX * orbitSensitivity;
-                verticalAngle -= mouseY * orbitSensitivity;
+                horizontalAngle -= mouseX * editOrbitSensitivity;
+                verticalAngle -= mouseY * editOrbitSensitivity;
                 verticalAngle = Mathf.Clamp(verticalAngle, minVerticalAngle, maxVerticalAngle);
                 
                 timeSinceLastInput = 0f;
             }
-            else
+            
+            // === MOVIMIENTO HORIZONTAL: WASD mueve el punto focal en el plano XZ ===
+            float moveH = 0f;
+            float moveV = 0f;
+            float moveY = 0f;
+            
+            if (Input.GetKey(KeyCode.W)) moveV = 1f;
+            if (Input.GetKey(KeyCode.S)) moveV = -1f;
+            if (Input.GetKey(KeyCode.A)) moveH = -1f;
+            if (Input.GetKey(KeyCode.D)) moveH = 1f;
+            
+            // === MOVIMIENTO VERTICAL: Q/E o Space/Ctrl sube/baja el punto focal ===
+            if (Input.GetKey(KeyCode.E) || Input.GetKey(KeyCode.Space)) moveY = 1f;
+            if (Input.GetKey(KeyCode.Q) || Input.GetKey(KeyCode.LeftControl)) moveY = -1f;
+            
+            if (Mathf.Abs(moveH) > 0.01f || Mathf.Abs(moveV) > 0.01f || Mathf.Abs(moveY) > 0.01f)
             {
-                timeSinceLastInput += Time.deltaTime;
+                // Velocidad con Shift
+                float speed = editMoveSpeed;
+                if (Input.GetKey(KeyCode.LeftShift))
+                {
+                    speed *= editFastMultiplier;
+                }
+                
+                // Direcciones horizontales basadas en la orientación de la cámara (sin componente Y)
+                Vector3 forward = transform.forward;
+                forward.y = 0f;
+                forward.Normalize();
+                
+                Vector3 right = transform.right;
+                right.y = 0f;
+                right.Normalize();
+                
+                // Mover el punto focal
+                Vector3 movement = (forward * moveV + right * moveH + Vector3.up * moveY) * speed * Time.deltaTime;
+                editFocusPoint += movement;
+                
+                // Colisión con suelo: el punto focal no puede bajar de la altura mínima
+                if (editFocusPoint.y < editMinHeight)
+                {
+                    editFocusPoint.y = editMinHeight;
+                }
+                
+                timeSinceLastInput = 0f;
             }
         }
         
@@ -290,8 +350,17 @@ namespace RobotGame.Control
         
         private void UpdateFocusPoint()
         {
-            Vector3 targetPoint = target.position + targetOffset;
-            currentFocusPoint = Vector3.SmoothDamp(currentFocusPoint, targetPoint, ref focusVelocity, followSmoothTime);
+            if (isInEditMode && editModeInitialized)
+            {
+                // En modo edición, usar el punto de enfoque libre (sin seguir al target)
+                currentFocusPoint = Vector3.SmoothDamp(currentFocusPoint, editFocusPoint, ref focusVelocity, followSmoothTime);
+            }
+            else
+            {
+                // En modo normal, seguir al target
+                Vector3 targetPoint = target.position + targetOffset;
+                currentFocusPoint = Vector3.SmoothDamp(currentFocusPoint, targetPoint, ref focusVelocity, followSmoothTime);
+            }
         }
         
         #endregion

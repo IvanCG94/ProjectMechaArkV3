@@ -875,20 +875,20 @@ namespace RobotGame.Assembly
                 CycleFallbackArmor(scroll > 0 ? 1 : -1);
             }
             
-            // Rotar con R (eje Y) o Shift+R (eje X)
+            // Rotar con R (eje X) o Shift+R (eje Y)
             if (Input.GetKeyDown(rotateKey))
             {
                 if (Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift))
                 {
-                    // Shift+R: Rotar 90° en X
-                    armorRotation3D = Quaternion.Euler(90, 0, 0) * armorRotation3D;
-                    // Debug.Log($"Armadura rotada en X. Rotación actual: {armorRotation3D.eulerAngles}");
+                    // Shift+R: Rotar 90° en Y
+                    armorRotation3D = Quaternion.Euler(0, 90, 0) * armorRotation3D;
+                    // Debug.Log($"Armadura rotada en Y. Rotación actual: {armorRotation3D.eulerAngles}");
                 }
                 else
                 {
-                    // R: Rotar 90° en Y
-                    armorRotation3D = Quaternion.Euler(0, 90, 0) * armorRotation3D;
-                    // Debug.Log($"Armadura rotada en Y. Rotación actual: {armorRotation3D.eulerAngles}");
+                    // R: Rotar 90° en X
+                    armorRotation3D = Quaternion.Euler(90, 0, 0) * armorRotation3D;
+                    // Debug.Log($"Armadura rotada en X. Rotación actual: {armorRotation3D.eulerAngles}");
                 }
             }
             
@@ -1249,20 +1249,35 @@ namespace RobotGame.Assembly
                 }
             }
             
-            // Verificar intersección por bounds
+            // DEBUG: Mostrar todos los colliders existentes
+            Debug.Log($"[COLLISION_CHECK] Comparando {newBoxColliders.Count} colliders nuevos contra {existingBoxColliders.Count} existentes");
             foreach (var newCol in newBoxColliders)
             {
-                if (newCol == null) continue;
-                Bounds newBounds = GetBoxColliderBounds(newCol);
-                newBounds.extents *= 0.95f;
+                Bounds b = GetBoxColliderBounds(newCol);
+                Debug.Log($"[COLLISION_CHECK] Nuevo: '{newCol.gameObject.name}' - center={b.center}, size={b.size}");
+            }
+            foreach (var existing in existingBoxColliders)
+            {
+                Bounds b = GetBoxColliderBounds(existing);
+                Debug.Log($"[COLLISION_CHECK] Existente: '{existing.gameObject.name}' en {existing.transform.parent?.name} - center={b.center}, size={b.size}");
+            }
+            
+            // Verificar intersección usando OBB (preciso para rotaciones)
+            foreach (var newCol in newBoxColliders)
+            {
+                if (newCol == null || !(newCol is BoxCollider newBox)) continue;
                 
                 foreach (var existingCol in existingBoxColliders)
                 {
-                    if (existingCol == null) continue;
-                    Bounds existingBounds = GetBoxColliderBounds(existingCol);
+                    if (existingCol == null || !(existingCol is BoxCollider existingBox)) continue;
                     
-                    if (newBounds.Intersects(existingBounds))
+                    if (OBBIntersects(newBox, existingBox, 0.95f))
                     {
+                        Bounds newBounds = GetBoxColliderBounds(newCol);
+                        Bounds existingBounds = GetBoxColliderBounds(existingCol);
+                        Debug.Log($"[COLLISION] '{newCol.gameObject.name}' bounds: center={newBounds.center}, size={newBounds.size}");
+                        Debug.Log($"[COLLISION] '{existingCol.gameObject.name}' bounds: center={existingBounds.center}, size={existingBounds.size}");
+                        Debug.Log($"[COLLISION] Distancia entre centros: {Vector3.Distance(newBounds.center, existingBounds.center):F3}");
                         return $"'{newCol.gameObject.name}' con '{existingCol.gameObject.name}' (parte: {existingCol.transform.parent?.name ?? "?"})";
                     }
                 }
@@ -1331,21 +1346,16 @@ namespace RobotGame.Assembly
                 return false;
             }
             
-            // Verificar intersección usando GetBoxColliderBounds (funciona con colliders deshabilitados)
+            // Verificar intersección usando OBB (preciso para rotaciones)
             foreach (var newCol in newBoxColliders)
             {
-                Bounds newBounds = GetBoxColliderBounds(newCol);
-                
-                // Reducir ligeramente para evitar falsos positivos
-                newBounds.extents *= 0.9f;
+                if (newCol == null || !(newCol is BoxCollider newBox)) continue;
                 
                 foreach (var existingCol in existingBoxColliders)
                 {
-                    if (existingCol == null) continue;
+                    if (existingCol == null || !(existingCol is BoxCollider existingBox)) continue;
                     
-                    Bounds existingBounds = GetBoxColliderBounds(existingCol);
-                    
-                    if (newBounds.Intersects(existingBounds))
+                    if (OBBIntersects(newBox, existingBox, 0.9f))
                     {
                         // Debug.Log($"¡COLISIÓN DETECTADA! '{newCol.gameObject.name}' con '{existingCol.gameObject.name}'");
                         return true;
@@ -1379,6 +1389,92 @@ namespace RobotGame.Assembly
         /// Calcula los bounds de un BoxCollider incluso si está deshabilitado.
         /// Cuando un collider está disabled, Unity retorna bounds de tamaño 0.
         /// </summary>
+        /// <summary>
+        /// Verifica si dos BoxColliders colisionan usando OBB (Oriented Bounding Box).
+        /// Esto es más preciso que comparar AABBs cuando los objetos están rotados.
+        /// Usa el Separating Axis Theorem (SAT).
+        /// </summary>
+        private bool OBBIntersects(BoxCollider a, BoxCollider b, float shrinkFactor = 0.95f)
+        {
+            // Obtener centros en world space
+            Vector3 centerA = a.transform.TransformPoint(a.center);
+            Vector3 centerB = b.transform.TransformPoint(b.center);
+            
+            // Obtener half extents escalados
+            Vector3 halfExtentsA = Vector3.Scale(a.size * 0.5f * shrinkFactor, a.transform.lossyScale);
+            Vector3 halfExtentsB = Vector3.Scale(b.size * 0.5f, b.transform.lossyScale);
+            
+            // Obtener los ejes locales de cada caja
+            Vector3[] axesA = new Vector3[3] {
+                a.transform.right,
+                a.transform.up,
+                a.transform.forward
+            };
+            Vector3[] axesB = new Vector3[3] {
+                b.transform.right,
+                b.transform.up,
+                b.transform.forward
+            };
+            
+            // Vector entre centros
+            Vector3 T = centerB - centerA;
+            
+            // Probar los 15 ejes de separación potenciales
+            // 3 ejes de A
+            for (int i = 0; i < 3; i++)
+            {
+                if (!OverlapOnAxis(T, axesA[i], axesA, axesB, halfExtentsA, halfExtentsB))
+                    return false;
+            }
+            
+            // 3 ejes de B
+            for (int i = 0; i < 3; i++)
+            {
+                if (!OverlapOnAxis(T, axesB[i], axesA, axesB, halfExtentsA, halfExtentsB))
+                    return false;
+            }
+            
+            // 9 productos cruz (AxA x AxB)
+            for (int i = 0; i < 3; i++)
+            {
+                for (int j = 0; j < 3; j++)
+                {
+                    Vector3 axis = Vector3.Cross(axesA[i], axesB[j]);
+                    // Ignorar ejes degenerados (cuando los ejes son paralelos)
+                    if (axis.sqrMagnitude < 0.0001f) continue;
+                    
+                    if (!OverlapOnAxis(T, axis.normalized, axesA, axesB, halfExtentsA, halfExtentsB))
+                        return false;
+                }
+            }
+            
+            // Si hay overlap en todos los ejes, las cajas colisionan
+            return true;
+        }
+        
+        /// <summary>
+        /// Verifica si hay overlap en un eje específico (helper para SAT)
+        /// </summary>
+        private bool OverlapOnAxis(Vector3 T, Vector3 axis, Vector3[] axesA, Vector3[] axesB, 
+                                   Vector3 halfExtentsA, Vector3 halfExtentsB)
+        {
+            // Proyectar T en el eje
+            float tProjection = Mathf.Abs(Vector3.Dot(T, axis));
+            
+            // Calcular el radio de proyección de A
+            float rA = Mathf.Abs(Vector3.Dot(axesA[0] * halfExtentsA.x, axis)) +
+                       Mathf.Abs(Vector3.Dot(axesA[1] * halfExtentsA.y, axis)) +
+                       Mathf.Abs(Vector3.Dot(axesA[2] * halfExtentsA.z, axis));
+            
+            // Calcular el radio de proyección de B
+            float rB = Mathf.Abs(Vector3.Dot(axesB[0] * halfExtentsB.x, axis)) +
+                       Mathf.Abs(Vector3.Dot(axesB[1] * halfExtentsB.y, axis)) +
+                       Mathf.Abs(Vector3.Dot(axesB[2] * halfExtentsB.z, axis));
+            
+            // Hay overlap si la distancia proyectada es menor que la suma de radios
+            return tProjection <= (rA + rB);
+        }
+        
         private Bounds GetBoxColliderBounds(Collider col)
         {
             if (col is BoxCollider box)
@@ -1917,11 +2013,17 @@ namespace RobotGame.Assembly
                 if (previewMaterial.HasProperty("_BaseColor"))
                 {
                     previewMaterial.SetColor("_BaseColor", previewColor);
+                    Debug.Log($"[PREVIEW] Color aplicado (URP): {previewColor}");
                 }
                 else
                 {
                     previewMaterial.color = previewColor;
+                    Debug.Log($"[PREVIEW] Color aplicado (Built-in): {previewColor}");
                 }
+            }
+            else
+            {
+                Debug.LogWarning("[PREVIEW] previewMaterial es NULL!");
             }
         }
         
@@ -1931,33 +2033,56 @@ namespace RobotGame.Assembly
         /// </summary>
         private bool SimulatePlacement(ArmorPartData armorData, int anchorIndex, Quaternion finalRotation)
         {
-            if (hoveredGrid == null || armorData == null) return false;
+            Debug.Log($"[SIMULATE] Iniciando simulación para '{armorData?.displayName}' en stud {anchorIndex}");
+            
+            if (hoveredGrid == null || armorData == null)
+            {
+                Debug.Log($"[SIMULATE] FALLO: hoveredGrid={hoveredGrid != null}, armorData={armorData != null}");
+                return false;
+            }
             
             // Verificar inventario
             if (useInventory && !PlayerInventory.Instance.HasItem(armorData, 1))
             {
+                Debug.Log($"[SIMULATE] FALLO: No hay en inventario");
                 return false;
             }
             
             // Crear la pieza temporalmente para validar
             ArmorPart tempArmor = RobotFactory.Instance.CreateArmorPart(armorData);
-            if (tempArmor == null) return false;
+            if (tempArmor == null)
+            {
+                Debug.Log($"[SIMULATE] FALLO: No se pudo crear tempArmor");
+                return false;
+            }
             
             bool canPlace = false;
             
             try
             {
+                // IMPORTANTE: Destruir componentes que interfieren ANTES de validar
+                foreach (var ph in tempArmor.GetComponentsInChildren<Combat.PartHealth>(true))
+                {
+                    DestroyImmediate(ph);
+                }
+                
                 var tailGrid = tempArmor.TailGrid;
                 if (tailGrid == null || tailGrid.StudCount == 0)
                 {
+                    Debug.Log($"[SIMULATE] FALLO: tailGrid es null o vacío (tailGrid={tailGrid != null}, StudCount={tailGrid?.StudCount ?? 0})");
                     return false;
                 }
+                
+                Debug.Log($"[SIMULATE] TailGrid tiene {tailGrid.StudCount} studs");
                 
                 // Validar studs (misma lógica que TryPlaceArmor)
                 if (!hoveredGrid.CanPlaceAllTails(tailGrid, anchorIndex, finalRotation))
                 {
+                    Debug.Log($"[SIMULATE] FALLO: CanPlaceAllTails retornó false");
                     return false;
                 }
+                
+                Debug.Log($"[SIMULATE] CanPlaceAllTails OK");
                 
                 // Posicionar para validar colisión (misma lógica que TryPlaceArmor)
                 Vector3 armorPosition = hoveredGrid.CalculateArmorPosition(tailGrid, anchorIndex, finalRotation);
@@ -1967,20 +2092,28 @@ namespace RobotGame.Assembly
                 Transform boneTransform = hoveredGrid.GetCurrentStudParentTransform();
                 tempArmor.transform.SetParent(boneTransform, worldPositionStays: true);
                 
+                Debug.Log($"[SIMULATE] Pieza posicionada en: pos={armorPosition}, rot={finalRotation.eulerAngles}, parent={boneTransform?.name}");
+                
+                // Forzar actualización de física antes del check
+                Physics.SyncTransforms();
+                
                 // Validar colisión - usar GetCollisionInfo como TryPlaceArmor
-                if (GetCollisionInfo(tempArmor) != null)
+                string collisionInfo = GetCollisionInfo(tempArmor);
+                if (collisionInfo != null)
                 {
+                    Debug.Log($"[SIMULATE] FALLO: Colisión detectada con {collisionInfo}");
                     return false;
                 }
                 
+                Debug.Log($"[SIMULATE] Sin colisiones - ÉXITO");
                 canPlace = true;
             }
             finally
             {
-                // Siempre destruir la pieza temporal
+                // IMPORTANTE: Usar DestroyImmediate para evitar colisiones fantasma
                 if (tempArmor != null)
                 {
-                    Destroy(tempArmor.gameObject);
+                    DestroyImmediate(tempArmor.gameObject);
                 }
             }
             
@@ -1994,30 +2127,9 @@ namespace RobotGame.Assembly
         {
             if (modelContainer == null) return false;
             
-            // Obtener bounds del preview desde los renderers
-            var renderers = modelContainer.GetComponentsInChildren<MeshRenderer>();
-            if (renderers.Length == 0) return false;
-            
-            Bounds previewBounds = new Bounds();
-            bool initialized = false;
-            
-            foreach (var renderer in renderers)
-            {
-                if (!initialized)
-                {
-                    previewBounds = renderer.bounds;
-                    initialized = true;
-                }
-                else
-                {
-                    previewBounds.Encapsulate(renderer.bounds);
-                }
-            }
-            
-            if (!initialized) return false;
-            
-            // Reducir ligeramente
-            previewBounds.extents *= 0.85f;
+            // Obtener BoxColliders del preview
+            var previewBoxColliders = GetBoxColliders(modelContainer);
+            if (previewBoxColliders.Count == 0) return false;
             
             // Recopilar todos los colliders Box_ existentes
             List<Collider> existingBoxColliders = new List<Collider>();
@@ -2052,16 +2164,19 @@ namespace RobotGame.Assembly
                 }
             }
             
-            // Verificar intersección usando GetBoxColliderBounds (funciona con colliders deshabilitados)
-            foreach (var existingCol in existingBoxColliders)
+            // Verificar intersección usando OBB (preciso para rotaciones)
+            foreach (var previewCol in previewBoxColliders)
             {
-                if (existingCol == null) continue;
+                if (previewCol == null || !(previewCol is BoxCollider previewBox)) continue;
                 
-                Bounds existingBounds = GetBoxColliderBounds(existingCol);
-                
-                if (previewBounds.Intersects(existingBounds))
+                foreach (var existingCol in existingBoxColliders)
                 {
-                    return true;
+                    if (existingCol == null || !(existingCol is BoxCollider existingBox)) continue;
+                    
+                    if (OBBIntersects(previewBox, existingBox, 0.85f))
+                    {
+                        return true;
+                    }
                 }
             }
             
@@ -2138,13 +2253,29 @@ namespace RobotGame.Assembly
                     modelInstance.transform.localPosition = Vector3.zero;
                     modelInstance.transform.localRotation = Quaternion.identity;
                     
+                    // IMPORTANTE: Destruir TODOS los PartHealth del preview para evitar interferencias
+                    var partHealths = modelInstance.GetComponentsInChildren<Combat.PartHealth>(true);
+                    Debug.Log($"[PREVIEW] Creando preview de '{armorData.displayName}' - Tiene {partHealths.Length} PartHealth");
+                    
+                    foreach (var ph in partHealths)
+                    {
+                        Debug.Log($"[PREVIEW] Destruyendo PartHealth en '{ph.gameObject.name}'");
+                        DestroyImmediate(ph);
+                    }
+                    
                     foreach (var col in modelInstance.GetComponentsInChildren<Collider>())
                     {
                         col.enabled = false;
                     }
                     
-                    foreach (var renderer in modelInstance.GetComponentsInChildren<MeshRenderer>())
+                    // DEBUG: Contar renderers
+                    var renderers = modelInstance.GetComponentsInChildren<MeshRenderer>();
+                    Debug.Log($"[PREVIEW] Encontrados {renderers.Length} MeshRenderers");
+                    
+                    foreach (var renderer in renderers)
                     {
+                        Debug.Log($"[PREVIEW] Renderer '{renderer.gameObject.name}' tiene {renderer.materials.Length} materiales");
+                        
                         Material[] mats = new Material[renderer.materials.Length];
                         for (int i = 0; i < mats.Length; i++)
                         {
@@ -2152,6 +2283,8 @@ namespace RobotGame.Assembly
                         }
                         renderer.materials = mats;
                         previewRenderers.Add(renderer);
+                        
+                        Debug.Log($"[PREVIEW] Material asignado: {previewMaterial != null}, Color: {(previewMaterial != null ? previewMaterial.GetColor("_BaseColor").ToString() : "null")}");
                     }
                 }
             }

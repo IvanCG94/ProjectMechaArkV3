@@ -421,7 +421,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::RobotGame.AI.WildRobotSpawner
   possibleRobots:
   - {fileID: 11400000, guid: 3892618bcfdef894ca687a5c8828067e, type: 2}
-  maxActiveRobots: 0
+  maxActiveRobots: 1
   spawnInterval: 30
   spawnRadius: 5
   spawnOnStart: 1
@@ -822,6 +822,10 @@ MonoBehaviour:
   collisionPullInSpeed: 10
   collisionPushOutSpeed: 2
   isInEditMode: 0
+  editMoveSpeed: 10
+  editFastMultiplier: 2
+  editMinHeight: 0.5
+  editOrbitSensitivity: 3
   showDebugUI: 0
 --- !u!1 &393854377
 GameObject:
@@ -2745,7 +2749,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::RobotGame.Inventory.PlayerInventory
   maxSlotsPerCategory: 50
   startingItems:
-  - item: {fileID: 11400000, guid: 7299fa8f0fc82aa43b181a54d4443ce5, type: 2}
+  - item: {fileID: 11400000, guid: 7df91aff86329a94293d18276da65848, type: 2}
     quantity: 4
   - item: {fileID: 11400000, guid: 95a4fee86bdbb654e832ad9a213a2075, type: 2}
     quantity: 4
@@ -2763,8 +2767,6 @@ MonoBehaviour:
     quantity: 1
   - item: {fileID: 11400000, guid: 8c29da02c9b70084da2f0a4ed7b41662, type: 2}
     quantity: 1
-  - item: {fileID: 11400000, guid: 7df91aff86329a94293d18276da65848, type: 2}
-    quantity: 2
   allItems: []
 --- !u!1 &1624930344
 GameObject:
