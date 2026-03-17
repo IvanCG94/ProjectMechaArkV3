@@ -800,9 +800,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::RobotGame.Control.PlayerCamera
   target: {fileID: 0}
   targetOffset: {x: 0, y: 1.5, z: 0}
-  defaultDistance: 6
-  minDistance: 2
-  maxDistance: 15
+  baseDefaultDistance: 5
+  baseMinDistance: 2
+  baseMaxDistance: 12
+  distanceScaleFactor: 1.5
   zoomSpeed: 5
   zoomSmoothTime: 0.1
   orbitSensitivity: 3
@@ -820,7 +821,7 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 4294967295
   collisionPullInSpeed: 10
-  collisionPushOutSpeed: 2
+  collisionRecoverSpeed: 8
   isInEditMode: 0
   editMoveSpeed: 10
   editFastMultiplier: 2

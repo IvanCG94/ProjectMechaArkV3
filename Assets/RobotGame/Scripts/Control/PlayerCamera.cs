@@ -9,7 +9,8 @@ namespace RobotGame.Control
     /// - Cursor bloqueado (invisible)
     /// - Mouse mueve la cámara directamente (sin click)
     /// - Mantener Alt para liberar el cursor temporalmente
-    /// - Zoom con rueda
+    /// - Zoom con rueda del mouse
+    /// - La distancia se ajusta automáticamente al tamaño del robot
     /// 
     /// MODO EDICIÓN (ensamblaje):
     /// - Cursor libre (visible) para seleccionar partes
@@ -28,12 +29,19 @@ namespace RobotGame.Control
         [SerializeField] private Transform target;
         [SerializeField] private Vector3 targetOffset = new Vector3(0f, 1.5f, 0f);
         
-        [Header("Distancia")]
-        [SerializeField] private float defaultDistance = 6f;
-        [SerializeField] private float minDistance = 2f;
-        [SerializeField] private float maxDistance = 15f;
+        [Header("Distancia Base (se escala con tamaño del robot)")]
+        [Tooltip("Distancia por defecto para un robot de tamaño 1")]
+        [SerializeField] private float baseDefaultDistance = 5f;
+        [Tooltip("Distancia mínima para un robot de tamaño 1")]
+        [SerializeField] private float baseMinDistance = 2f;
+        [Tooltip("Distancia máxima para un robot de tamaño 1")]
+        [SerializeField] private float baseMaxDistance = 12f;
+        [Tooltip("Factor de escala de distancia (mayor = más lejos para robots grandes)")]
+        [SerializeField] private float distanceScaleFactor = 1.5f;
+        
+        [Header("Zoom")]
         [SerializeField] private float zoomSpeed = 3f;
-        [SerializeField] private float zoomSmoothTime = 0.15f;
+        [SerializeField] private float zoomSmoothTime = 0.1f;
         
         [Header("Órbita")]
         [SerializeField] private float orbitSensitivity = 2f;
@@ -54,10 +62,12 @@ namespace RobotGame.Control
         
         [Header("Colisión")]
         [SerializeField] private bool enableCollision = true;
-        [SerializeField] private float collisionRadius = 0.2f;
+        [SerializeField] private float collisionRadius = 0.3f;
         [SerializeField] private LayerMask collisionLayers = ~0;
-        [SerializeField] private float collisionPullInSpeed = 10f;
-        [SerializeField] private float collisionPushOutSpeed = 2f;
+        [Tooltip("Qué tan rápido la cámara se acerca al detectar colisión")]
+        [SerializeField] private float collisionPullInSpeed = 15f;
+        [Tooltip("Qué tan rápido la cámara vuelve a su distancia normal después de colisión")]
+        [SerializeField] private float collisionRecoverSpeed = 8f;
         
         [Header("Estado")]
         [SerializeField] private bool isInEditMode = false;
@@ -79,17 +89,25 @@ namespace RobotGame.Control
         private float horizontalAngle;
         private float verticalAngle = 30f;
         
-        // Distancia
+        // Distancia - calculada según tamaño del robot
+        private float currentMinDistance;
+        private float currentMaxDistance;
+        private float currentDefaultDistance;
+        
+        // Distancia actual y objetivo
         private float currentDistance;
         private float targetDistance;
         private float distanceVelocity;
         
+        // Distancia efectiva (después de colisión)
+        private float effectiveDistance;
+        
+        // Tamaño del robot
+        private float robotSize = 1f;
+        
         // Posición del punto de enfoque
         private Vector3 currentFocusPoint;
         private Vector3 focusVelocity;
-        
-        // Colisión
-        private float currentCollisionDistance;
         
         // Auto-recentrado
         private float timeSinceLastInput;
@@ -120,10 +138,35 @@ namespace RobotGame.Control
             {
                 playerController = FindObjectOfType<PlayerController>();
                 
+                // Calcular tamaño del robot y ajustar distancias
+                CalculateRobotSize();
+                
                 if (instant)
                 {
                     InitializeCamera();
                 }
+            }
+        }
+        
+        /// <summary>
+        /// Recalcula el tamaño del robot y ajusta las distancias de cámara.
+        /// Llamar cuando el robot cambia de tamaño (ej: al agregar/quitar partes).
+        /// </summary>
+        public void RefreshRobotSize()
+        {
+            if (target != null)
+            {
+                float oldDefault = currentDefaultDistance;
+                CalculateRobotSize();
+                
+                // Si la distancia actual estaba en el default, actualizarla
+                if (Mathf.Approximately(targetDistance, oldDefault))
+                {
+                    targetDistance = currentDefaultDistance;
+                }
+                
+                // Clamp al nuevo rango
+                targetDistance = Mathf.Clamp(targetDistance, currentMinDistance, currentMaxDistance);
             }
         }
         
@@ -148,7 +191,15 @@ namespace RobotGame.Control
         
         public void SetZoom(float distance)
         {
-            targetDistance = Mathf.Clamp(distance, minDistance, maxDistance);
+            targetDistance = Mathf.Clamp(distance, currentMinDistance, currentMaxDistance);
+        }
+        
+        /// <summary>
+        /// Resetea el zoom a la distancia por defecto
+        /// </summary>
+        public void ResetZoom()
+        {
+            targetDistance = currentDefaultDistance;
         }
         
         #endregion
@@ -157,14 +208,21 @@ namespace RobotGame.Control
         
         private void Start()
         {
-            currentDistance = defaultDistance;
-            targetDistance = defaultDistance;
-            currentCollisionDistance = defaultDistance;
-            
             if (target != null)
             {
-                InitializeCamera();
                 playerController = FindObjectOfType<PlayerController>();
+                CalculateRobotSize();
+                InitializeCamera();
+            }
+            else
+            {
+                // Valores por defecto si no hay target
+                currentMinDistance = baseMinDistance;
+                currentMaxDistance = baseMaxDistance;
+                currentDefaultDistance = baseDefaultDistance;
+                currentDistance = baseDefaultDistance;
+                targetDistance = baseDefaultDistance;
+                effectiveDistance = baseDefaultDistance;
             }
             
             if (!isInEditMode)
@@ -187,13 +245,87 @@ namespace RobotGame.Control
         
         #endregion
         
+        #region Robot Size Calculation
+        
+        /// <summary>
+        /// Calcula el tamaño del robot basándose en los bounds de sus renderers
+        /// </summary>
+        private void CalculateRobotSize()
+        {
+            if (target == null)
+            {
+                robotSize = 1f;
+                ApplyDistanceScale();
+                return;
+            }
+            
+            // Intentar obtener bounds del robot
+            Bounds robotBounds = new Bounds(target.position, Vector3.zero);
+            bool hasBounds = false;
+            
+            // Primero intentar con Renderers
+            var renderers = target.GetComponentsInChildren<Renderer>();
+            foreach (var renderer in renderers)
+            {
+                // Ignorar renderers de UI, partículas, etc.
+                if (renderer is MeshRenderer || renderer is SkinnedMeshRenderer)
+                {
+                    if (!hasBounds)
+                    {
+                        robotBounds = renderer.bounds;
+                        hasBounds = true;
+                    }
+                    else
+                    {
+                        robotBounds.Encapsulate(renderer.bounds);
+                    }
+                }
+            }
+            
+            if (hasBounds)
+            {
+                // Usar el tamaño más grande (usualmente altura o largo)
+                float maxDimension = Mathf.Max(robotBounds.size.x, robotBounds.size.y, robotBounds.size.z);
+                
+                // Normalizar: un robot de ~2 unidades de alto es "tamaño 1"
+                robotSize = Mathf.Max(0.5f, maxDimension / 2f);
+                
+                // Ajustar el offset del target basado en la altura
+                targetOffset = new Vector3(0f, robotBounds.size.y * 0.5f, 0f);
+            }
+            else
+            {
+                robotSize = 1f;
+            }
+            
+            ApplyDistanceScale();
+        }
+        
+        /// <summary>
+        /// Aplica la escala de distancia basada en el tamaño del robot
+        /// </summary>
+        private void ApplyDistanceScale()
+        {
+            float scale = 1f + (robotSize - 1f) * distanceScaleFactor;
+            scale = Mathf.Max(0.5f, scale); // Mínimo 0.5x
+            
+            currentMinDistance = baseMinDistance * scale;
+            currentMaxDistance = baseMaxDistance * scale;
+            currentDefaultDistance = baseDefaultDistance * scale;
+        }
+        
+        #endregion
+        
         #region Initialization
         
         private void InitializeCamera()
         {
             currentFocusPoint = target.position + targetOffset;
             horizontalAngle = target.eulerAngles.y;
-            currentCollisionDistance = defaultDistance;
+            
+            currentDistance = currentDefaultDistance;
+            targetDistance = currentDefaultDistance;
+            effectiveDistance = currentDefaultDistance;
         }
         
         #endregion
@@ -202,12 +334,13 @@ namespace RobotGame.Control
         
         private void HandleInput()
         {
-            // Zoom
+            // Zoom con rueda del mouse
             float scroll = Input.GetAxis("Mouse ScrollWheel");
             if (Mathf.Abs(scroll) > 0.01f)
             {
-                targetDistance -= scroll * zoomSpeed;
-                targetDistance = Mathf.Clamp(targetDistance, minDistance, maxDistance);
+                targetDistance -= scroll * zoomSpeed * robotSize; // Escalar zoom con tamaño
+                targetDistance = Mathf.Clamp(targetDistance, currentMinDistance, currentMaxDistance);
+                timeSinceLastInput = 0f;
             }
             
             // Órbita según modo
@@ -229,7 +362,7 @@ namespace RobotGame.Control
         
         private void HandleNormalModeInput()
         {
-            // Alt libera cursor temporalmente
+            // Liberar cursor con Alt
             if (Input.GetKeyDown(freeCursorKey))
             {
                 Cursor.lockState = CursorLockMode.None;
@@ -245,13 +378,13 @@ namespace RobotGame.Control
             if (Input.GetKey(freeCursorKey))
                 return;
             
-            // Mouse mueve cámara
+            // Mouse mueve cámara (órbita)
             float mouseX = Input.GetAxis("Mouse X");
             float mouseY = Input.GetAxis("Mouse Y");
             
             if (Mathf.Abs(mouseX) > 0.001f || Mathf.Abs(mouseY) > 0.001f)
             {
-                horizontalAngle -= mouseX * orbitSensitivity;
+                horizontalAngle += mouseX * orbitSensitivity;
                 verticalAngle -= mouseY * orbitSensitivity;
                 verticalAngle = Mathf.Clamp(verticalAngle, minVerticalAngle, maxVerticalAngle);
                 
@@ -271,7 +404,7 @@ namespace RobotGame.Control
                 float mouseX = Input.GetAxis("Mouse X");
                 float mouseY = Input.GetAxis("Mouse Y");
                 
-                horizontalAngle -= mouseX * editOrbitSensitivity;
+                horizontalAngle += mouseX * editOrbitSensitivity;
                 verticalAngle -= mouseY * editOrbitSensitivity;
                 verticalAngle = Mathf.Clamp(verticalAngle, minVerticalAngle, maxVerticalAngle);
                 
@@ -369,6 +502,7 @@ namespace RobotGame.Control
         
         private void UpdateDistance()
         {
+            // Interpolar suavemente hacia la distancia objetivo
             currentDistance = Mathf.SmoothDamp(currentDistance, targetDistance, ref distanceVelocity, zoomSmoothTime);
         }
         
@@ -378,35 +512,60 @@ namespace RobotGame.Control
         
         private void UpdateCollision()
         {
+            // La distancia efectiva siempre intenta ser igual a currentDistance
+            // Solo se reduce temporalmente si hay colisión
+            
             if (!enableCollision)
             {
-                currentCollisionDistance = currentDistance;
+                effectiveDistance = currentDistance;
                 return;
             }
             
             Vector3 direction = GetCameraDirection();
-            float desiredDistance = currentDistance;
+            float desiredEffectiveDistance = currentDistance;
             
-            // Raycast desde el punto de enfoque hacia atrás
-            if (Physics.SphereCast(currentFocusPoint, collisionRadius, direction, out RaycastHit hit, 
-                currentDistance, collisionLayers, QueryTriggerInteraction.Ignore))
+            // Usar RaycastAll para poder filtrar colisiones con el propio robot
+            RaycastHit[] hits = Physics.SphereCastAll(currentFocusPoint, collisionRadius, direction, 
+                currentDistance, collisionLayers, QueryTriggerInteraction.Ignore);
+            
+            // Buscar el hit más cercano que NO sea parte del robot del jugador
+            float closestValidHit = currentDistance;
+            bool foundValidHit = false;
+            
+            foreach (var hit in hits)
             {
-                // Hay obstáculo - acercarse
-                desiredDistance = Mathf.Max(hit.distance - collisionRadius, minDistance * 0.5f);
+                // Ignorar colliders que son hijos del target (el robot del jugador)
+                if (target != null && hit.collider.transform.IsChildOf(target))
+                {
+                    continue;
+                }
+                
+                if (hit.distance < closestValidHit)
+                {
+                    closestValidHit = hit.distance;
+                    foundValidHit = true;
+                }
             }
             
-            // Suavizado diferente para acercarse vs alejarse
-            if (desiredDistance < currentCollisionDistance)
+            if (foundValidHit)
+            {
+                // Hay obstáculo válido - calcular distancia segura
+                float safeDistance = Mathf.Max(closestValidHit - collisionRadius * 0.5f, currentMinDistance * 0.3f);
+                desiredEffectiveDistance = Mathf.Min(currentDistance, safeDistance);
+            }
+            
+            // Interpolar hacia la distancia efectiva deseada
+            if (desiredEffectiveDistance < effectiveDistance)
             {
                 // Acercarse rápido (evitar atravesar paredes)
-                currentCollisionDistance = Mathf.MoveTowards(currentCollisionDistance, desiredDistance, 
+                effectiveDistance = Mathf.MoveTowards(effectiveDistance, desiredEffectiveDistance, 
                     collisionPullInSpeed * Time.deltaTime);
             }
             else
             {
-                // Alejarse lento (evitar rebotes)
-                currentCollisionDistance = Mathf.MoveTowards(currentCollisionDistance, desiredDistance, 
-                    collisionPushOutSpeed * Time.deltaTime);
+                // Volver a la distancia normal (después de que la colisión terminó)
+                effectiveDistance = Mathf.MoveTowards(effectiveDistance, desiredEffectiveDistance, 
+                    collisionRecoverSpeed * Time.deltaTime);
             }
         }
         
@@ -419,20 +578,19 @@ namespace RobotGame.Control
             float hRad = horizontalAngle * Mathf.Deg2Rad;
             float vRad = verticalAngle * Mathf.Deg2Rad;
             
-            // Dirección desde el personaje hacia la cámara
+            // Dirección desde el personaje hacia la cámara (hacia atrás y arriba)
             return new Vector3(
                 -Mathf.Sin(hRad) * Mathf.Cos(vRad),
                 Mathf.Sin(vRad),
-                Mathf.Cos(hRad) * Mathf.Cos(vRad)
+                -Mathf.Cos(hRad) * Mathf.Cos(vRad)
             );
         }
         
         private void ApplyCameraTransform()
         {
             Vector3 direction = GetCameraDirection();
-            float effectiveDistance = Mathf.Min(currentDistance, currentCollisionDistance);
             
-            // Posición
+            // Usar la distancia efectiva (que considera colisiones)
             Vector3 newPosition = currentFocusPoint + direction * effectiveDistance;
             transform.position = newPosition;
             
@@ -448,18 +606,32 @@ namespace RobotGame.Control
         {
             if (!showDebugUI) return;
             
-            GUILayout.BeginArea(new Rect(Screen.width - 220, 10, 210, 140));
+            GUILayout.BeginArea(new Rect(Screen.width - 250, 10, 240, 200));
             GUILayout.BeginVertical("box");
             
             GUILayout.Label("=== Camera ===");
             GUILayout.Label($"Mode: {(isInEditMode ? "EDIT" : "NORMAL")}");
+            GUILayout.Label($"Robot Size: {robotSize:F2}");
             GUILayout.Label($"H: {horizontalAngle:F1}° V: {verticalAngle:F1}°");
-            GUILayout.Label($"Distance: {currentDistance:F1}");
-            GUILayout.Label($"Collision: {currentCollisionDistance:F1}");
+            GUILayout.Label($"Target Dist: {targetDistance:F1}");
+            GUILayout.Label($"Current Dist: {currentDistance:F1}");
+            GUILayout.Label($"Effective Dist: {effectiveDistance:F1}");
+            GUILayout.Label($"Range: [{currentMinDistance:F1} - {currentMaxDistance:F1}]");
             GUILayout.Label($"Idle: {timeSinceLastInput:F1}s");
             
             GUILayout.EndVertical();
             GUILayout.EndArea();
+        }
+        
+        private void OnDrawGizmosSelected()
+        {
+            if (target == null) return;
+            
+            // Dibujar el rango de distancia
+            Gizmos.color = Color.yellow;
+            Gizmos.DrawWireSphere(currentFocusPoint, currentMinDistance);
+            Gizmos.color = Color.green;
+            Gizmos.DrawWireSphere(currentFocusPoint, currentMaxDistance);
         }
         
         #endregion

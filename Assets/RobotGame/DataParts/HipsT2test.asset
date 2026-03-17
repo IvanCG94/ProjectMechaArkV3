@@ -16,7 +16,7 @@ MonoBehaviour:
   displayName: Hips Test
   description: 
   icon: {fileID: 21300000, guid: 655010aef06e15641a44ff95cfbb1991, type: 3}
-  prefab: {fileID: 2756720801327204182, guid: 8f49a4cbb0878384b9b3cd3e8a7df0d5, type: 3}
+  prefab: {fileID: 3222359216177865725, guid: 8f49a4cbb0878384b9b3cd3e8a7df0d5, type: 3}
   category: 0
   tier:
     tier: 1
@@ -31,7 +31,7 @@ MonoBehaviour:
   - socketType: 1
     transformName: Socket_torso
     isRequired: 0
-    localPosition: {x: 0, y: 0.11817932, z: -0.00000011920929}
+    localPosition: {x: 0, y: 2.1981792, z: 0}
     localRotation: {x: 0, y: 0, z: -2.7805295e-22}
   animatorController: {fileID: 0}
   animatorAvatar: {fileID: 0}

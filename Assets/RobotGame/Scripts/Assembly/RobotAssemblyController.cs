@@ -1249,19 +1249,6 @@ namespace RobotGame.Assembly
                 }
             }
             
-            // DEBUG: Mostrar todos los colliders existentes
-            Debug.Log($"[COLLISION_CHECK] Comparando {newBoxColliders.Count} colliders nuevos contra {existingBoxColliders.Count} existentes");
-            foreach (var newCol in newBoxColliders)
-            {
-                Bounds b = GetBoxColliderBounds(newCol);
-                Debug.Log($"[COLLISION_CHECK] Nuevo: '{newCol.gameObject.name}' - center={b.center}, size={b.size}");
-            }
-            foreach (var existing in existingBoxColliders)
-            {
-                Bounds b = GetBoxColliderBounds(existing);
-                Debug.Log($"[COLLISION_CHECK] Existente: '{existing.gameObject.name}' en {existing.transform.parent?.name} - center={b.center}, size={b.size}");
-            }
-            
             // Verificar intersección usando OBB (preciso para rotaciones)
             foreach (var newCol in newBoxColliders)
             {
@@ -1273,11 +1260,6 @@ namespace RobotGame.Assembly
                     
                     if (OBBIntersects(newBox, existingBox, 0.95f))
                     {
-                        Bounds newBounds = GetBoxColliderBounds(newCol);
-                        Bounds existingBounds = GetBoxColliderBounds(existingCol);
-                        Debug.Log($"[COLLISION] '{newCol.gameObject.name}' bounds: center={newBounds.center}, size={newBounds.size}");
-                        Debug.Log($"[COLLISION] '{existingCol.gameObject.name}' bounds: center={existingBounds.center}, size={existingBounds.size}");
-                        Debug.Log($"[COLLISION] Distancia entre centros: {Vector3.Distance(newBounds.center, existingBounds.center):F3}");
                         return $"'{newCol.gameObject.name}' con '{existingCol.gameObject.name}' (parte: {existingCol.transform.parent?.name ?? "?"})";
                     }
                 }
@@ -2013,17 +1995,11 @@ namespace RobotGame.Assembly
                 if (previewMaterial.HasProperty("_BaseColor"))
                 {
                     previewMaterial.SetColor("_BaseColor", previewColor);
-                    Debug.Log($"[PREVIEW] Color aplicado (URP): {previewColor}");
                 }
                 else
                 {
                     previewMaterial.color = previewColor;
-                    Debug.Log($"[PREVIEW] Color aplicado (Built-in): {previewColor}");
                 }
-            }
-            else
-            {
-                Debug.LogWarning("[PREVIEW] previewMaterial es NULL!");
             }
         }
         
@@ -2033,18 +2009,14 @@ namespace RobotGame.Assembly
         /// </summary>
         private bool SimulatePlacement(ArmorPartData armorData, int anchorIndex, Quaternion finalRotation)
         {
-            Debug.Log($"[SIMULATE] Iniciando simulación para '{armorData?.displayName}' en stud {anchorIndex}");
-            
             if (hoveredGrid == null || armorData == null)
             {
-                Debug.Log($"[SIMULATE] FALLO: hoveredGrid={hoveredGrid != null}, armorData={armorData != null}");
                 return false;
             }
             
             // Verificar inventario
             if (useInventory && !PlayerInventory.Instance.HasItem(armorData, 1))
             {
-                Debug.Log($"[SIMULATE] FALLO: No hay en inventario");
                 return false;
             }
             
@@ -2052,7 +2024,6 @@ namespace RobotGame.Assembly
             ArmorPart tempArmor = RobotFactory.Instance.CreateArmorPart(armorData);
             if (tempArmor == null)
             {
-                Debug.Log($"[SIMULATE] FALLO: No se pudo crear tempArmor");
                 return false;
             }
             
@@ -2069,20 +2040,14 @@ namespace RobotGame.Assembly
                 var tailGrid = tempArmor.TailGrid;
                 if (tailGrid == null || tailGrid.StudCount == 0)
                 {
-                    Debug.Log($"[SIMULATE] FALLO: tailGrid es null o vacío (tailGrid={tailGrid != null}, StudCount={tailGrid?.StudCount ?? 0})");
                     return false;
                 }
-                
-                Debug.Log($"[SIMULATE] TailGrid tiene {tailGrid.StudCount} studs");
                 
                 // Validar studs (misma lógica que TryPlaceArmor)
                 if (!hoveredGrid.CanPlaceAllTails(tailGrid, anchorIndex, finalRotation))
                 {
-                    Debug.Log($"[SIMULATE] FALLO: CanPlaceAllTails retornó false");
                     return false;
                 }
-                
-                Debug.Log($"[SIMULATE] CanPlaceAllTails OK");
                 
                 // Posicionar para validar colisión (misma lógica que TryPlaceArmor)
                 Vector3 armorPosition = hoveredGrid.CalculateArmorPosition(tailGrid, anchorIndex, finalRotation);
@@ -2092,8 +2057,6 @@ namespace RobotGame.Assembly
                 Transform boneTransform = hoveredGrid.GetCurrentStudParentTransform();
                 tempArmor.transform.SetParent(boneTransform, worldPositionStays: true);
                 
-                Debug.Log($"[SIMULATE] Pieza posicionada en: pos={armorPosition}, rot={finalRotation.eulerAngles}, parent={boneTransform?.name}");
-                
                 // Forzar actualización de física antes del check
                 Physics.SyncTransforms();
                 
@@ -2101,11 +2064,9 @@ namespace RobotGame.Assembly
                 string collisionInfo = GetCollisionInfo(tempArmor);
                 if (collisionInfo != null)
                 {
-                    Debug.Log($"[SIMULATE] FALLO: Colisión detectada con {collisionInfo}");
                     return false;
                 }
                 
-                Debug.Log($"[SIMULATE] Sin colisiones - ÉXITO");
                 canPlace = true;
             }
             finally
@@ -2255,11 +2216,8 @@ namespace RobotGame.Assembly
                     
                     // IMPORTANTE: Destruir TODOS los PartHealth del preview para evitar interferencias
                     var partHealths = modelInstance.GetComponentsInChildren<Combat.PartHealth>(true);
-                    Debug.Log($"[PREVIEW] Creando preview de '{armorData.displayName}' - Tiene {partHealths.Length} PartHealth");
-                    
                     foreach (var ph in partHealths)
                     {
-                        Debug.Log($"[PREVIEW] Destruyendo PartHealth en '{ph.gameObject.name}'");
                         DestroyImmediate(ph);
                     }
                     
@@ -2268,14 +2226,9 @@ namespace RobotGame.Assembly
                         col.enabled = false;
                     }
                     
-                    // DEBUG: Contar renderers
                     var renderers = modelInstance.GetComponentsInChildren<MeshRenderer>();
-                    Debug.Log($"[PREVIEW] Encontrados {renderers.Length} MeshRenderers");
-                    
                     foreach (var renderer in renderers)
                     {
-                        Debug.Log($"[PREVIEW] Renderer '{renderer.gameObject.name}' tiene {renderer.materials.Length} materiales");
-                        
                         Material[] mats = new Material[renderer.materials.Length];
                         for (int i = 0; i < mats.Length; i++)
                         {
@@ -2283,8 +2236,6 @@ namespace RobotGame.Assembly
                         }
                         renderer.materials = mats;
                         previewRenderers.Add(renderer);
-                        
-                        Debug.Log($"[PREVIEW] Material asignado: {previewMaterial != null}, Color: {(previewMaterial != null ? previewMaterial.GetColor("_BaseColor").ToString() : "null")}");
                     }
                 }
             }
